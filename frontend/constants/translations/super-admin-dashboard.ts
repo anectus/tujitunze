@@ -1,0 +1,36 @@
+import type { Language } from "@/lib/context/LanguageContext";
+
+export const superAdminDashboardTranslations = {
+  en: {
+    title: "Super-admin Dashboard",
+    loading: "Loading dashboard...",
+    errorFallback: "Unable to load the dashboard.",
+    members: "Members",
+    admins: "Admins",
+    bankStaff: "Bank Staff",
+    telecomStaff: "Telecom Staff",
+    insuranceStaff: "Insurance Staff",
+    banks: "Banks",
+    telecomOperators: "Telecom Operators",
+    insuranceProviders: "Insurance Providers",
+    roles: "Roles",
+    permissions: "Permissions",
+    auditLogEntries24h: "Audit Log Entries (24h)",
+  },
+  sw: {
+    title: "Dashibodi ya Msimamizi Mkuu",
+    loading: "Inapakia dashibodi...",
+    errorFallback: "Imeshindwa kupakia dashibodi.",
+    members: "Wanachama",
+    admins: "Wasimamizi",
+    bankStaff: "Wafanyakazi wa Benki",
+    telecomStaff: "Wafanyakazi wa Simu",
+    insuranceStaff: "Wafanyakazi wa Bima",
+    banks: "Benki",
+    telecomOperators: "Watoa Huduma za Simu",
+    insuranceProviders: "Watoa Huduma za Bima",
+    roles: "Majukumu",
+    permissions: "Ruhusa",
+    auditLogEntries24h: "Kumbukumbu za Ukaguzi (Masaa 24)",
+  },
+} as const satisfies Record<Language, Record<string, string>>;

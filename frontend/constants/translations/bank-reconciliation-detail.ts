@@ -1,0 +1,38 @@
+import type { Language } from "@/lib/context/LanguageContext";
+
+export const bankReconciliationDetailTranslations = {
+  en: {
+    titlePrefix: "Reconciliation Run",
+    backToReconciliation: "← Back to Reconciliation",
+    loading: "Loading...",
+    unableToLoadRun: "Unable to load this reconciliation run.",
+    uploaded: "Uploaded",
+    matched: "Matched",
+    discrepancies: "Discrepancies",
+    unmatched: "Unmatched",
+    reference: "Reference",
+    amount: "Amount",
+    status: "Status",
+    notes: "Notes",
+    matchedValue: "Matched",
+    discrepancyValue: "Discrepancy",
+    unmatchedValue: "Unmatched",
+  },
+  sw: {
+    titlePrefix: "Muendesho wa Upatanisho",
+    backToReconciliation: "← Rudi kwenye Upatanisho",
+    loading: "Inapakia...",
+    unableToLoadRun: "Imeshindwa kupakia muendesho huu wa upatanisho.",
+    uploaded: "Zilizopakiwa",
+    matched: "Zinazolingana",
+    discrepancies: "Tofauti",
+    unmatched: "Zisizolingana",
+    reference: "Kumbukumbu",
+    amount: "Kiasi",
+    status: "Hali",
+    notes: "Maelezo",
+    matchedValue: "Inalingana",
+    discrepancyValue: "Tofauti",
+    unmatchedValue: "Haiendani",
+  },
+} as const satisfies Record<Language, Record<string, string>>;

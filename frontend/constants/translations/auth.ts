@@ -1,0 +1,136 @@
+import type { Language } from "@/lib/context/LanguageContext";
+
+export const loginFormTranslations = {
+  en: {
+    title: "Login",
+    subtitle: "Enter your credentials to access your account",
+    usernameLabel: "Username",
+    usernamePlaceholder: "Enter your NIDA number or email",
+    usernameHelp: "Log in with your NIDA number or email address.",
+    passwordLabel: "Password",
+    passwordPlaceholder: "Enter your password",
+    forgotPassword: "Forgot password?",
+    showPassword: "Show password",
+    hidePassword: "Hide password",
+    rememberMe: "Remember me",
+    loginButton: "Login",
+    loggingIn: "Logging in...",
+    noAccount: "Don't have an account?",
+    signUp: "Sign Up",
+    successMessage: "Login successful.",
+    errorFallback: "Invalid NIDA number, email, or password.",
+    genericErrorFallback: "Unable to login. Please try again.",
+  },
+  sw: {
+    title: "Ingia",
+    subtitle: "Weka taarifa zako za akaunti ili kufikia akaunti yako",
+    usernameLabel: "Jina la Mtumiaji",
+    usernamePlaceholder: "Weka namba yako ya NIDA au barua pepe",
+    usernameHelp: "Ingia kwa kutumia namba yako ya NIDA au barua pepe.",
+    passwordLabel: "Nywila",
+    passwordPlaceholder: "Weka nywila yako",
+    forgotPassword: "Umesahau nywila?",
+    showPassword: "Onyesha nywila",
+    hidePassword: "Ficha nywila",
+    rememberMe: "Nikumbuke",
+    loginButton: "Ingia",
+    loggingIn: "Inaingia...",
+    noAccount: "Huna akaunti?",
+    signUp: "Jisajili",
+    successMessage: "Umeingia kikamilifu.",
+    errorFallback: "Namba ya NIDA, barua pepe, au nywila si sahihi.",
+    genericErrorFallback: "Imeshindwa kuingia. Tafadhali jaribu tena.",
+  },
+} as const satisfies Record<Language, Record<string, string>>;
+
+export const registerFormTranslations = {
+  en: {
+    title: "Sign Up",
+    subtitle: "Create your Tujitunze healthcare account",
+    firstName: "First Name",
+    firstNamePlaceholder: "Enter your first name",
+    secondName: "Second Name",
+    secondNamePlaceholder: "Enter your second name",
+    optional: "(Optional)",
+    surname: "Surname",
+    surnamePlaceholder: "Enter your surname",
+    phoneNumber: "Phone Number",
+    phoneNumberPlaceholder: "0626881149",
+    phoneNumberHelp: "You can add more phone numbers later from your profile.",
+    nidaNumber: "NIDA Number",
+    nidaNumberPlaceholder: "20030707-35805-00002-26",
+    nidaNumberHelp:
+      "Type only the digits — the dashes are added automatically. Used to verify your identity.",
+    email: "Email Address",
+    emailPlaceholder: "example@email.com",
+    password: "Password",
+    passwordPlaceholder: "Create a password",
+    passwordHelp: "Minimum 8 characters.",
+    confirmPassword: "Confirm Password",
+    confirmPasswordPlaceholder: "Confirm your password",
+    termsLabel:
+      "I agree to the Tujitunze terms and conditions and confirm that the information provided is accurate.",
+    submit: "Create Account",
+    submitting: "Creating Account...",
+    alreadyHaveAccount: "Already have an account?",
+    login: "Login",
+    copyright: "© 2026 Tujitunze. Health Savings & Insurance Management System.",
+    passwordTooShort: "Password must be at least 8 characters.",
+    successMessage: "Account created. Redirecting you to login...",
+    errorFallback: "Sign up failed.",
+  },
+  sw: {
+    title: "Jisajili",
+    subtitle: "Fungua akaunti yako ya afya ya Tujitunze",
+    firstName: "Jina la Kwanza",
+    firstNamePlaceholder: "Weka jina lako la kwanza",
+    secondName: "Jina la Pili",
+    secondNamePlaceholder: "Weka jina lako la pili",
+    optional: "(Si lazima)",
+    surname: "Jina la Ukoo",
+    surnamePlaceholder: "Weka jina lako la ukoo",
+    phoneNumber: "Namba ya Simu",
+    phoneNumberPlaceholder: "0626881149",
+    phoneNumberHelp: "Unaweza kuongeza namba nyingine za simu baadaye kwenye wasifu wako.",
+    nidaNumber: "Namba ya NIDA",
+    nidaNumberPlaceholder: "20030707-35805-00002-26",
+    nidaNumberHelp:
+      "Andika tarakimu tu — mistari hutiwa moja kwa moja. Hutumika kuthibitisha utambulisho wako.",
+    email: "Anwani ya Barua Pepe",
+    emailPlaceholder: "mfano@barua.com",
+    password: "Nywila",
+    passwordPlaceholder: "Tengeneza nywila",
+    passwordHelp: "Angalau herufi 8.",
+    confirmPassword: "Thibitisha Nywila",
+    confirmPasswordPlaceholder: "Thibitisha nywila yako",
+    termsLabel:
+      "Nakubali masharti na vigezo vya Tujitunze na kuthibitisha kuwa taarifa nilizotoa ni sahihi.",
+    submit: "Fungua Akaunti",
+    submitting: "Inafungua Akaunti...",
+    alreadyHaveAccount: "Una akaunti tayari?",
+    login: "Ingia",
+    copyright: "© 2026 Tujitunze. Mfumo wa Akiba ya Afya na Usimamizi wa Bima.",
+    passwordTooShort: "Nywila lazima iwe na angalau herufi 8.",
+    successMessage: "Akaunti imefunguliwa. Unaelekezwa kuingia...",
+    errorFallback: "Usajili umeshindwa.",
+  },
+} as const satisfies Record<Language, Record<string, string>>;
+
+export const protectedRouteTranslations = {
+  en: {
+    checkingAccess: "Checking access...",
+  },
+  sw: {
+    checkingAccess: "Inakagua ufikiaji...",
+  },
+} as const satisfies Record<Language, Record<string, string>>;
+
+export const forgotPasswordTranslations = {
+  en: { title: "Forgot password?", description: "Enter your registered email address or phone number.", identifier: "Email or Phone Number", submit: "Send Reset Link", submitting: "Sending...", success: "If an account exists with that email or phone number, password-reset instructions have been sent.", emailUnavailable: "Password reset email service is not configured. Please contact support.", smsUnavailable: "Password reset SMS service is not configured. Please contact support.", otpDescription: "Enter the 6-digit verification code sent to your phone.", otp: "Verification code", verify: "Verify Code", verifying: "Verifying...", invalidOtp: "The verification code is invalid or expired.", resend: "Resend Code", error: "Unable to request a password reset.", backToLogin: "Remember your password? Log in" },
+  sw: { title: "Umesahau nywila?", description: "Weka barua pepe au namba ya simu iliyosajiliwa.", identifier: "Barua Pepe au Namba ya Simu", submit: "Tuma Kiungo cha Kubadilisha", submitting: "Inatuma...", success: "Ikiwa akaunti ipo kwa barua pepe au namba hiyo, maelekezo yametumwa.", emailUnavailable: "Huduma ya barua pepe ya kubadilisha nywila haijawekwa. Wasiliana na msaada.", smsUnavailable: "Huduma ya SMS ya kubadilisha nywila haijawekwa. Wasiliana na msaada.", otpDescription: "Weka msimbo wa tarakimu 6 uliotumwa kwenye simu yako.", otp: "Msimbo wa uthibitishaji", verify: "Thibitisha Msimbo", verifying: "Inathibitisha...", invalidOtp: "Msimbo si sahihi au muda wake umeisha.", resend: "Tuma tena Msimbo", error: "Imeshindwa kuomba kubadilisha nywila.", backToLogin: "Unakumbuka nywila? Ingia" },
+} as const satisfies Record<Language, Record<string, string>>;
+
+export const resetPasswordTranslations = {
+  en: { title: "Create a new password", description: "Choose a new password for your account.", password: "New password", confirmPassword: "Confirm new password", submit: "Reset password", submitting: "Resetting...", success: "Password reset successful. You can now log in.", error: "Unable to reset your password.", invalidLink: "This password reset link is invalid or expired.", passwordMismatch: "Passwords do not match.", backToLogin: "Go to login" },
+  sw: { title: "Tengeneza nywila mpya", description: "Chagua nywila mpya ya akaunti yako.", password: "Nywila mpya", confirmPassword: "Thibitisha nywila mpya", submit: "Badilisha nywila", submitting: "Inabadilisha...", success: "Nywila imebadilishwa. Sasa unaweza kuingia.", error: "Imeshindwa kubadilisha nywila.", invalidLink: "Kiungo hiki si sahihi au muda wake umeisha.", passwordMismatch: "Nywila hazifanani.", backToLogin: "Nenda kuingia" },
+} as const satisfies Record<Language, Record<string, string>>;

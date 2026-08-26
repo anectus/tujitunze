@@ -1,0 +1,48 @@
+import type { Language } from "@/lib/context/LanguageContext";
+
+export const bankReportsTranslations = {
+  en: {
+    title: "Reports",
+    dailyReport: "Daily Report",
+    weeklyReport: "Weekly Report",
+    monthlyReport: "Monthly Report",
+    unableToLoad: "Unable to load reports.",
+    loading: "Loading...",
+    depositReportTitle: "Deposit Report",
+    noDepositsPeriod: "No deposits in this period yet.",
+    withdrawalReportTitle: "Withdrawal Report",
+    noWithdrawalsPeriod: "No withdrawals in this period yet.",
+    settlementReportTitle: "Settlement Report",
+    noSettlements: "No settlements recorded yet.",
+    period: "Period",
+    count: "Count",
+    total: "Total",
+    reconciliationReportTitle: "Reconciliation Report",
+    reconciliationReportNote:
+      "page for run-by-run history — a rolled-up trend report over multiple runs isn't built yet.",
+    reconciliationLink: "Reconciliation",
+    seeThe: "See the",
+  },
+  sw: {
+    title: "Ripoti",
+    dailyReport: "Ripoti ya Kila Siku",
+    weeklyReport: "Ripoti ya Kila Wiki",
+    monthlyReport: "Ripoti ya Kila Mwezi",
+    unableToLoad: "Imeshindwa kupakia ripoti.",
+    loading: "Inapakia...",
+    depositReportTitle: "Ripoti ya Amana",
+    noDepositsPeriod: "Hakuna amana katika kipindi hiki bado.",
+    withdrawalReportTitle: "Ripoti ya Uondoaji",
+    noWithdrawalsPeriod: "Hakuna uondoaji katika kipindi hiki bado.",
+    settlementReportTitle: "Ripoti ya Malipo ya Mrejesho",
+    noSettlements: "Hakuna malipo ya mrejesho yaliyorekodiwa bado.",
+    period: "Kipindi",
+    count: "Idadi",
+    total: "Jumla",
+    reconciliationReportTitle: "Ripoti ya Upatanisho",
+    reconciliationReportNote:
+      "ukurasa wa historia ya kila muendesho — ripoti ya mwelekeo iliyounganishwa ya miendesho mingi haijajengwa bado.",
+    reconciliationLink: "Upatanisho",
+    seeThe: "Angalia",
+  },
+} as const satisfies Record<Language, Record<string, string>>;

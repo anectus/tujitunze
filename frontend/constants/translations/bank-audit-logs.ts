@@ -1,0 +1,46 @@
+import type { Language } from "@/lib/context/LanguageContext";
+
+export const bankAuditLogsTranslations = {
+  en: {
+    title: "Audit & Security",
+    unableToLoad: "Unable to load audit logs.",
+    loading: "Loading...",
+    activitySectionTitle: "Transaction Audit Logs, User Activity & Approval Logs",
+    noActivity: "No activity recorded yet.",
+    action: "Action",
+    table: "Table",
+    ipAddress: "IP Address",
+    date: "Date",
+    apiLogsTitle: "API Logs",
+    noApiActivity: "No API activity recorded yet.",
+    event: "Event",
+    endpoint: "Endpoint",
+    result: "Result",
+    success: "Success",
+    failed: "Failed",
+    securityEventsTitle: "Dedicated Security Events",
+    securityEventsNote:
+      "Credential regeneration and webhook reconfiguration already appear above as regular activity log entries — a separate security-event feed (e.g. failed login attempts) doesn't exist system-wide yet.",
+  },
+  sw: {
+    title: "Ukaguzi na Usalama",
+    unableToLoad: "Imeshindwa kupakia kumbukumbu za ukaguzi.",
+    loading: "Inapakia...",
+    activitySectionTitle: "Kumbukumbu za Ukaguzi wa Miamala, Shughuli za Mtumiaji na Idhini",
+    noActivity: "Hakuna shughuli iliyorekodiwa bado.",
+    action: "Kitendo",
+    table: "Jedwali",
+    ipAddress: "Anwani ya IP",
+    date: "Tarehe",
+    apiLogsTitle: "Kumbukumbu za API",
+    noApiActivity: "Hakuna shughuli ya API iliyorekodiwa bado.",
+    event: "Tukio",
+    endpoint: "Kiungo",
+    result: "Matokeo",
+    success: "Imefanikiwa",
+    failed: "Imeshindwa",
+    securityEventsTitle: "Matukio Maalum ya Usalama",
+    securityEventsNote:
+      "Utengenezaji upya wa vitambulisho na urekebishaji wa webhook tayari vinaonekana hapo juu kama vipengele vya kawaida vya kumbukumbu za shughuli — mkondo tofauti wa matukio ya usalama (mfano majaribio yaliyoshindwa ya kuingia) haujajengwa bado kwa mfumo mzima.",
+  },
+} as const satisfies Record<Language, Record<string, string>>;

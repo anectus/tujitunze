@@ -1,0 +1,22 @@
+import ProtectedRoute from "@/components/auth/ProtectedRoute";
+import DashboardLayout from "@/components/dashboard/DashboardLayout";
+
+const NAV_ITEMS = [
+  { labelKey: "dashboard", href: "/super-admin/dashboard" },
+  { labelKey: "administrators", href: "/super-admin/administrators" },
+  { labelKey: "rolesPermissions", href: "/super-admin/roles" },
+] as const;
+
+export default function SuperAdminLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  return (
+    <ProtectedRoute allowedRoles={["Super-admin"]}>
+      <DashboardLayout roleLabel="Super-admin" navItems={NAV_ITEMS}>
+        {children}
+      </DashboardLayout>
+    </ProtectedRoute>
+  );
+}

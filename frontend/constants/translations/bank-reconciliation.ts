@@ -1,0 +1,48 @@
+import type { Language } from "@/lib/context/LanguageContext";
+
+export const bankReconciliationTranslations = {
+  en: {
+    title: "Reconciliation",
+    uploadTitle: "Upload Bank Records",
+    uploadDescription:
+      "Paste your own bank-side records (CSV: reference,amount,date) — each row is matched against HSIMS's transaction records by reference and amount. A reference that matches but with a different amount is flagged as a Discrepancy rather than simply Unmatched.",
+    unableToLoadHistory: "Unable to load reconciliation history.",
+    unableToRunReconciliation: "Unable to run reconciliation.",
+    pasteAtLeastOneRow: "Paste at least one valid row (reference,amount[,date]).",
+    reconciling: "Reconciling...",
+    runReconciliation: "Run Reconciliation",
+    resultMatched: "matched",
+    resultUnmatchedOf: "unmatched/discrepant out of",
+    historyTitle: "Reconciliation History",
+    loading: "Loading...",
+    noRuns: "No reconciliation runs yet.",
+    run: "Run",
+    uploaded: "Uploaded",
+    matched: "Matched",
+    unmatchedDiscrepant: "Unmatched/Discrepant",
+    date: "Date",
+    view: "View →",
+  },
+  sw: {
+    title: "Upatanisho",
+    uploadTitle: "Pakia Rekodi za Benki",
+    uploadDescription:
+      "Bandika rekodi zako za upande wa benki (CSV: reference,amount,date) — kila mstari unalinganishwa na rekodi za miamala za HSIMS kwa kumbukumbu na kiasi. Kumbukumbu inayolingana lakini kiasi tofauti inawekwa alama ya Tofauti badala ya Isiyolingana tu.",
+    unableToLoadHistory: "Imeshindwa kupakia historia ya upatanisho.",
+    unableToRunReconciliation: "Imeshindwa kuendesha upatanisho.",
+    pasteAtLeastOneRow: "Bandika angalau mstari mmoja sahihi (reference,amount[,date]).",
+    reconciling: "Inapatanisha...",
+    runReconciliation: "Endesha Upatanisho",
+    resultMatched: "zinazolingana",
+    resultUnmatchedOf: "zisizolingana/tofauti kati ya",
+    historyTitle: "Historia ya Upatanisho",
+    loading: "Inapakia...",
+    noRuns: "Hakuna muendesho wa upatanisho bado.",
+    run: "Muendesho",
+    uploaded: "Zilizopakiwa",
+    matched: "Zinazolingana",
+    unmatchedDiscrepant: "Zisizolingana/Tofauti",
+    date: "Tarehe",
+    view: "Angalia →",
+  },
+} as const satisfies Record<Language, Record<string, string>>;

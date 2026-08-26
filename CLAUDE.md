@@ -1,0 +1,454 @@
+# Tujitunze / HSIMS — Project Instructions
+
+Health Savings and Insurance Management System for Tanzania. Handles national ID
+(NIDA) numbers, health records, and financial transactions (wallet, bank,
+telecom contributions) — treat all member data as sensitive by default.
+
+Stack: Next.js (App Router) frontend, NestJS + TypeORM + PostgreSQL backend.
+
+## Roles
+
+Source of truth: the `roles` table seed data in `database/schema/tujitunze.sql`
+and the route groups under `frontend/app/(*)`. Backend enforcement is
+`@Roles('RoleName')` + `RolesGuard` (`backend/src/modules/auth/guards/roles.guard.ts`)
+on top of `JwtAuthGuard` — a request must pass both to reach a role-scoped
+handler. As of 2026-08-14, **every role has at least one real, guarded
+backend endpoint**: `Member` (`members.controller.ts`), `Admin`
+(`backend/src/modules/admin/` — members and hospital-directory management,
+plus `GET /admin/dashboard`), and now `Hospital`/`Bank`/`Telecom`/
+`Insurance`/`Super-admin`, each with its own module
+(`backend/src/modules/{hospital,bank,telecom,insurance,super-admin}/`)
+exposing a single `GET /<role>/dashboard` summary endpoint following the
+same `JwtAuthGuard` + `RolesGuard` + `@Roles(...)` pattern `admin`
+established. Beyond that one endpoint per role, these five are still a
+thin slice — no CRUD for patients/claims/billing/accounts/etc. yet; add
+those to the same module as the need comes up, not as new modules per
+resource.
+
+Hospital/Bank/Telecom/Insurance dashboards are tenant-scoped: `users` has
+nullable `hospital_id`/`bank_id`/`telecom_operator_id`/
+`insurance_provider_id` columns (`database/migrations/
+0004_add_staff_tenant_links.sql`) linking a staff account to the specific
+hospital/bank/operator/provider it belongs to, and each service throws
+`ForbiddenException` if that link is unset rather than returning
+empty/global data.
+
+As of 2026-08-14, Super-admin can now create staff accounts for any role
+through a real endpoint instead of hand-written SQL: `POST /super-admin/
+administrators` (`backend/src/modules/super-admin/super-admin.service.ts`
+`createAdministrator`, DTO in `dto/create-administrator.dto.ts`) validates
+NIDA/email uniqueness the same way `members.service.ts`'s `register()`
+does, hashes the password at the same bcrypt cost (12 rounds), rejects a
+tenant id that doesn't match what the chosen role requires (Hospital/Bank/
+Telecom/Insurance need one, Admin/Super-admin must not have one), and
+audit-logs the creation (`staff_account.create`) inside the same
+transaction as the write. `GET /super-admin/administrators` lists every
+non-Member account with its role and tenant name; `GET /super-admin/
+tenants` feeds the create form's tenant dropdown. Frontend at
+`(super-admin)/super-admin/administrators/page.tsx`. `Member` accounts
+still only ever come from `/members/register` — this endpoint deliberately
+excludes that role. Covered by
+`backend/test/super-admin-administrators.e2e-spec.ts`, including the full
+create → log in → reach the new account's own scoped dashboard loop.
+
+As of 2026-08-15, Super-admin can also manage the roles/permissions catalog
+itself, closing the gap the table below used to call out: `GET
+/super-admin/roles` lists every role with its permissions and live
+`user_count`; `POST /super-admin/roles` creates a role (starts with no
+permissions); `PUT /super-admin/roles/:id/permissions` replaces a role's
+permission set wholesale (not incremental — send the full desired list);
+`PATCH /super-admin/roles/:id` renames/redescribes a role; `DELETE
+/super-admin/roles/:id` removes one. `GET /super-admin/permissions` lists
+the permission catalog for the assignment UI. All five live in
+`super-admin-roles.service.ts`/`super-admin-roles.controller.ts` and share
+the same `JwtAuthGuard` + `RolesGuard` + `@Roles('Super-admin')` guard as
+`administrators`. Rename/delete both reject the seven seeded role names
+(`Member`/`Admin`/`Hospital`/`Bank`/`Telecom`/`Insurance`/`Super-admin` —
+see `CORE_ROLE_NAMES` in the service) with `403`, since those strings are
+load-bearing in every `@Roles(...)` decorator and frontend route group;
+delete additionally rejects with `409` if the role still has any
+`member_roles` rows (reassign first). Every write is audit-logged
+(`role.create`/`role.update`/`role.permissions_update`/`role.delete`)
+inside the same transaction. Frontend at
+`(super-admin)/super-admin/roles/page.tsx` — core roles render read-only
+(name/description as text, no delete button); custom roles get editable
+fields and a delete button, purely a UX mirror of the backend's guard, not
+a substitute for it. Covered by
+`backend/test/super-admin-roles.e2e-spec.ts`.
+
+As of 2026-08-17, the Member dashboard is a real 9-section hub instead of
+three quick links: My Profile, My Membership, Contribution, Health Fund
+Status, Healthcare Services, Hospital Verification, Claims, Notifications,
+and Transaction History (`(member)/dashboard/page.tsx`). All of it reads
+from tables `tujitunze.sql` already defined but that had no NestJS module
+behind them yet: `GET /members/membership` combines `users` +
+`health_wallets` + `member_insurance`/`insurance_plans` into one summary
+(member ID is computed as `TB` + zero-padded user id, not a stored
+column); `GET/PATCH /members/notifications*` is a new
+`NotificationsModule` (`backend/src/modules/notifications/`) that other
+modules write into transactionally — a wallet top-up, first-time
+onboarding completion, a new phone/bank link, a password change, and
+setting a primary phone (new: `PATCH /members/phone-numbers/:id/primary`)
+each create a real notification row, the same atomic-with-the-write
+pattern `AuditLogsService` established; `GET /members/hospitals` +
+`GET /members/hospitals/:id` is a read-only member-facing view of the
+same `hospitals` table Admin manages; `GET /members/insurance` and
+`GET /members/claims` read the member's own `member_insurance` and
+`healthcare_claims` rows. `GET /members/verifications` and the Claims
+list are genuinely real endpoints but will read back empty on a fresh
+DB — nothing writes to `healthcare_verifications` or creates a claim yet
+(that's a Hospital-side check-in/claim-filing flow that doesn't exist),
+same honest gap as `telecom_contributions` below. `wallet/transactions`
+and `insurance/claims`/`insurance/plans` (previously hand-written sample
+data with an on-page disclaimer) now fetch these real endpoints instead.
+Member-facing `hospitals`, `hospitals/[id]`, `notifications`, and
+`membership` frontend pages replace what were `ComingSoonPage`
+placeholders; `hospitals/appointments`, `wallet/withdraw`,
+`wallet/transfer`, and everything under `telecom/*` are still
+placeholders — no backend exists for appointments, withdrawals/transfers,
+or telecom purchases (that last one is the unbuilt micro-levy engine).
+
+As of 2026-08-17, the Telecom staff dashboard grew from one summary
+endpoint into a real multi-page module (`backend/src/modules/telecom/`),
+backed by migration `database/migrations/0005_telecom_dashboard.sql`
+(new columns on `telecom_operators` for contact info + API/webhook
+credentials, plus `contribution_rules` — seeded with the documented
+default levy rates — `telecom_reconciliation_runs`/`_records`, and
+`api_access_logs`). All of it is tenant-scoped the same way the original
+`GET /telecom/dashboard` was, via `users.telecom_operator_id`. Real:
+`GET /telecom/operator` (info, contact, credential status — never
+returns the key/secret itself), `PATCH /telecom/operator/contact`,
+`POST /telecom/operator/api-key/regenerate` (bcrypt-hashed at rest, full
+key shown exactly once), `POST /telecom/operator/webhook` (secret stored
+retrievable-plaintext, not hashed — HSIMS would need the raw value to
+sign outgoing deliveries with it; flagged below as a known gap, not a
+pattern to copy), `POST /telecom/operator/connection-test` (a real
+outbound HTTP call to the operator's `api_endpoint`, logged to
+`api_access_logs`), `GET /telecom/members` (roster scoped by phone
+number's operator), `GET /telecom/contributions` (+ `/export` CSV,
+status-filterable — also backs the Successful/Failed Transactions
+views), `GET /telecom/contribution-rules` (read-only for Telecom —
+editing is a deliberately deferred Admin/Super-admin decision),
+`POST /telecom/reconciliation/runs` (upload the operator's own record
+batch, matched against `telecom_contributions` by reference+amount) +
+`GET /telecom/reconciliation/runs[/:id]`, `GET /telecom/reports`
+(daily/weekly/monthly contribution aggregation), and
+`GET /telecom/activity-logs` / `GET /telecom/api-access-logs`. Still
+placeholder: an inbound webhook-receipt endpoint that would actually
+*use* the API key (credential issuance is built, nothing consumes it
+yet — deliberately not built alongside this pass, since that endpoint
+would create real `telecom_contributions`/wallet-affecting writes and
+deserves its own threat-modeling pass, not a side effect of a dashboard
+task); authentication/login-attempt logging (the `sessions` table exists
+in schema but nothing writes to it, system-wide, not just for Telecom);
+and a rolled-up multi-run reconciliation trend report (today's
+Reconciliation Report just links to the run-by-run history page).
+Frontend at `(telecom)/telecom/{operator,members,contributions,
+contribution-rules,reconciliation,reports,audit-logs}` — all
+`/telecom/...`-prefixed from the start, unlike the Member-dashboard pass
+which hit the bare-path collision live (see above); this one avoided it
+by not reusing the old bare `customers`/`transactions`/`payments`/
+`reconciliation`/`reports`/`settings` stub folders.
+
+As of 2026-08-17, the Bank staff dashboard grew the same way, via
+`backend/src/modules/bank/` and migration `database/migrations/
+0006_bank_dashboard.sql`. It mirrors Telecom's shared pieces exactly
+(contact info, API/webhook credentials with the same plaintext-secret
+caveat, connection testing, reconciliation, reports, audit logs — see
+Known Security Gap #12, which now covers both) but also introduces
+genuinely new territory the Telecom pass didn't need: HSIMS's own
+operational accounts at the bank. `bank_fund_accounts` holds one ledger
+row per (bank, account type) — Settlement / Health Fund / Reserve,
+lazily created the same way `health_wallets` is — with `balance` and
+`reserved_balance` columns; `bank_fund_transfers` is the append-only
+ledger of deposits/withdrawals against them. `settlements` records a
+payout to a Telecom or Hospital partner: creating one reserves the
+amount from the Settlement account's `reserved_balance` (status
+`Pending`), and `PATCH /bank/settlements/:id/complete` is what actually
+debits `balance` and writes the `Settlement Out` transfer row (status
+`Completed`) — verified end-to-end against a real running instance,
+including that over-committing past the available balance correctly
+`400`s. Like `health_wallets`, this is ledger/bookkeeping only, not a
+live payment rail — see Known Security Gap #8. `bank_transactions`
+(Deposits/Withdrawals/Transactions) still has no writer — no Member-side
+"request a bank withdrawal" flow exists — so `PATCH /bank/transactions/
+:id/status` (the withdrawal-approval action) is real and tenant-checked
+but has nothing to act on yet, same honest shape as Telecom's contribution
+transactions. Bank's reconciliation does a three-way match (`Matched` /
+`Discrepancy` — reference matches but amount doesn't / `Unmatched`)
+rather than Telecom's binary one, since the dashboard spec calls out
+Discrepancies as their own concept. One tenant-isolation bug was caught
+and fixed before shipping: `listActivityLogs`'s first draft filtered
+`audit_logs` by `affected_record_id` for `settlements`/`bank_transactions`
+rows without checking those records actually belonged to *this* bank
+(that id isn't a bank id) — fixed to match Telecom's narrower, safe
+shape (own profile changes + this staff member's own actions only).
+
+Each role's frontend route group (`app/(admin)`, `(hospital)`, `(bank)`, (`app/(admin)`, `(hospital)`, `(bank)`,
+`(telecom)`, `(super-admin)`, `(insurance)`, `(member)`) does have a
+client-side gate now: `components/auth/ProtectedRoute.tsx` (using
+`lib/hooks/useAuth.ts` / `lib/utils/permissions.ts`) wraps each
+`layout.tsx`, decodes the JWT out of `localStorage`, and redirects to
+`/login` (no/expired token) or `/access-denied` (wrong role). **This is
+UX/defense-in-depth only, not a security boundary** — the token is decoded
+client-side, not verified, so it's trivially bypassable by editing
+`localStorage`. The backend guard above is what actually protects the
+data, same as the existing rule that the frontend not showing a button is
+never sufficient on its own.
+
+Every staff route group now also shares one sidebar shell
+(`components/dashboard/DashboardLayout.tsx` + `components/common/
+Sidebar.tsx`, mounted in each group's `layout.tsx`) so a role's nav is
+consistent across every page in that group, not just its dashboard. A
+group's `NAV_ITEMS` list only real pages — most of these route groups
+still have no `page.tsx` beyond `dashboard/`, so don't copy a nav entry
+from this table's route-group column without first checking the page
+exists, or it'll 404.
+
+Route groups don't add a URL prefix in Next.js — `(admin)/dashboard` and
+`(member)/dashboard` would both resolve to `/dashboard` and collide, which
+is why each role's dashboard lives at `/<role>/dashboard`
+(`app/(admin)/admin/dashboard`, `app/(hospital)/hospital/dashboard`, …)
+except `Member`, which already owned the bare `/dashboard`. The other
+folders each route group was originally scaffolded with (e.g. `(admin)/
+claims`, `(admin)/settings`) are still bare, unprefixed segments — the
+same collision is latent there too (two role groups both adding, say, a
+`reports/page.tsx` will collide at `/reports`) and will need the same
+`/<role>/...` prefix treatment whenever those get built out, not just
+`dashboard`.
+
+| Role | Who | Route group | What they're for |
+|---|---|---|---|
+| `Member` | A registered citizen/patient | `(member)` — dashboard, wallet, telecom, insurance, hospitals, reports, profile, notifications, settings, qr, onboarding | Their own health savings/wallet, linking phone/bank accounts, viewing their own claims and insurance, nothing belonging to another member |
+| `Admin` | Internal Tujitunze staff | `(admin)` — members, users, claims, transactions, hospitals, banks, telecom, reports, audit-logs, settings; dashboard at `/admin/dashboard` | Operational oversight across members: user/claim/transaction management, reviewing audit logs — not the same as `Super-admin` (system-level config) |
+| `Hospital` | Staff at a partner hospital | `(hospital)` — dashboard at `/hospital/dashboard` (only real page so far); patients, claims, billing, appointments, staff, reports, settings folders still empty | Their own hospital's patients/claims/billing/staff only — a hospital must never see another hospital's claims (enforced today via `users.hospital_id` scoping in `hospital.service.ts`, and tested in `backend/test/role-dashboards.e2e-spec.ts`) |
+| `Insurance` | Staff at an insurance provider | `(insurance)` — dashboard at `/insurance/dashboard` (only page; route group didn't exist before 2026-08-14) | Managing their own plans and reviewing claims routed to them |
+| `Bank` | Staff at a partner bank / bank integration | `(bank)` — real pages now at `/bank/dashboard`, `/bank/profile`, `/bank/fund-accounts`, `/bank/transactions`, `/bank/settlements`, `/bank/reconciliation[/:id]`, `/bank/reports`, `/bank/audit-logs` (all `/bank/...`-prefixed; the old bare `accounts`/`customers`/`transactions`/`transfers`/`reconciliation`/`reports`/`settings` folders are untouched empty stubs, not reused) | Their own bank's linked accounts/transactions, plus HSIMS's own operational fund accounts and settlements at this bank — same cross-tenant boundary concern as Hospital |
+| `Telecom` | Staff at a partner telecom operator | `(telecom)` — real pages now at `/telecom/dashboard`, `/telecom/operator`, `/telecom/members`, `/telecom/contributions`, `/telecom/contribution-rules`, `/telecom/reconciliation[/:id]`, `/telecom/reports`, `/telecom/audit-logs` (all `/telecom/...`-prefixed per the collision rule above — the old bare `customers`/`transactions`/`payments`/`reconciliation`/`reports`/`settings` folders are untouched empty stubs, not reused) | Their own operator's contribution/levy data, member roster, API credentials, and reconciliation only |
+| `Super-admin` | Platform owner/operator | `(super-admin)` — dashboard at `/super-admin/dashboard`, staff provisioning at `/super-admin/administrators`, roles/permissions catalog at `/super-admin/roles`; integrations, system, audit-logs, settings folders still empty | System-wide configuration, managing other Admins, integrations — role is seeded (`role_id 7`); can create a staff account (any role) via `/super-admin/administrators` and manage the roles/permissions catalog via `/super-admin/roles` (create/rename/delete a role, assign its permissions) — the seven core role names can't be renamed or deleted |
+
+## Forgot / reset password (email or phone)
+
+`POST /auth/forgot-password` (`backend/src/modules/auth/`) takes a single
+`identifier` field and detects email vs. Tanzanian phone itself — an
+`@` routes to `issueEmailReset()`, everything else through
+`normalizeTanzanianPhone()` (accepts `0712345678`/`255712345678`/
+`+255712345678`) into `issuePhoneOtp()`. Both paths always return the
+same generic message + a `channel` field, never revealing whether the
+account exists. Email issues a 32-byte random token; phone issues a
+random 6-digit OTP; both are stored only as a sha256 hash
+(`password_reset_tokens.token_hash` / `password_reset_otps.otp_hash` —
+migrations `0009`–`0012`), single-use, and expire (20 min / 10 min).
+`POST /auth/verify-reset-otp` checks the OTP (max 5 attempts) and, on
+success, issues a short-lived `resetToken` — a second, `channel:
+'PHONE'` row in the same `password_reset_tokens` table — which
+`POST /auth/reset-password` consumes the same way an emailed `token` is
+consumed (`resetToken ?? token` in `ResetPasswordDto`). `POST
+/auth/resend-reset-otp` reissues a phone OTP only (400s on an
+email-shaped identifier). All four routes are `@Throttle`d, tested in
+`backend/test/rate-limiting.e2e-spec.ts`.
+
+Real email send is `nodemailer` against `MAIL_*`/`SMTP_*` env vars; real
+SMS send is Africa's Talking against `SMS_*` (`SmsService`,
+`backend/src/modules/auth/sms.service.ts`) — see `.env.example` for the
+exact variable names. Neither is configured in a fresh local checkout,
+and both fail closed with a `503` rather than pretending to have sent
+anything (`ServiceUnavailableException`, "... is not configured"), so a
+freshly-cloned dev environment cannot deliver a real reset email/SMS
+until those vars are set — this is intended fail-closed behavior, not a
+bug to route around.
+
+Fixed 2026-08-25: `verifyResetOtp()` was throwing
+`UnauthorizedException` from *inside* `dataSource.transaction()`'s
+callback on a wrong OTP guess, which rolled back the whole transaction —
+including the `attempts` increment it had just saved in the same
+callback. That silently defeated the 5-attempt brute-force limit: a
+wrong guess was correctly rejected in the moment, but never actually
+persisted, so the OTP could be guessed indefinitely until it expired.
+Fixed by having the transaction return a `{ok, resetToken?}` result and
+throwing only after it commits, so a failed attempt's increment survives
+regardless of the outcome. Covered by
+`backend/test/password-reset.e2e-spec.ts` (seeds an OTP at
+`attempts: maxAttempts - 1` and proves one more wrong guess locks it out
+even for the subsequently-correct code) — if this regresses, that
+specific test is the one that catches it.
+
+## Secure Software Development Life Cycle (SSDLC)
+
+Every change to this project — frontend or backend, big or small — goes
+through these phases. Skipping a phase is a decision to flag to the user, not
+a default.
+
+### 1. Requirements & Planning
+- State the security requirement alongside the functional one before building
+  (e.g. "who is allowed to call this endpoint", not just "what does it do").
+- Classify the data a feature touches: **PII** (name, NIDA, address, DOB),
+  **financial** (wallet/bank/telecom transactions), **health** (claims,
+  verifications, insurance), or **public**. PII/financial/health data always
+  needs an authz check and an audit trail.
+
+### 2. Design
+- Threat-model new features before writing code: who can call this, what do
+  they have access to today vs after this change, what's the worst input an
+  attacker could send. A few sentences is enough for small features.
+- Default to least privilege: a role (Member/Admin/Hospital/Insurance/Bank/
+  Telecom/Super-admin) gets only what its own workflows require — check
+  `database/schema/tujitunze.sql` roles table and route groups under
+  `frontend/app/(*)` for the current role boundaries.
+- Secrets, keys, and tokens are never designed to live in source, only in env
+  vars / a secrets manager.
+
+### 3. Implementation
+- Backend: use NestJS DTOs + `class-validator` + a global `ValidationPipe` for
+  every endpoint that accepts input — do not rely on manual `if` checks alone
+  (current `members.service.ts` / `auth.service.ts` predate this rule and are
+  a known gap, not a pattern to copy).
+- All DB access goes through TypeORM's query builder / repository API or
+  parameterized raw queries (`$1`, `$2`, …) — never string-concatenated SQL.
+- Every authenticated endpoint is guarded (NestJS Guards), never left to
+  "the frontend won't show the button."
+- Never commit `.env`; `.env.example` documents required keys with no real
+  values.
+- No hardcoded default credentials (e.g. `password: process.env.DB_PASSWORD
+  || 'postgres'` in `database.config.ts` is a known gap — insecure fallback
+  defaults should fail closed, not fall back to a guessable value).
+- `TypeOrmModule` `synchronize: true` is dev-only. Production/shared
+  environments must use migrations — flag before this ships anywhere beyond a
+  local machine.
+
+### 4. Verification
+- Before treating a security-sensitive change as done, run it past the
+  `security-review` skill (or `/code-review` for correctness/quality) rather
+  than self-certifying.
+- New auth/authz logic gets a test that proves the boundary holds (a
+  non-member can't hit a member-only route, a hospital can't see another
+  hospital's claims, etc.), not just a happy-path test.
+- Run `npm audit` (or equivalent) when dependencies change; don't add a
+  package without checking it's maintained.
+
+### 5. Deployment
+- CORS allowlist stays explicit (see `backend/src/main.ts`) — never wildcard
+  origins once real user data is involved.
+- Security headers (e.g. `helmet`) are required before any non-local
+  deployment — currently absent, tracked as a gap. Rate limiting on
+  `/auth/login`, `/members/register`, and other write endpoints is now in
+  place (`@nestjs/throttler`, see Known Security Gaps), but its in-memory
+  storage needs revisiting before a horizontally-scaled deployment.
+- HTTPS only outside local dev.
+
+### 6. Maintenance
+- `audit_logs` should capture writes to sensitive tables (claims, wallets,
+  bank accounts, insurance policies) — check the table is actually being
+  written to, not just present in the schema.
+- Revisit this file's "known gaps" as they're closed, so it stays a live
+  checklist instead of stale advice.
+
+## Known Security Gaps (updated 2026-08-15)
+
+Resolved since the original baseline: global `ValidationPipe`/DTOs are now
+wired in `main.ts`; login issues a real JWT (`auth.service.ts`); guards
+(`JwtAuthGuard`, `RolesGuard`) now protect role-scoped routes;
+`backend/.env.example` lists required variables; `audit_logs` is now a
+real entity/service (`backend/src/modules/audit-logs/`), written to
+atomically inside the same DB transaction as the write it's logging
+(`phone_number.add`, `bank_account.add`, `member.password_change`,
+`member.status_change`), with an Admin-only `GET /admin/audit-logs` to
+read it back; `Hospital`/`Bank`/`Telecom`/`Insurance`/`Super-admin` now
+each have a real guarded `GET /<role>/dashboard` endpoint instead of an
+empty module stub; the `Super-admin` role row (previously believed
+unseeded) was confirmed already present in the live database — no seed
+migration was actually needed; Super-admin can now provision a staff
+account for any role via `POST /super-admin/administrators` instead of a
+hand-written SQL `INSERT`; Super-admin can now create/rename/delete
+roles and edit their permission sets via `/super-admin/roles` instead of
+hand-written SQL against `roles`/`role_permissions` (see the Roles section
+above), with e2e coverage for the core-role-name protection; and
+`@nestjs/throttler` (added 2026-08-15) now rate-limits `/auth/login`,
+`/members/register`, `/members/phone-numbers`, `/super-admin/
+administrators`, and `/super-admin/roles*` (`ThrottlerModule.forRoot` in
+`app.module.ts` sets a generous global default, `@Throttle(...)` on each
+of those handlers/controllers sets the tighter per-route limit), proven
+by `backend/test/rate-limiting.e2e-spec.ts` actually hitting each limit
+and asserting the `429`, not just checking the decorator is present.
+
+Still open, flagged so they aren't silently reintroduced or forgotten:
+
+1. `@nestjs/throttler`'s in-memory storage is per-process — fine for this
+   single-instance app, but won't share rate-limit state across multiple
+   backend instances behind a load balancer. Revisit with a shared store
+   (e.g. Redis) before any horizontally-scaled deployment. Limits are also
+   currently fixed in code, not configurable per-environment via env vars.
+2. No `helmet`/security headers configured in `main.ts`.
+3. `database.config.ts` falls back to a default DB password if
+   `DB_PASSWORD` is unset.
+4. `synchronize: true` in TypeORM config (fine for local dev, unsafe beyond
+   it).
+5. The frontend persists the JWT access token in `localStorage`
+   (`components/auth/LoginForm.tsx`) — no `AuthProvider`/httpOnly-cookie
+   infra exists yet (`providers/AuthProvider.tsx`, `lib/store/authStore.ts`
+   are still empty stubs), so the token is exposed to XSS. Move to an
+   httpOnly cookie once real session infra is built, before any non-local
+   deployment.
+6. `audit_logs` coverage is partial — only the four write paths listed
+   above are instrumented. `POST /members/register` (account creation),
+   `PATCH /members/me` (profile updates), and any future
+   Hospital/Bank/Telecom/Insurance writes are not yet logged. Extend each
+   new sensitive write with `AuditLogsService.record(manager, …)` inside
+   its transaction as those land, rather than adding it as an afterthought.
+7. `AuditLogsService.list()` has no pagination or filtering — it returns
+   the latest 200 rows flat. Fine for local testing; needs pagination
+   (and probably filtering by member/action/date) before this is usable
+   at real volume.
+8. `POST /members/wallet/topup` (`backend/src/modules/wallets/`) credits
+   the wallet ledger directly — it does **not** capture a real mobile
+   money or bank debit. There is no live payment gateway integrated
+   (`telecom-contributions`/`bank-transactions` modules are still empty
+   stubs), so a top-up today is trusted, unauthenticated-by-a-third-party
+   ledger math, not a real funds movement. Treat this as the wallet's
+   internal accounting layer, not a payment feature, until a real
+   mobile-money/bank integration sits in front of it. The same caveat now
+   also applies to Bank's `bank_fund_accounts`/`bank_fund_transfers`/
+   `settlements` (added 2026-08-17, migration 0006) — Bank staff record
+   deposits/withdrawals/settlements as bookkeeping entries through
+   `/bank/fund-accounts` and `/bank/settlements`; nothing actually moves
+   money at a real bank.
+9. `POST /super-admin/administrators` (added 2026-08-14) can *create* a
+   staff account for any role and set its tenant link, but there's still
+   no way to edit, deactivate, delete, or reassign one after creation —
+   unlike roles (#10 below), administrators have no edit/delete path yet.
+   A Hospital/Bank/Telecom/Insurance login with no tenant link set still
+   gets a `403 Forbidden` from its dashboard rather than someone else's
+   data or a silent empty result — that part of the design hasn't changed,
+   only how the link gets set in the first place.
+10. `PUT /super-admin/roles/:id/permissions` replaces a role's entire
+    permission set on every call rather than diffing — a stale client
+    payload silently drops permissions another admin just added
+    concurrently (last write wins, no optimistic-locking/version check).
+    Deleting a role cascades its `role_permissions` rows at the DB level
+    (`ON DELETE CASCADE`) but is blocked at the service layer whenever
+    `member_roles` still references it, so no user is ever silently left
+    with a dangling role.
+11. None of the e2e spec files under `backend/test/` apply the global
+    `ValidationPipe` that `main.ts` wires up for the real app — they only
+    call `createNestApplication()` + `app.init()`, so class-validator
+    never runs and a request with a missing/malformed body reaches the
+    service layer unchecked instead of getting a `400`. This was only
+    caught by accident while writing `rate-limiting.e2e-spec.ts` (an empty
+    `POST /super-admin/roles` body 500'd in-process instead of the `400`
+    the real running server correctly returns). That one spec now sets up
+    its own `useGlobalPipes(...)` to match `main.ts`; the other four spec
+    files still don't, so a DTO validation bug could pass their e2e suite
+    while still being broken in production. Worth fixing once, in a
+    shared test bootstrap helper, rather than copy-pasting the pipe setup
+    into every spec file as it's noticed.
+12. `telecom_operators.webhook_secret` (added 2026-08-17, migration 0005)
+    and `banks.webhook_secret` (added 2026-08-17, migration 0006) are
+    stored retrievable — not bcrypt-hashed like `api_key_hash` or
+    passwords — because HSIMS is meant to be the one signing outgoing
+    webhook deliveries with it, which needs the raw value on read, not
+    just the ability to verify it. That's a real plaintext-at-rest gap;
+    move it to an encrypted/secrets-manager design before any non-local
+    deployment, same caveat as `DB_PASSWORD`'s insecure fallback (#3).
+    No endpoint reads or uses either secret to sign anything yet —
+    nothing dispatches outgoing webhooks — so the immediate exposure is
+    low, but the storage design should be fixed before that changes.
