@@ -35,6 +35,15 @@ export interface FinancialReportFilters {
 // wallet_transactions, exactly as InsuranceService.getAllocationTrace()
 // already joins it) and admin_reconciliation_records (STEP 7) to know
 // whether a transaction has ever actually been reconciled.
+//
+// wt.amount > 0 in each wallet_transactions join matters: a reversed/
+// failed contribution has TWO wallet_transactions rows sharing the same
+// contribution_id/bank_transaction_id (the original credit and
+// WalletsService.reverseContribution()'s negative-amount debit) — an
+// unqualified join would fan that one contribution out into two rows
+// here. Restricting to the positive row picks the original credit only,
+// which is also the one insurance_allocations.wallet_transaction_id
+// actually references.
 const FINANCIAL_COMBINED_CTE = `
   combined AS (
     SELECT 'AIRTIME'::text AS channel, tc.contribution_id AS source_id, tc.member_id,
@@ -46,7 +55,8 @@ const FINANCIAL_COMBINED_CTE = `
     FROM telecom_contributions tc
     JOIN users u ON u.user_id = tc.member_id
     JOIN telecom_operators top ON top.operator_id = tc.operator_id
-    LEFT JOIN wallet_transactions wt ON wt.contribution_id = tc.contribution_id
+    LEFT JOIN wallet_transactions wt
+      ON wt.contribution_id = tc.contribution_id AND wt.amount > 0
 
     UNION ALL
 
@@ -60,7 +70,8 @@ const FINANCIAL_COMBINED_CTE = `
     JOIN member_bank_accounts mba ON mba.member_bank_account_id = bt.member_bank_account_id
     JOIN users u ON u.user_id = mba.member_id
     JOIN banks b ON b.bank_id = mba.bank_id
-    LEFT JOIN wallet_transactions wt ON wt.bank_transaction_id = bt.bank_transaction_id
+    LEFT JOIN wallet_transactions wt
+      ON wt.bank_transaction_id = bt.bank_transaction_id AND wt.amount > 0
     WHERE bt.transaction_type = 'Contribution'
   )
 `;

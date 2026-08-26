@@ -25,6 +25,10 @@ export const statusLabelTranslations = {
     transaction: {
       completed: "Completed",
       pending: "Pending",
+      processing: "Processing",
+      received: "Received",
+      validated: "Validated",
+      allocated: "Allocated",
       failed: "Failed",
       reversed: "Reversed",
     },
@@ -60,6 +64,10 @@ export const statusLabelTranslations = {
     transaction: {
       completed: "Imekamilika",
       pending: "Inasubiri",
+      processing: "Inachakatwa",
+      received: "Imepokelewa",
+      validated: "Imethibitishwa",
+      allocated: "Imetengwa",
       failed: "Imeshindwa",
       reversed: "Imerejeshwa",
     },

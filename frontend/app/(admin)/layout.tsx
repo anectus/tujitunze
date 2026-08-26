@@ -4,6 +4,7 @@ import DashboardLayout from "@/components/dashboard/DashboardLayout";
 const NAV_ITEMS = [
   { labelKey: "dashboard", href: "/admin/dashboard" },
   { labelKey: "members", href: "/members" },
+  { labelKey: "financialReports", href: "/admin/reports" },
   { labelKey: "auditLogs", href: "/audit-logs" },
 ] as const;
 

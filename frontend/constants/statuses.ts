@@ -68,10 +68,19 @@ export const COVERAGE_STATUS: Record<string, StatusStyle> = {
   expired: statusStyle("Expired", "danger"),
 };
 
-// Wallet / bank / telecom transaction status
+// Wallet / bank / telecom transaction status. Includes the full
+// contribution-ledger vocabulary (Received/Validated/Allocated, plus
+// Processing for an in-flight insurance allocation) alongside the
+// older completed/pending/failed/reversed set, since both the
+// telecom/bank dashboards and the newer Admin financial report render
+// contribution and allocation statuses through this same domain.
 export const TRANSACTION_STATUS: Record<string, StatusStyle> = {
   completed: statusStyle("Completed", "success"),
   pending: statusStyle("Pending", "warning"),
+  processing: statusStyle("Processing", "warning"),
+  received: statusStyle("Received", "info"),
+  validated: statusStyle("Validated", "info"),
+  allocated: statusStyle("Allocated", "success"),
   failed: statusStyle("Failed", "danger"),
   reversed: statusStyle("Reversed", "neutral"),
 };

@@ -26,6 +26,7 @@ export const navLabelTranslations = {
     contributionRules: "Contribution Rules",
     administrators: "Administrators",
     rolesPermissions: "Roles & Permissions",
+    financialReports: "Financial Reports",
   },
   sw: {
     dashboard: "Dashibodi",
@@ -46,6 +47,7 @@ export const navLabelTranslations = {
     contributionRules: "Kanuni za Michango",
     administrators: "Wasimamizi",
     rolesPermissions: "Majukumu na Ruhusa",
+    financialReports: "Ripoti za Fedha",
   },
 } as const satisfies Record<Language, Record<string, string>>;
 
