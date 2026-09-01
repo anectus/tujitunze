@@ -286,9 +286,7 @@ export class WalletsService {
       // same wallet_transaction_id (which the caller's own contribution-
       // status check should already have blocked) finds no row here and
       // simply logs nothing further, rather than silently re-reversing.
-      const [allocation] = await manager.query<
-        { allocation_id: number }[]
-      >(
+      const [allocation] = await manager.query<{ allocation_id: number }[]>(
         `SELECT allocation_id FROM insurance_allocations
          WHERE wallet_transaction_id = $1 AND allocation_status = 'Allocated'`,
         [originalWalletTransactionId],

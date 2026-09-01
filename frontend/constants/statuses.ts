@@ -83,6 +83,12 @@ export const TRANSACTION_STATUS: Record<string, StatusStyle> = {
   allocated: statusStyle("Allocated", "success"),
   failed: statusStyle("Failed", "danger"),
   reversed: statusStyle("Reversed", "neutral"),
+  // telecom_usage_events' own status vocabulary (Model B usage
+  // contributions) — added rather than reusing "completed"/"allocated"
+  // since a usage event's terminal success state is a distinct value
+  // ("SUCCESSFUL") from the contribution ledger it produces.
+  successful: statusStyle("Successful", "success"),
+  pending_review: statusStyle("Pending Review", "warning"),
 };
 
 // Member account status — new registrations start "Pending" until

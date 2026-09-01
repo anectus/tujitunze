@@ -129,8 +129,12 @@ describe('Telecom webhook security — signature & replay (e2e)', () => {
     jwtService = app.get(JwtService);
     dataSource = app.get(DataSource);
 
+    // Deliberately excludes Vodacom: that operator's webhook contribution
+    // now routes through the real (genuinely credentialed) M-Pesa
+    // collection rail — this test exercises the pre-existing direct-
+    // credit path shared by every other operator, not Vodacom itself.
     const [operator] = await dataSource.query<{ operator_id: number }[]>(
-      `SELECT operator_id FROM telecom_operators LIMIT 1`,
+      `SELECT operator_id FROM telecom_operators WHERE operator_name != 'Vodacom' LIMIT 1`,
     );
     operatorId = operator.operator_id;
 
@@ -240,8 +244,10 @@ describe('Telecom webhook security — signature & replay (e2e)', () => {
       transactionType: 'Airtime',
       externalTransactionId: `WHSEC-${ts}-valid`,
     };
-    const res = await sendWebhook(payload, buildSignatureHeader(payload))
-      .expect(201);
+    const res = await sendWebhook(
+      payload,
+      buildSignatureHeader(payload),
+    ).expect(201);
 
     expect(res.body).toMatchObject({
       duplicate: false,
@@ -271,8 +277,10 @@ describe('Telecom webhook security — signature & replay (e2e)', () => {
       transactionType: 'Airtime',
       externalTransactionId: `WHSEC-${ts}-valid`,
     };
-    const res = await sendWebhook(payload, buildSignatureHeader(payload))
-      .expect(201);
+    const res = await sendWebhook(
+      payload,
+      buildSignatureHeader(payload),
+    ).expect(201);
 
     expect(res.body).toMatchObject({ duplicate: true });
 
@@ -364,8 +372,12 @@ describe('Telecom webhook security — signature & replay (e2e)', () => {
   });
 
   it('still accepts an unsigned call from an operator that has never configured a webhook secret (signature is "where supported", not mandatory day one)', async () => {
+    // Also excludes Vodacom (same reason as the primary operatorId pick
+    // above) — this test's own operator must be a second, DIFFERENT
+    // non-Vodacom operator, not incidentally fall back to the one whose
+    // webhook now routes through real M-Pesa collection.
     const [otherOperator] = await dataSource.query<{ operator_id: number }[]>(
-      `SELECT operator_id FROM telecom_operators WHERE operator_id != $1 LIMIT 1`,
+      `SELECT operator_id FROM telecom_operators WHERE operator_id != $1 AND operator_name != 'Vodacom' LIMIT 1`,
       [operatorId],
     );
     if (!otherOperator) {
@@ -374,10 +386,9 @@ describe('Telecom webhook security — signature & replay (e2e)', () => {
 
     const [{ api_key_hash: otherOrigHash }] = await dataSource.query<
       { api_key_hash: string | null }[]
-    >(
-      `SELECT api_key_hash FROM telecom_operators WHERE operator_id = $1`,
-      [otherOperator.operator_id],
-    );
+    >(`SELECT api_key_hash FROM telecom_operators WHERE operator_id = $1`, [
+      otherOperator.operator_id,
+    ]);
     const otherRawKey = `tk_e2e_nosig_${crypto.randomBytes(12).toString('hex')}`;
     await dataSource.query(
       `UPDATE telecom_operators SET api_key_hash = $2, status = 'Active' WHERE operator_id = $1`,

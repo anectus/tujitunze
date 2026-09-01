@@ -113,8 +113,12 @@ describe('Contribution channels — Airtime & Bank Transfer (e2e)', () => {
     jwtService = app.get(JwtService);
     dataSource = app.get(DataSource);
 
+    // Deliberately excludes Vodacom: that operator's webhook contribution
+    // now routes through the real (genuinely credentialed) M-Pesa
+    // collection rail — this test exercises the pre-existing direct-
+    // credit path shared by every other operator, not Vodacom itself.
     const [operator] = await dataSource.query<{ operator_id: number }[]>(
-      `SELECT operator_id FROM telecom_operators LIMIT 1`,
+      `SELECT operator_id FROM telecom_operators WHERE operator_name != 'Vodacom' LIMIT 1`,
     );
     operatorId = operator.operator_id;
 

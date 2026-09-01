@@ -1,0 +1,1148 @@
+<!doctype html><html><head><!-- frame-runtime --><base href="/_f/1787823179-30a3/"><script>window.__FRAME_PREAMBLE={"v":1,"capabilities":{"artifact":"artifact.DvsaCnS7.js","assets":"assets.8Gk803W0.js","comments":"comments.GLuHR3zP.js","db":"db.h-3sndFg.js","downloads":"downloads.C3GSvEDP.js","embed":"embed.CxGAyc-v.js","mcp":"mcp.Bvma3qD7.js","network":"network.B5UA9Su4.js","permissions":"permissions.BNySkLV5.js","room":"room.BMMoe2BY.js","sample":"sample.BW2Uysoh.js","self":"artifact.DvsaCnS7.js","user":"user.BpKav-Rf.js"},"transforms":"_transforms.CQm3TZ9K.js","comments":"_comments.DELvYLUh.js","translate":"_translate.5HCW4BJh.js"}</script><script>(function(){"use strict";var J=["light","dark","system"],Q=/^[A-Za-z0-9_-]{1,64}$/,H=/^[a-zA-Z_:][a-zA-Z0-9_:.-]{0,127}$/,ee=new Set(["class","hidden","value","checked"]);function te(e){const t=e.toLowerCase();return t.startsWith("data-")||t.startsWith("aria-")||ee.has(t)}var Me="http://www.w3.org/1999/xhtml",re="http://www.w3.org/2000/svg",ne=new Set(["script","style","iframe","noscript","noframes","noembed","xmp","plaintext","template","title","textarea","object","embed"]),oe=new Set(["script","style"]);function se(e){const t=e.localName.toLowerCase();return e.namespaceURI==="http://www.w3.org/1999/xhtml"?!ne.has(t):e.namespaceURI===re?!oe.has(t):!1}var ae=new Set(["html","head","body","frameset"]);function ie(e){return e.namespaceURI==="http://www.w3.org/1999/xhtml"&&ae.has(e.localName)}function ce(e){if(e===null||typeof e!="object")return!1;const t=e;if(typeof t.target!="string"||!Q.test(t.target)||t.text!==void 0&&typeof t.text!="string")return!1;if(t.attrsSet!==void 0){if(t.attrsSet===null||typeof t.attrsSet!="object")return!1;for(const[r,n]of Object.entries(t.attrsSet))if(!H.test(r)||typeof n!="string")return!1}if(t.attrsRemoved!==void 0){if(!Array.isArray(t.attrsRemoved))return!1;for(const r of t.attrsRemoved)if(typeof r!="string"||!H.test(r))return!1}return!0}function le(e,t){if(e===null||typeof e!="object")return!1;const{seq:r,elements:n}=e;if(typeof r!="number"||!Number.isSafeInteger(r)||!Array.isArray(n)||n.length===0||n.length>64)return!1;for(let s=0;s<n.length;s++)if(!t(n[s]))return!1;return!0}function ue(e){return e===null||typeof e!="object"?!1:le(e.__frame_patch,ce)}function fe(e){if(e===null||typeof e!="object")return!1;const t=e.__frame_init;return t!==null&&typeof t=="object"}function pe(e){return e!==null&&typeof e=="object"&&e.__frame_size_poke===!0}function de(e){if(e===null||typeof e!="object")return!1;const t=e.__frame_theme;if(t===null||typeof t!="object")return!1;const r=t.theme;return typeof r=="string"&&J.includes(r)}var A=/^[\w.-]+\.js$/;function me(e,t,r){return r?"inert":typeof t=="string"&&A.test(t)?e?[t]:"inert":e?"inert":"framed"}function he(){return{post(e,t){parent.postMessage(e,t)},on(e){const t=r=>{r.source===parent&&e(r.data,r.origin)};return addEventListener("message",t),()=>removeEventListener("message",t)}}}function _e(){return{post:()=>{},on:()=>()=>{}}}var O="__frame_scroll",ve=150,ye=310,we=160,be=3e4;function Ee(){let e=0,t=!1,r=!1,n=!1,s=0,a=null;const l=i=>{try{sessionStorage.setItem(O,JSON.stringify({y:i}))}catch{}},d=()=>{if(clearTimeout(e),a===null)return;const i=a;a=null,l(i)},v=()=>{if(t){t=!1;return}r=!0,a=scrollY,clearTimeout(e),e=setTimeout(d,ve)};try{addEventListener("scroll",v,{passive:!0}),addEventListener("pagehide",d)}catch{}const y=()=>{let i;try{i=sessionStorage.getItem(O)}catch{return null}if(i===null)return null;let m;try{m=JSON.parse(i)}catch{m=null}const u=m?.y;if(!(typeof u=="number"&&Number.isFinite(u)&&u>=0)){try{sessionStorage.removeItem(O)}catch{}return null}return u};let S=!1;const h=i=>{try{const m=scrollY;scrollTo({top:i,left:0,behavior:"instant"}),s=i,n=!0,clearTimeout(e),a=null,l(i);const u=scrollY;u!==m&&(t=!0),u!==i&&!S&&(S=!0,addEventListener("load",()=>{try{if(scrollY===u){const k=y();h(k!==null?k:s)}}catch{}},{once:!0}))}catch{}},w=()=>{try{return!!location.hash}catch{return!0}};let o=!1;const f=()=>{try{if(o||innerWidth>ye||innerHeight>we)return;o=!0;const i=Date.now(),m=()=>{try{removeEventListener("resize",m)}catch{}if(Date.now()-i>be||r||w())return;const u=y();h(u!==null?u:s)};addEventListener("resize",m)}catch{}};let _=!1,b=!1;return{restore(){if(_||(_=!0,w()))return;const i=y();i!==null&&(h(i),f())},promoted(){if(b||(b=!0,w()))return;const i=y();i!==null?(h(i),f()):n&&h(s)}}}function ge(e,t,r,n){let s=null;try{s=window.trustedTypes?.createPolicy("frame-runtime",{createScriptURL:v=>v})??null}catch{}const a=window.Worker,l=a?.prototype,d=Object.freeze({Worker:a,workerOn:l?.addEventListener,workerPost:l?.postMessage,workerTerminate:l?.terminate,fetch:window.fetch.bind(window),preventDefault:Event.prototype.preventDefault,policy:s,origins:t});r(e).then(v=>v?.bootTopLevel?v.bootTopLevel(d,n):n.settle()).catch(()=>n.settle())}var Oe="modulepreload",Ce=function(e){return"/"+e},je={},Ae=function(t,r,n){let s=Promise.resolve();function a(l){const d=new Event("vite:preloadError",{cancelable:!0});if(d.payload=l,window.dispatchEvent(d),!d.defaultPrevented)throw l}return s.then(l=>{for(const d of l||[])d.status==="rejected"&&a(d.reason);return t().catch(a)})},Re=window===top,q=Object.getOwnPropertyDescriptor(window,"claude"),T=me(Re,window.__FRAME_PREAMBLE?.topLevel,q?.writable===!1),C=typeof T=="object"&&T[0],p=C?_e():he();(function(){const e=Object.defineProperty,t=globalThis,r=["RTCPeerConnection","webkitRTCPeerConnection","RTCDataChannel","RTCIceCandidate","RTCSessionDescription","RTCRtpSender","RTCRtpReceiver"];let n=0;for(let s=0;s<r.length;s++){const a=r[s];try{e(t,a,{value:void 0,writable:!1,configurable:!1})}catch{try{delete t[a]}catch{}try{e(t,a,{value:void 0,writable:!1,configurable:!0})}catch{}}typeof t[a]=="function"&&n++}if(n&&T==="framed")try{p.post({__frame_rtc_lockdown_failed:n},"*")}catch{}})();var Se=1e4,W=Object.freeze([...window.__FRAME_PREAMBLE?.origins??["https://claude.ai","https://preview.claude.ai"]]);function $(e){for(const t of W)if(t.endsWith(":*"))try{const r=new URL(e);if(`${r.protocol}//${r.hostname}:*`===t)return!0}catch{}else if(e===t)return!0;return!1}var L=Object.freeze({...window.__FRAME_PREAMBLE?.capabilities}),j=window.__FRAME_PREAMBLE?.transforms,N=window.__FRAME_PREAMBLE?.comments,I=window.__FRAME_PREAMBLE?.translate;function R(e){return Ae(()=>import("/_runtime/"+e),void 0)}function K(e,t){return{contract:e.contract,changes:new Set(e.changes??[]),flags:new Set(e.flags??[]),capabilities:e.capabilities??{},capBudgets:e.capBudgets??{},transforms:new Map,shellOrigin:t,mount:D,pipe:()=>({wrap:(r,n)=>(...s)=>{try{return n(...s)}catch(a){return Promise.reject(a)}}})}}var P=null,E=null;function Y(e,t,r){try{Object.defineProperty(e,t,{value:r,writable:!1,configurable:!1,enumerable:!0})}catch{try{Object.defineProperty(e,t,{value:r,writable:!1,configurable:!0,enumerable:!0})}catch{}}}var B=!1;function ke(e,t){const r=[];for(const n of e.elements){const s=document.querySelector(`[data-id="${n.target}"]`);if(!s){p.post({__frame_patch_miss:{seq:e.seq}},t);return}if([...Object.keys(n.attrsSet??{}),...n.attrsRemoved??[]].some(a=>!te(a))){p.post({__frame_patch_miss:{seq:e.seq}},t);return}if(n.text!==void 0&&(!se(s)||ie(s))){p.post({__frame_patch_miss:{seq:e.seq}},t);return}for(const[a,l]of Object.entries(n.attrsSet??{}))if(!G(s,a)){try{s.setAttribute(a,l)}catch{}X(s,a,l)}for(const a of n.attrsRemoved??[])G(s,a)||(s.removeAttribute(a),X(s,a,null));typeof n.text=="string"&&(s.textContent=n.text),r.push(n.target)}try{document.dispatchEvent(new CustomEvent("claude:edit",{detail:{seq:e.seq,targets:r}}))}catch{}}function X(e,t,r){if(!(e instanceof HTMLInputElement))return;const n=t.toLowerCase();n==="checked"?e.checked=r!==null:n==="value"&&e.type!=="file"&&(e.value=r??"")}function G(e,t){const r=t.toLowerCase(),n=e;return r==="data-id"||(r==="value"||r==="checked")&&(n.__artifactSecret===!0||/^(password|hidden|file)$/.test(n.type??"")||/(^|\s)(cc-|one-time-code|current-password|new-password)/i.test(`${e.getAttribute("autocomplete")??""} ${n.autocomplete??""}`))}function V(e){const t=document.documentElement;e==="light"||e==="dark"?(t.dataset.theme=e,t.style.colorScheme=e,B=!0):B&&(delete t.dataset.theme,t.style.colorScheme="",B=!1)}var M=new Map;function Te(){let e;const t={u:new Promise(r=>{e=r}),r:r=>{t.done=!0,e(r)},done:!1,nulled:!1};return t}function U(){for(const e of M.values())e.done||(e.nulled=!0,e.r(null))}var Le=Object.freeze(Object.assign(Object.create(null),{call:Function.prototype.call,apply:Function.prototype.apply,bind:Function.prototype.bind})),D=(e,t)=>{const r=M.get(e);if(!r||r.done){r?.nulled&&E&&p.post({__frame_cap_telemetry:{kind:"cap-load-error",cap:e}},E);return}const n=typeof t=="function"?Object.setPrototypeOf(t,Le):Object.assign(Object.create(null),t);typeof n.then=="function"&&delete n.then,r.r(Object.freeze(n))};function Z(){const e=q?.value??{};Y(window,"claude",e);for(const t of Object.keys(L)){if(e[t]!==void 0){Y(e,t,e[t]);continue}M.set(t,Te())}if(e.use===void 0){const t=r=>{if(typeof r!="string"||!Object.hasOwn(L,r))return Promise.resolve(null);const n=M.get(r);return n?n.u:Promise.resolve(e[r]??null)};try{Object.defineProperty(e,"use",{value:t,writable:!0,configurable:!0,enumerable:!1})}catch{}}}if(T==="framed"){const e=j&&A.test(j)?R(j).catch(()=>{}):Promise.resolve(void 0),t=o=>{if(o.type==="auxclick"&&o.button!==1)return;const f=o.target,_=f&&f.closest?f.closest("a[href],area[href]"):null;if(!_)return;const b=_.getAttribute("href");if(!b)return;let i;try{i=new URL(b,document.baseURI)}catch{return}if((i.protocol==="http:"||i.protocol==="https:")&&i.origin!==location.origin){o.preventDefault();const m=(_.getAttribute("target")??"").toLowerCase(),u=o.type==="auxclick"||o.metaKey||o.ctrlKey||o.shiftKey||o.altKey||!["","_self","_top","_parent"].includes(m);p.post({__frame_nav:!0,url:i.href,newTab:u},"*")}};addEventListener("click",t,!0),addEventListener("auxclick",t,!0);const r={},n=o=>{o.isTrusted&&(r.pointer=!0)},s=o=>{o.isTrusted&&(r.click=!0)};addEventListener("pointermove",n,{capture:!0,passive:!0}),addEventListener("click",s,{capture:!0,passive:!0}),e.then(o=>{o?.wireNav&&(o.wireNav(),removeEventListener("click",t,!0),removeEventListener("auxclick",t,!0),removeEventListener("pointermove",n,!0),removeEventListener("click",s,!0),o.wireEngagement?.(r))});let a=null;try{a=Ee()}catch{}Z();let l=null,d=null,v=0;const y=p.on((o,f)=>{$(f)&&fe(o)&&(l=o.__frame_init,E=f,y(),clearTimeout(v),d?.())});p.post({__frame_connect:!0},"*");const S=new Promise(o=>{d=o,v=setTimeout(()=>{y(),o()},Se)}),h=document.readyState==="loading"?new Promise(o=>document.addEventListener("DOMContentLoaded",()=>o(),{once:!0})):Promise.resolve();h.then(()=>{try{a?.restore()}catch{}});const w={cb:null};p.on((o,f)=>{if($(f)&&pe(o)){try{a?.promoted()}catch{}w.cb?.()}}),S.then(async()=>{if(!l||!E){U();return}V(l.theme);const o=E;let f=!1,_=!1;p.on((c,x)=>{if(x!==o)return;de(c)&&V(c.__frame_theme.theme),ue(c)&&ke(c.__frame_patch,o);const g=c?.__fc_mode;g&&typeof g=="object"&&!f&&N&&A.test(N)&&(f=!0,R(N).then(z=>z.install?.(o,g.on===!0)).catch(()=>{}));const F=c?.__ft_cmd;F&&typeof F=="object"&&!_&&I&&A.test(I)&&(_=!0,R(I).then(z=>z.install?.(o,F)).catch(()=>{}))});const b=Object.keys(l.capabilities??{}).filter(c=>Object.hasOwn(L,c)).map(c=>[c,L[c]]).filter(c=>typeof c[1]=="string"&&A.test(c[1])),i=await Promise.allSettled(b.map(([,c])=>R(c))),m=await e,u=E;if(m?.buildBoot||p.post({__frame_cap_telemetry:{kind:"cap-load-error",cap:"_transforms"}},u),m?.buildBoot)try{P=m.buildBoot(l,m.TRANSFORMS??{},{shellOrigin:u,mount:D},c=>p.post({__frame_cap_telemetry:c},u))}catch{p.post({__frame_cap_telemetry:{kind:"cap-load-error",cap:"_transforms"}},u),P=K(l,u)}else P=K(l,u);const k=c=>p.post({__frame_cap_telemetry:{kind:"cap-load-error",cap:c}},u),Pe=P;i.forEach((c,x)=>{const g=b[x][0];if(c.status!=="fulfilled"){k(g);return}try{c.value?.install?.(Pe)}catch{k(g)}}),U(),await h,p.post({__frame_ready:!0},E),e.then(c=>c?.installSizeReporter?.(u,w))})}else C&&(Z(),ge(C,W,R,{settle:U,mount:D}))})();</script><!-- /frame-runtime --><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1"><style>:root{color-scheme:light}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}</style></head><body>
+<title>Tujitunze SRS</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Serif:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+  :root{
+    --paper:#f5f6f8;
+    --surface:#ffffff;
+    --ink:#14202b;
+    --ink-soft:#4b5763;
+    --ink-faint:#7c8794;
+    --rule:#d8dce1;
+    --rule-soft:#e6e9ec;
+    --accent:#0f6b72;
+    --accent-ink:#0a4e53;
+    --accent-soft:#e3f0ef;
+    --good:#2f7a4f;
+    --good-soft:#e5f2e9;
+    --warn:#a6640f;
+    --warn-soft:#faf0dd;
+    --bad:#a13f34;
+    --bad-soft:#f8e8e5;
+    --defer:#5b5f8a;
+    --defer-soft:#eceafa;
+    --font-h:'IBM Plex Serif', Georgia, 'Times New Roman', serif;
+    --font-b:'IBM Plex Sans', -apple-system, Segoe UI, sans-serif;
+    --font-m:'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --paper:#0f1417;
+      --surface:#161d21;
+      --ink:#e8ecee;
+      --ink-soft:#aab4ba;
+      --ink-faint:#7d8890;
+      --rule:#2b343a;
+      --rule-soft:#212a30;
+      --accent:#5fc2c9;
+      --accent-ink:#8fd8dd;
+      --accent-soft:#132a2b;
+      --good:#7ccb98;
+      --good-soft:#132a1d;
+      --warn:#e3b165;
+      --warn-soft:#2c2313;
+      --bad:#e6968a;
+      --bad-soft:#2c1815;
+      --defer:#aeb0e0;
+      --defer-soft:#201f34;
+    }
+  }
+  :root[data-theme="dark"]{
+    --paper:#0f1417;
+    --surface:#161d21;
+    --ink:#e8ecee;
+    --ink-soft:#aab4ba;
+    --ink-faint:#7d8890;
+    --rule:#2b343a;
+    --rule-soft:#212a30;
+    --accent:#5fc2c9;
+    --accent-ink:#8fd8dd;
+    --accent-soft:#132a2b;
+    --good:#7ccb98;
+    --good-soft:#132a1d;
+    --warn:#e3b165;
+    --warn-soft:#2c2313;
+    --bad:#e6968a;
+    --bad-soft:#2c1815;
+    --defer:#aeb0e0;
+    --defer-soft:#201f34;
+  }
+
+  *{box-sizing:border-box;}
+  body{
+    margin:0; background:var(--paper); color:var(--ink);
+    font-family:var(--font-b); font-size:16px; line-height:1.65;
+    -webkit-font-smoothing:antialiased;
+  }
+  a{color:var(--accent-ink);}
+  a:focus-visible, button:focus-visible, summary:focus-visible{outline:2px solid var(--accent); outline-offset:2px;}
+
+  .shell{
+    max-width:1180px; margin:0 auto; padding:0 24px 96px;
+    display:grid; grid-template-columns:250px minmax(0,1fr); gap:48px;
+  }
+  @media (max-width:920px){
+    .shell{grid-template-columns:1fr;}
+    .toc{position:static; max-height:none;}
+  }
+
+  /* ---- cover ---- */
+  .cover{
+    grid-column:1/-1;
+    border-bottom:1px solid var(--rule);
+    padding:64px 0 40px;
+    display:flex; flex-direction:column; gap:22px;
+  }
+  .cover .eyebrow{
+    font-family:var(--font-m); font-size:12.5px; letter-spacing:.09em; text-transform:uppercase;
+    color:var(--accent-ink); display:flex; align-items:center; gap:10px;
+  }
+  .cover .eyebrow::before{content:"";width:26px;height:1px;background:var(--accent);display:inline-block;}
+  .cover h1{
+    font-family:var(--font-h); font-weight:600; font-size:clamp(34px,5vw,54px);
+    line-height:1.08; margin:0; text-wrap:balance; max-width:14ch;
+  }
+  .cover .sub{
+    font-size:18px; color:var(--ink-soft); max-width:62ch; margin:0;
+  }
+  .doc-control{
+    display:grid; grid-template-columns:repeat(auto-fit,minmax(170px,1fr));
+    gap:1px; background:var(--rule); border:1px solid var(--rule);
+    margin-top:8px; font-family:var(--font-m); font-size:13px;
+  }
+  .doc-control div{background:var(--surface); padding:12px 16px;}
+  .doc-control dt{color:var(--ink-faint); text-transform:uppercase; letter-spacing:.06em; font-size:10.5px; margin-bottom:4px;}
+  .doc-control dd{margin:0; color:var(--ink); font-weight:500;}
+
+  .legend{
+    grid-column:1/-1;
+    display:flex; flex-wrap:wrap; gap:10px 22px;
+    padding:16px 0 32px; border-bottom:1px solid var(--rule);
+    font-size:13.5px; color:var(--ink-soft);
+  }
+  .legend strong{color:var(--ink); font-weight:600;}
+
+  /* ---- toc ---- */
+  .toc{
+    position:sticky; top:24px; align-self:start; max-height:calc(100vh - 48px);
+    overflow-y:auto; padding-right:8px; padding-top:32px;
+  }
+  .toc h2{
+    font-family:var(--font-m); font-size:11px; letter-spacing:.1em; text-transform:uppercase;
+    color:var(--ink-faint); margin:0 0 14px;
+  }
+  .toc ol{list-style:none; margin:0; padding:0; font-size:13.5px;}
+  .toc li{margin:0;}
+  .toc a{
+    display:block; padding:5px 0 5px 10px; color:var(--ink-soft); text-decoration:none;
+    border-left:2px solid transparent; line-height:1.35;
+  }
+  .toc a:hover{color:var(--ink); border-left-color:var(--rule);}
+  .toc .chapter > a{font-weight:600; color:var(--ink); text-transform:uppercase; font-size:11.5px; letter-spacing:.04em; margin-top:14px;}
+  .toc .l2 > a{padding-left:10px; font-weight:500;}
+  .toc .l3 > a{padding-left:22px; font-size:12.8px;}
+  .toc .l4 > a{padding-left:34px; font-size:12.3px; color:var(--ink-faint);}
+
+  /* ---- main ---- */
+  main{min-width:0; padding-top:32px;}
+  .chapter-head{
+    margin:76px 0 28px; padding-top:8px;
+  }
+  .chapter-head .num{
+    font-family:var(--font-m); color:var(--accent-ink); font-size:13px; letter-spacing:.08em;
+  }
+  .chapter-head h1{
+    font-family:var(--font-h); font-size:clamp(26px,3.4vw,34px); margin:6px 0 0; font-weight:600;
+  }
+  section{scroll-margin-top:20px;}
+  h2{
+    font-family:var(--font-h); font-size:23px; font-weight:600; margin:52px 0 14px;
+    padding-bottom:10px; border-bottom:1px solid var(--rule); text-wrap:balance;
+  }
+  h3{font-family:var(--font-h); font-size:19px; font-weight:600; margin:34px 0 10px;}
+  h4{font-family:var(--font-b); font-size:15px; font-weight:600; margin:24px 0 8px; color:var(--ink);}
+  h2 .num, h3 .num, h4 .num{font-family:var(--font-m); color:var(--accent-ink); font-weight:500; margin-right:10px;}
+  p{margin:0 0 14px; max-width:74ch;}
+  ul, ol{margin:0 0 16px; padding-left:22px; max-width:70ch;}
+  li{margin-bottom:6px;}
+  strong{font-weight:600;}
+  code, .kbd{font-family:var(--font-m); font-size:.88em; background:var(--rule-soft); padding:.1em .35em; border-radius:4px;}
+
+  .lede{font-size:17.5px; color:var(--ink-soft); max-width:70ch;}
+
+  .callout{
+    border:1px solid var(--rule); border-left:3px solid var(--accent);
+    background:var(--surface); border-radius:6px; padding:16px 18px; margin:20px 0;
+    font-size:14.5px; max-width:70ch;
+  }
+  .callout p:last-child{margin-bottom:0;}
+  .callout.gap{border-left-color:var(--warn);}
+  .callout.data{border-left-color:var(--defer);}
+  .callout .tag{
+    font-family:var(--font-m); font-size:11px; text-transform:uppercase; letter-spacing:.08em;
+    color:var(--accent-ink); display:block; margin-bottom:6px;
+  }
+  .callout.gap .tag{color:var(--warn);}
+  .callout.data .tag{color:var(--defer);}
+
+  /* status chips */
+  .stat{
+    display:inline-flex; align-items:center; gap:6px; font-family:var(--font-m);
+    font-size:11.5px; text-transform:uppercase; letter-spacing:.04em;
+    padding:2px 8px 2px 7px; border-radius:20px; white-space:nowrap; font-weight:500;
+  }
+  .stat::before{content:""; width:6px; height:6px; border-radius:50%; display:inline-block;}
+  .stat-real{background:var(--good-soft); color:var(--good);}
+  .stat-real::before{background:var(--good);}
+  .stat-partial{background:var(--warn-soft); color:var(--warn);}
+  .stat-partial::before{background:var(--warn);}
+  .stat-gap{background:var(--bad-soft); color:var(--bad);}
+  .stat-gap::before{background:var(--bad);}
+  .stat-defer{background:var(--defer-soft); color:var(--defer);}
+  .stat-defer::before{background:var(--defer);}
+
+  .reqlist{list-style:none; padding:0; margin:0 0 18px; max-width:74ch;}
+  .reqlist li{
+    display:flex; gap:12px; align-items:flex-start; padding:9px 0; border-bottom:1px solid var(--rule-soft);
+  }
+  .reqlist li:last-child{border-bottom:none;}
+  .reqlist .stat{flex:0 0 auto; margin-top:2px;}
+  .reqlist span.txt{color:var(--ink);}
+
+  .tablewrap{overflow-x:auto; margin:18px 0; border:1px solid var(--rule); border-radius:6px;}
+  table{border-collapse:collapse; width:100%; font-size:14px; min-width:520px;}
+  caption{text-align:left; font-family:var(--font-m); font-size:12px; color:var(--ink-faint); padding:10px 14px; letter-spacing:.03em;}
+  th, td{padding:9px 14px; text-align:left; border-bottom:1px solid var(--rule-soft); vertical-align:top;}
+  thead th{
+    font-family:var(--font-m); font-size:11px; text-transform:uppercase; letter-spacing:.05em;
+    color:var(--ink-faint); background:var(--rule-soft); border-bottom:1px solid var(--rule);
+  }
+  tbody tr:last-child td{border-bottom:none;}
+  td code{white-space:nowrap;}
+
+  figure{margin:26px 0 30px; padding:20px 18px 14px; background:var(--surface); border:1px solid var(--rule); border-radius:8px;}
+  figure svg{max-width:100%; height:auto; display:block; color:var(--ink);}
+  figure .fignum{font-family:var(--font-m); font-size:11px; color:var(--accent-ink); text-transform:uppercase; letter-spacing:.06em;}
+  figcaption{font-size:13.5px; color:var(--ink-soft); margin-top:12px; max-width:66ch;}
+  .diagram-label{font-family:var(--font-m); font-size:13px;}
+  .diagram-sub{font-family:var(--font-m); font-size:10.5px; fill:var(--ink-faint);}
+
+  .rolegrid{display:grid; grid-template-columns:repeat(auto-fit,minmax(300px,1fr)); gap:16px; margin:20px 0 28px;}
+  .rolecard{border:1px solid var(--rule); border-radius:8px; padding:16px 18px; background:var(--surface);}
+  .rolecard h4{margin:0 0 10px; display:flex; align-items:center; justify-content:space-between; gap:8px;}
+  .rolecard ul{margin:0; padding-left:18px; font-size:13.8px;}
+  .rolecard li{margin-bottom:5px;}
+
+  .backrefs{font-size:12.5px; color:var(--ink-faint); border-top:1px solid var(--rule); margin-top:120px; padding-top:24px; max-width:74ch;}
+
+  ::selection{background:var(--accent-soft); color:var(--ink);}
+</style>
+
+<div class="shell">
+
+  <div class="cover">
+    <span class="eyebrow">System Requirements Specification</span>
+    <h1>Tujitunze / HSIMS</h1>
+    <p class="sub">Health Savings and Insurance Management System for Tanzania — a member-owned digital wallet that turns everyday mobile-money, airtime and bank activity into a traceable contribution toward each member's own health cover.</p>
+    <dl class="doc-control">
+      <div><dt>Document</dt><dd>System Requirements Specification</dd></div>
+      <div><dt>Version</dt><dd>1.0</dd></div>
+      <div><dt>Date</dt><dd>27 August 2026</dd></div>
+      <div><dt>Source</dt><dd>Direct repository audit</dd></div>
+      <div><dt>Scope</dt><dd>Overview-level (see §4.2.2)</dd></div>
+    </dl>
+  </div>
+
+  <div class="legend">
+    <span><strong>Status legend used throughout this document —</strong></span>
+    <span class="stat stat-real">Real</span> built, wired end-to-end, and tested
+    <span class="stat stat-partial">Partial</span> real on one side (usually backend) without its full counterpart
+    <span class="stat stat-defer">Deferred</span> schema or scaffold exists, deliberately not wired up yet
+    <span class="stat stat-gap">Not built</span> no implementation exists today
+  </div>
+
+  <nav class="toc" aria-label="Table of contents">
+    <h2>Contents</h2>
+    <ol>
+      <li class="chapter"><a href="#ch1">Chapter 1 — Requirements</a></li>
+      <li class="l2"><a href="#s11">1.1 Introduction</a></li>
+      <li class="l3"><a href="#s111">1.1.1 Project overview</a></li>
+      <li class="l3"><a href="#s112">1.1.2 Problem statement</a></li>
+      <li class="l3"><a href="#s113">1.1.3 Purpose of the system</a></li>
+      <li class="l3"><a href="#s114">1.1.4 Intended audience</a></li>
+      <li class="l3"><a href="#s115">1.1.5 Intended use</a></li>
+      <li class="l3"><a href="#s116">1.1.6 Scope of the system</a></li>
+      <li class="l3"><a href="#s117">1.1.7 Definitions &amp; acronyms</a></li>
+      <li class="l2"><a href="#s12">1.2 Overall description</a></li>
+      <li class="l3"><a href="#s121">1.2.1 Development methodology</a></li>
+      <li class="l3"><a href="#s122">1.2.2 Assumptions &amp; dependencies</a></li>
+      <li class="l2"><a href="#s13">1.3 System features &amp; requirements</a></li>
+      <li class="l3"><a href="#s131">1.3.1 Functional requirements</a></li>
+      <li class="l3"><a href="#s132">1.3.2 Non-functional requirements</a></li>
+      <li class="l3"><a href="#s133">1.3.3 System features</a></li>
+      <li class="l3"><a href="#s134">1.3.4 Data requirements &amp; sources</a></li>
+
+      <li class="chapter"><a href="#ch2">Chapter 2 — SSAD</a></li>
+      <li class="l2"><a href="#s21">2.1 Context diagram</a></li>
+      <li class="l2"><a href="#s22">2.2 Level-0 data flow diagram</a></li>
+      <li class="l2"><a href="#s23">2.3 Entity relationship diagram</a></li>
+      <li class="l2"><a href="#s24">2.4 Logic diagrams</a></li>
+      <li class="l3"><a href="#s241">2.4.1 Process flowchart</a></li>
+      <li class="l3"><a href="#s242">2.4.2 State diagram</a></li>
+
+      <li class="chapter"><a href="#ch4">Chapter 4 — System Design</a></li>
+      <li class="l2"><a href="#s41">4.1 System architecture</a></li>
+      <li class="l2"><a href="#s42">4.2 Detailed system design</a></li>
+      <li class="l3"><a href="#s421">4.2.1 Physical design</a></li>
+      <li class="l3"><a href="#s422">4.2.2 Database design (overview)</a></li>
+      <li class="l3"><a href="#s423">4.2.3 Interface design</a></li>
+    </ol>
+  </nav>
+
+  <main>
+
+    <div class="callout data">
+      <span class="tag">Scope note</span>
+      <p>This SRS follows the structure of the project's approved SRS/SAD template, with <strong>Chapter Three (OOSAD — use-case, class, sequence and deployment diagrams)</strong> and the <strong>Planning / cost&#8211;benefit chapter</strong> intentionally excluded. Under §1.3.4, <em>Data Acquisition</em> is omitted; <em>Data Requirements</em> and <em>Data Sources</em> are retained. Because the live schema now spans 23 migrations and several dozen tables, §4.2.2 gives a database <em>overview</em> rather than a full column-level data dictionary — the migration files and <code>database/schema/tujitunze.sql</code> remain the authoritative reference for that level of detail.</p>
+    </div>
+    <div class="callout gap">
+      <span class="tag">Correction against prior project notes</span>
+      <p>This document is grounded in a direct audit of the current source tree, not in previously circulated notes. One correction worth flagging up front: earlier project documentation described a live <strong>Hospital</strong> staff dashboard. No <code>hospital</code> backend module, controller, or frontend route group exists in the repository today — <code>Hospital</code> survives only as a seeded role name and as read-only reference data (partner hospital directory, claims, verifications) consumed by Member-facing screens. This SRS treats that as the current, honest state of the system; see §1.1.6 and §4.2.3.</p>
+    </div>
+
+    <!-- ============================================================ CHAPTER 1 -->
+    <div class="chapter-head" id="ch1">
+      <span class="num">Chapter 1</span>
+      <h1>Requirements</h1>
+    </div>
+
+    <section id="s11">
+      <h2 id="s111"><span class="num">1.1</span>Introduction</h2>
+
+      <h3><span class="num">1.1.1</span>Project overview</h3>
+      <p class="lede">Tujitunze (HSIMS — Health Savings and Insurance Management System) is a community-based health savings platform for Tanzania. It lets a member accumulate a personal health fund from the mobile money, airtime, and bank activity they already do every day, and routes a share of each contribution into that member's insurance cover automatically.</p>
+      <p>The platform is a Next.js (App Router) frontend over a NestJS + TypeORM + PostgreSQL backend, organised around seven operating roles — Member, Admin, Bank, Telecom, Insurance, Super-admin, and the currently-inactive Hospital role — each with its own guarded API surface and, for six of the seven, its own operational dashboard.</p>
+
+      <h3 id="s112"><span class="num">1.1.2</span>Problem statement</h3>
+      <ul>
+        <li><strong>Low formal health-cover penetration.</strong> Many Tanzanians who transact daily through mobile money and airtime purchases have no mechanism that converts that everyday activity into health savings or insurance cover.</li>
+        <li><strong>Fragmented, untraceable contributions.</strong> Where informal or scheme-based health contributions exist, members typically cannot see, per contribution, where their money went — which channel it came through, which ledger it landed in, or which insurer it was allocated to.</li>
+        <li><strong>Manual reconciliation across partners.</strong> Telecom operators, banks, and insurers each keep their own records; matching a member's contribution across all three has historically been a manual, error-prone process for the operator running the scheme.</li>
+      </ul>
+
+      <h3 id="s113"><span class="num">1.1.3</span>Purpose of the system</h3>
+      <p>Tujitunze exists to:</p>
+      <ul>
+        <li>Turn routine telecom and bank activity into an automatic, rule-computed contribution toward a member's own health wallet.</li>
+        <li>Make every contribution traceable end-to-end — from the originating webhook, through the contribution ledger, into the wallet, and (where the member holds an active policy) into a specific insurer's allocation.</li>
+        <li>Give each partner in the scheme — telecom operator, bank, insurer, and the platform operator itself — its own tenant-scoped view of exactly its own data, with nothing bled across partners.</li>
+        <li>Keep a full audit trail of the sensitive actions taken against member identity, financial, and health data.</li>
+      </ul>
+
+      <h3 id="s114"><span class="num">1.1.4</span>Intended audience</h3>
+      <div class="tablewrap">
+        <table>
+          <thead><tr><th>Role</th><th>Who</th><th>What they need from the system</th></tr></thead>
+          <tbody>
+            <tr><td><code>Member</code></td><td>A registered citizen contributing to and drawing on their own health fund</td><td>See their wallet, contributions, insurance cover, claims, and notifications</td></tr>
+            <tr><td><code>Admin</code></td><td>Internal Tujitunze operations staff</td><td>Oversee members, reconcile contributions across channels, produce financial reports, review the audit log</td></tr>
+            <tr><td><code>Bank</code></td><td>Staff at a partner bank</td><td>Manage their bank's linked accounts, contribution/transaction records, settlements to Tujitunze, and reconciliation</td></tr>
+            <tr><td><code>Telecom</code></td><td>Staff at a partner telecom operator</td><td>Manage contribution/levy data, member roster, API credentials, and reconciliation for their operator</td></tr>
+            <tr><td><code>Insurance</code></td><td>Staff at a partner insurance provider</td><td>See claims and contribution allocations routed to their plans, and settlement records</td></tr>
+            <tr><td><code>Super-admin</code></td><td>Platform owner/operator</td><td>Provision staff accounts for any role, and manage the roles/permissions catalog itself</td></tr>
+            <tr><td><code>Hospital</code> <span class="stat stat-gap">not built</span></td><td>Staff at a partner hospital</td><td>Seeded as a role and represented as reference data only — see §1.1.6</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3 id="s115"><span class="num">1.1.5</span>Intended use</h3>
+      <p>Tujitunze is intended for continuous, browser-based use: a Member interacts with it to build and monitor a personal health fund; Bank, Telecom, and Insurance staff use it as their partner-facing operations console for that scheme; Admin and Super-admin use it to run and govern the platform. Every role signs in once and is routed to a role-scoped dashboard; a staff account with no tenant assigned is refused access to its own dashboard (<code>403</code>) rather than shown someone else's data or an empty screen.</p>
+
+      <h3 id="s116"><span class="num">1.1.6</span>Scope of the system</h3>
+      <h4>In scope — real today</h4>
+      <ul>
+        <li>Member registration, authentication, profile, phone/bank-account linking, and health wallet with a real transaction ledger.</li>
+        <li>Authenticated, signed webhook intake from Telecom and Bank partners that computes a contribution via a configurable rule engine and credits the wallet — proven live, not simulated.</li>
+        <li>Automatic insurance allocation with a fully traceable contribution → wallet transaction → allocation → provider chain.</li>
+        <li>Six of seven role-scoped operational dashboards (Member, Admin, Bank, Telecom, Insurance, Super-admin), each backend-guarded and tenant-isolated.</li>
+        <li>Cross-channel reconciliation, financial reporting, staff provisioning, and a roles/permissions catalog administered by Super-admin.</li>
+        <li>Password reset over email or Tanzanian phone number, rate-limited, OTP-based.</li>
+      </ul>
+      <h4>In scope, but not yet live — explicitly deferred</h4>
+      <ul>
+        <li><span class="stat stat-defer">Deferred</span> A Vodacom M-Pesa mobile-money adapter (session handling, C2B/B2C/B2B, idempotent payment-transaction recording) exists up to the point of the real provider call, which is blocked on Vodacom's own endpoint documentation rather than left unbuilt.</li>
+        <li><span class="stat stat-defer">Deferred</span> A usage-quantity-based 6% contribution model (voice minutes / SMS / data) — schema only, zero rows, not wired into any application code.</li>
+        <li><span class="stat stat-partial">Partial</span> Frontend screens for the Insurance role's claims, settlements, allocation, and reporting endpoints, and for Admin's contribution-summary reporting — the backend is real; no UI consumes it yet.</li>
+      </ul>
+      <h4>Out of scope</h4>
+      <ul>
+        <li><strong>A Hospital staff portal.</strong> <span class="stat stat-gap">Not built</span> No backend module or frontend route group exists for hospital staff. The <code>hospitals</code> directory, <code>healthcare_claims</code>, and <code>healthcare_verifications</code> tables remain as reference data, browsed read-only by Members; clinical workflows (check-in, claim filing, appointments) have no owner in the current build.</li>
+        <li>A real external payment rail beyond Tujitunze's own webhook edge — nothing today moves real money at a telecom operator or bank; contribution figures are internal, authenticated bookkeeping until a partner's live systems are pointed at the existing webhook endpoints.</li>
+        <li>Production-grade security hardening (security headers, httpOnly session cookies, distributed rate-limit storage) — see §1.3.2.</li>
+        <li>Real email/SMS delivery — the code paths exist and fail closed, but no production mail or SMS credentials are configured in this environment.</li>
+      </ul>
+
+      <h3 id="s117"><span class="num">1.1.7</span>Definitions, acronyms, and abbreviations</h3>
+      <div class="tablewrap">
+        <table>
+          <tbody>
+            <tr><td><code>HSIMS</code></td><td>Health Savings and Insurance Management System — the platform this document specifies</td></tr>
+            <tr><td><code>NIDA</code></td><td>Tanzania's National Identification Authority; the national ID number captured for each member</td></tr>
+            <tr><td><code>JWT</code></td><td>JSON Web Token — the bearer credential issued at login</td></tr>
+            <tr><td><code>RBAC</code></td><td>Role-Based Access Control — enforced by <code>JwtAuthGuard</code> + <code>RolesGuard</code> on every guarded route</td></tr>
+            <tr><td><code>DTO</code></td><td>Data Transfer Object — a <code>class-validator</code>-annotated request-body shape validated by a global <code>ValidationPipe</code></td></tr>
+            <tr><td><code>ORM</code></td><td>Object-Relational Mapper — TypeORM, used for repository/query-builder access and versioned migrations</td></tr>
+            <tr><td><code>C2B / B2C / B2B</code></td><td>Customer-to-Business / Business-to-Customer / Business-to-Business — the three Vodacom M-Pesa payment operation shapes the adapter is built against</td></tr>
+            <tr><td><code>MSISDN</code></td><td>Mobile Station International Subscriber Directory Number — a mobile phone number in its international-dialling form</td></tr>
+            <tr><td><code>OTP</code></td><td>One-Time Password — used for phone-based password reset</td></tr>
+            <tr><td><code>TZS</code></td><td>Tanzanian Shilling</td></tr>
+            <tr><td><code>HMAC</code></td><td>Hash-based Message Authentication Code — used to verify inbound webhook authenticity alongside a per-partner API key</td></tr>
+            <tr><td><code>SSAD / DFD / ERD</code></td><td>Structured System Analysis and Design / Data Flow Diagram / Entity Relationship Diagram — Chapter 2's modelling techniques</td></tr>
+            <tr><td><code>Tenant scoping</code></td><td>Restricting a staff account to only the bank/operator/insurer it is linked to, via a nullable foreign key on <code>users</code></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="s12">
+      <h2><span class="num">1.2</span>Overall description</h2>
+
+      <h3 id="s121"><span class="num">1.2.1</span>Software development methodology</h3>
+      <p>Tujitunze is built iteratively: the migration history (23 sequential, additive files in <code>database/migrations/</code>) shows each unit of work landing as an audited, self-contained increment — a migration's own header typically records the audit finding it addresses, what it deliberately does <em>not</em> yet touch, and why. Rather than a single big-bang release, features arrive in phases (for example the payment-transaction layer of migration 0018 was corrected in place by 0019–0023 as the underlying business rule for usage-based contributions was clarified), with each phase re-verified against the running system before the next begins.</p>
+      <p>Every change is additionally required to pass through a documented six-stage Secure Software Development Life Cycle before it is considered done: <strong>Requirements &amp; Planning</strong> (state the security requirement alongside the functional one, classify the data touched), <strong>Design</strong> (threat-model, least-privilege check), <strong>Implementation</strong> (DTO validation, parameterised queries, guarded endpoints), <strong>Verification</strong> (a security/code review pass, a boundary-proving test — not just a happy path), <strong>Deployment</strong> (CORS allowlist, HTTPS, security headers), and <strong>Maintenance</strong> (audit-log coverage, a living list of known gaps). That known-gaps list is itself treated as a project artefact, not a one-off note — several items closed since baseline are recorded as closed, and what remains open is listed plainly in §1.3.2 rather than omitted.</p>
+
+      <h3 id="s122"><span class="num">1.2.2</span>Assumptions and dependencies</h3>
+      <h4>Assumptions</h4>
+      <ul>
+        <li>A member has access to a smartphone or basic phone, an active mobile money/airtime relationship with a partner telecom operator, and/or an account at a partner bank.</li>
+        <li>A member holds or can obtain a NIDA number for identity verification at registration.</li>
+        <li>Staff accounts for Bank, Telecom, Insurance, Admin, and Super-admin roles are provisioned by a Super-admin, not self-registered.</li>
+        <li>Partner telecom operators and banks are willing and able to call Tujitunze's authenticated webhook endpoints from their own systems once integrated.</li>
+        <li>Users interact over a standard modern web browser; no native mobile app exists in the current build.</li>
+      </ul>
+      <h4>Dependencies</h4>
+      <div class="tablewrap">
+        <table>
+          <thead><tr><th>Category</th><th>Depends on</th></tr></thead>
+          <tbody>
+            <tr><td>Runtime</td><td>Node.js server for NestJS (backend) and Next.js (frontend); PostgreSQL for persistence</td></tr>
+            <tr><td>Identity data</td><td>NIDA number format/uniqueness at registration</td></tr>
+            <tr><td>Contribution channels</td><td>Telecom operator and bank webhook delivery, authenticated by a per-tenant API key and HMAC signature</td></tr>
+            <tr><td>Mobile money</td><td>Vodacom's M-Pesa Open API — session/C2B/B2C/B2B endpoint documentation, currently the blocking dependency for live mobile-money contributions</td></tr>
+            <tr><td>Notifications</td><td>An SMTP provider (email reset) and Africa's Talking (SMS reset) — both fail closed with <code>503</code> when unconfigured, rather than pretending to send</td></tr>
+            <tr><td>Libraries</td><td>TypeORM, <code>class-validator</code>, <code>bcrypt</code>, <code>@nestjs/throttler</code>, <code>@nestjs/jwt</code></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <h4>Constraints</h4>
+      <ul>
+        <li>No live mobile-money or bank settlement exists yet; every contribution figure today is internal bookkeeping authenticated at Tujitunze's own edge, not a verified external funds movement.</li>
+        <li>Development environments run with <code>TypeORM synchronize: true</code> and no production security headers — acceptable for local development, explicitly disqualifying for any non-local deployment until closed (§1.3.2).</li>
+        <li>The Hospital role has no functioning staff module — any requirement that assumes hospital-side interaction (claim filing, check-in) is out of scope until that module is built.</li>
+      </ul>
+      <h4>Operating environment</h4>
+      <ul>
+        <li>Server: Linux or Windows host running Node.js, fronting a PostgreSQL database.</li>
+        <li>Client: any modern desktop or mobile browser (Chrome, Firefox, Edge, Safari) over HTTPS in production.</li>
+        <li>Network: internet-connected for both member/staff use and partner webhook delivery.</li>
+      </ul>
+    </section>
+
+    <section id="s13">
+      <h2><span class="num">1.3</span>System features and requirements</h2>
+
+      <h3 id="s131"><span class="num">1.3.1</span>Functional requirements</h3>
+      <p>Requirements are grouped by role. Each line carries a status chip reflecting what exists in the codebase today, not an aspiration.</p>
+
+      <h4>a) Member functional requirements</h4>
+      <ul class="reqlist">
+        <li><span class="stat stat-real">Real</span><span class="txt">The system shall let a citizen register with NIDA number, phone number, and password, and authenticate via JWT.</span></li>
+        <li><span class="stat stat-real">Real</span><span class="txt">The system shall let a member view and update their profile, and link/unlink phone numbers and bank accounts.</span></li>
+        <li><span class="stat stat-real">Real</span><span class="txt">The system shall show a member their health wallet balance, top up the wallet directly, and list every wallet transaction with its contribution channel (airtime, bank transfer).</span></li>
+        <li><span class="stat stat-real">Real</span><span class="txt">The system shall show a member their own insurance plan and claim history, and a membership summary combining identity, wallet, and cover.</span></li>
+        <li><span class="stat stat-real">Real</span><span class="txt">The system shall notify a member of a wallet top-up, a new linked phone/bank account, a password change, and other sensitive account events.</span></li>
+        <li><span class="stat stat-real">Real</span><span class="txt">The system shall let a member reset a forgotten password via email token or phone OTP.</span></li>
+        <li><span class="stat stat-partial">Partial</span><span class="txt">The system shall provide a mobile-money account onboarding form; the underlying live mobile-money debit is not yet connected (§1.1.6).</span></li>
+        <li><span class="stat stat-gap">Not built</span><span class="txt">Wallet transfer, wallet withdrawal, telecom airtime/bundle purchase-through-wallet, a member-facing QR code, and a member reports screen are placeholders with no backend today.</span></li>
+      </ul>
+
+      <h4>b) Admin functional requirements</h4>
+      <ul class="reqlist">
+        <li><span class="stat stat-real">Real</span><span class="txt">The system shall let Admin manage members and hospital-directory reference records, and view/adjust member status.</span></li>
+        <li><span class="stat stat-real">Real</span><span class="txt">The system shall give Admin a contributions summary and filterable list across channels and statuses, and cross-channel reconciliation checks/runs.</span></li>
+        <li><span class="stat stat-real">Real</span><span class="txt">The system shall give Admin financial reports with filters and a transaction drill-down.</span></li>
+        <li><span class="stat stat-real">Real</span><span class="txt">The system shall let Admin read the platform audit log.</span></li>
+        <li><span class="stat stat-partial">Partial</span><span class="txt">Contribution filtering is channel- and status-based only today; filtering by member, date range, or specific operator/bank is not yet implemented.</span></li>
+      </ul>
+
+      <h4>c) Bank functional requirements</h4>
+      <ul class="reqlist">
+        <li><span class="stat stat-real">Real</span><span class="txt">The system shall let Bank staff manage their own bank's profile, contact details, and API/webhook credentials, scoped to their <code>bank_id</code> tenant link.</span></li>
+        <li><span class="stat stat-real">Real</span><span class="txt">The system shall accept an authenticated, signed webhook from the bank recording a contribution, and let staff manually record, reverse, or fail a transaction.</span></li>
+        <li><span class="stat stat-real">Real</span><span class="txt">The system shall let Bank manage Tujitunze's own fund accounts and fund transfers held at that bank, and create/complete settlements to Telecom or Hospital partners.</span></li>
+        <li><span class="stat stat-real">Real</span><span class="txt">The system shall give Bank a three-way reconciliation (Matched / Discrepancy / Unmatched), reports, and activity/API access logs — every page here has a matching frontend screen.</span></li>
+      </ul>
+
+      <h4>d) Telecom functional requirements</h4>
+      <ul class="reqlist">
+        <li><span class="stat stat-real">Real</span><span class="txt">The system shall mirror Bank's operator-profile, credentials, contribution recording/reversal, reconciliation, reports, and audit-log capabilities for a Telecom operator.</span></li>
+        <li><span class="stat stat-real">Real</span><span class="txt">The system shall let Telecom staff view their contribution rules (rate, minimum amount, effective date) read-only.</span></li>
+        <li><span class="stat stat-partial">Partial</span><span class="txt">The system shall expose a Vodacom M-Pesa transaction status query and reversal endpoint; the underlying live provider call is blocked on Vodacom's endpoint documentation (§1.1.6).</span></li>
+      </ul>
+
+      <h4>e) Insurance functional requirements</h4>
+      <ul class="reqlist">
+        <li><span class="stat stat-real">Real</span><span class="txt">The system shall let Insurance staff view claims routed to their provider and update claim status.</span></li>
+        <li><span class="stat stat-real">Real</span><span class="txt">The system shall let Insurance staff view per-contribution allocation records with a full traceability chain back to the originating contribution, plus settlement and reporting endpoints.</span></li>
+        <li><span class="stat stat-gap">Not built</span><span class="txt">None of the above beyond the summary dashboard has a frontend screen yet — every Insurance capability past the landing dashboard is API-only today.</span></li>
+      </ul>
+
+      <h4>f) Super-admin functional requirements</h4>
+      <ul class="reqlist">
+        <li><span class="stat stat-real">Real</span><span class="txt">The system shall let Super-admin provision a staff account for any non-Member role, validating NIDA/email uniqueness and the correct tenant-link requirement for that role.</span></li>
+        <li><span class="stat stat-real">Real</span><span class="txt">The system shall let Super-admin list every staff account and the available tenants for the provisioning form.</span></li>
+        <li><span class="stat stat-real">Real</span><span class="txt">The system shall let Super-admin create, rename, delete, and assign permissions to roles, while rejecting a rename/delete of the seven core seeded role names.</span></li>
+        <li><span class="stat stat-gap">Not built</span><span class="txt">There is no endpoint to edit, deactivate, or reassign a staff account after creation.</span></li>
+      </ul>
+
+      <h4>g) Hospital — current status</h4>
+      <div class="callout gap">
+        <span class="tag">Honest gap, not a partial feature</span>
+        <p><code>Hospital</code> is seeded as a role and <code>users.hospital_id</code> still exists as a tenant-link column, but no backend module, controller, or frontend route group implements it. A hospital cannot log in and reach a working dashboard today. The <code>hospitals</code> table, <code>healthcare_claims</code>, and <code>healthcare_verifications</code> persist only as reference data, read (never written) by Member-facing endpoints for hospital-directory browsing and verification history.</p>
+      </div>
+
+      <h4>Core system processing requirements</h4>
+      <ul class="reqlist">
+        <li><span class="stat stat-real">Real</span><span class="txt">The system shall authenticate inbound partner webhooks by a per-tenant API key plus an HMAC signature, independent of member JWT auth, via dedicated webhook-intake controllers.</span></li>
+        <li><span class="stat stat-real">Real</span><span class="txt">The system shall compute each contribution amount from a configurable rule (percentage rate, minimum amount, effective date) rather than a hardcoded constant.</span></li>
+        <li><span class="stat stat-real">Real</span><span class="txt">The system shall guarantee idempotency on a redelivered webhook — the same external transaction reference shall never produce a second ledger row or a second wallet credit.</span></li>
+        <li><span class="stat stat-real">Real</span><span class="txt">The system shall credit the wallet and, when the member holds an active policy, create an insurance allocation in the same transaction as the contribution — never as two separate, possibly-inconsistent writes.</span></li>
+        <li><span class="stat stat-real">Real</span><span class="txt">The system shall record a sensitive write (identity change, financial write, status change, staff/role management action) to the audit log inside the same database transaction as the write itself.</span></li>
+      </ul>
+
+      <h4>System interaction requirements</h4>
+      <ul class="reqlist">
+        <li><span class="stat stat-real">Real</span><span class="txt">The system shall serve every role through a single web platform, routing each role to its own path-prefixed dashboard (for example <code>/bank/dashboard</code>, <code>/telecom/dashboard</code>) to avoid Next.js route-group collisions.</span></li>
+        <li><span class="stat stat-real">Real</span><span class="txt">The system shall enforce every role boundary on the backend (<code>JwtAuthGuard</code> + <code>RolesGuard</code>); the frontend's route-group gate is UX/defense-in-depth only, never the actual authorization boundary.</span></li>
+        <li><span class="stat stat-real">Real</span><span class="txt">The system shall scope a tenant role's data (Bank/Telecom/Insurance) to its own linked institution and refuse (<code>403</code>) rather than return empty or global data when that link is unset.</span></li>
+      </ul>
+
+      <h3 id="s132"><span class="num">1.3.2</span>Non-functional requirements</h3>
+
+      <h4>Performance</h4>
+      <ul>
+        <li>Dashboard and list endpoints shall respond within normal interactive latency (low hundreds of milliseconds) under expected single-instance load; no dedicated load-testing has been run against this build.</li>
+        <li>Webhook intake shall process a single contribution synchronously within one request/response cycle, including idempotency check, rule computation, ledger write, and allocation.</li>
+      </ul>
+      <h4>Usability</h4>
+      <ul>
+        <li>Each role shall share one consistent dashboard shell (sidebar + layout) so navigation is uniform across every page within that role's route group.</li>
+        <li>A role's navigation shall only list pages that actually exist, to avoid dead links into unbuilt route-group stubs.</li>
+      </ul>
+      <h4>Security</h4>
+      <p>Implemented today: JWT + role-based guards on every role-scoped route; tenant scoping by nullable foreign key; DTO validation via a global <code>ValidationPipe</code>; parameterised/query-builder database access throughout; rate limiting on login, registration, phone-number, and super-admin write endpoints; an explicit CORS allowlist; password reset tokens/OTPs stored only as salted hashes with attempt limits and expiry; audit logging on the sensitive write paths listed in §1.3.1.</p>
+      <p>Still open — treated as required work before any non-local deployment, not silently dropped:</p>
+      <ul class="reqlist">
+        <li><span class="stat stat-gap">Open</span><span class="txt">No <code>helmet</code>/security-header middleware is configured.</span></li>
+        <li><span class="stat stat-gap">Open</span><span class="txt">The JWT is stored in browser <code>localStorage</code>, not an httpOnly cookie — exposed to XSS until session infrastructure is built.</span></li>
+        <li><span class="stat stat-gap">Open</span><span class="txt"><code>database.config.ts</code> falls back to a default DB password if <code>DB_PASSWORD</code> is unset, instead of failing closed.</span></li>
+        <li><span class="stat stat-gap">Open</span><span class="txt"><code>TypeORM synchronize: true</code> remains set — acceptable only for local development.</span></li>
+        <li><span class="stat stat-gap">Open</span><span class="txt">Rate-limit state is stored in-process and will not be shared once the backend runs behind a load balancer with multiple instances.</span></li>
+        <li><span class="stat stat-gap">Open</span><span class="txt">The audit log has no pagination or filtering beyond the latest 200 rows.</span></li>
+        <li><span class="stat stat-gap">Open</span><span class="txt">Telecom/Bank <code>webhook_secret</code> is stored retrievable rather than hashed, because Tujitunze needs the raw value to sign outgoing deliveries — a real plaintext-at-rest gap, currently unused by any live code path.</span></li>
+      </ul>
+      <h4>Reliability</h4>
+      <ul>
+        <li>A failed or ambiguous provider response (network error, timeout, unknown status) shall never be recorded as a successful payment; only a confirmed provider response may mark a transaction <code>SUCCESSFUL</code> — enforced at the database level, not only in application code.</li>
+        <li>Email and SMS delivery shall fail closed (<code>503</code>) when unconfigured rather than silently pretending to have sent something.</li>
+      </ul>
+      <h4>Scalability</h4>
+      <ul>
+        <li>The contribution rule engine, contribution channels, and provider adapters are designed as configuration/data rather than hardcoded constants, so a new operator, bank, or rule can be added without a code change to the core ledger path.</li>
+        <li>Horizontal scaling of the backend is currently constrained by the in-process rate-limiter and session-key cache (§ above) until a shared store is introduced.</li>
+      </ul>
+      <h4>Maintainability</h4>
+      <ul>
+        <li>Schema changes are additive, versioned SQL migrations under <code>database/migrations/</code>, each documenting the audit finding it addresses and what it deliberately leaves untouched.</li>
+        <li>Backend test coverage includes 16 end-to-end spec files and 14 unit spec files exercising authorization boundaries, webhook idempotency, reconciliation, and rate limiting — not just happy paths.</li>
+      </ul>
+      <h4>Compatibility</h4>
+      <ul>
+        <li>The frontend targets evergreen desktop and mobile browsers via Next.js's standard support matrix; no legacy-browser support is targeted.</li>
+      </ul>
+
+      <h3 id="s133"><span class="num">1.3.3</span>System features</h3>
+      <p>At its centre, Tujitunze gives every member a <strong>unified health wallet</strong>: one balance, backed by an immutable transaction ledger, regardless of which channel funded it. Feeding that wallet is a <strong>multi-channel contribution engine</strong> — authenticated webhooks from telecom and bank partners, each run through a configurable rate/minimum rule before a single shared crediting path touches the ledger, so airtime-based and bank-transfer-based contributions can never diverge in how they're recorded. A mobile-money channel via Vodacom M-Pesa is built up to the same idempotent, database-enforced-honesty standard, pending the provider's own endpoint documentation.</p>
+      <p>Where a member holds an active policy, a contribution automatically produces an <strong>insurance allocation</strong>, and that allocation is traceable in one query back to the exact contribution and wallet entry that produced it — a design goal the platform can answer concretely today ("where did this member's TZS 20 go?"), not just assert. Sitting over all of this is <strong>cross-channel reconciliation</strong>: Bank and Telecom can each upload or generate a batch of their own records and have it matched against Tujitunze's ledger, surfacing matches, discrepancies, and unmatched rows.</p>
+      <p>Six <strong>role-scoped operational dashboards</strong> give each class of user — Member, Admin, Bank, Telecom, Insurance, Super-admin — only the views and actions that belong to it, backed by the same guard pattern everywhere. A platform-wide <strong>audit trail</strong> and a <strong>notifications</strong> system keep members and operators aware of sensitive events as they happen. Finally, <strong>Super-admin governance</strong> closes the loop: staff accounts and the roles/permissions catalog itself are managed through the same audited, guarded pattern as every other sensitive write, rather than hand-written SQL.</p>
+
+      <h3 id="s134"><span class="num">1.3.4</span>Data requirements and data sources</h3>
+      <h4>Data requirements</h4>
+      <div class="callout data">
+        <span class="tag">Data classification</span>
+        <p>Tujitunze handles four categories of sensitive data, each requiring an authorization check and an audit trail: <strong>PII</strong> (name, NIDA number, address, date of birth), <strong>financial</strong> (wallet, bank, telecom, and mobile-money transactions), <strong>health</strong> (insurance policies, claims, verifications), and general <strong>administrative</strong> data (roles, permissions, tenant links).</p>
+      </div>
+      <p>Beyond identity and financial data, the system requires: contribution rule configuration (rate, minimum, effective date per rule type); reference data for partner institutions (telecom operators, banks, insurance providers and their plans); and operational data generated by the platform itself — audit log entries, notifications, and reconciliation run records.</p>
+      <h4>Data sources</h4>
+      <ul>
+        <li><strong>Member self-registration</strong> — identity, contact, and initial phone/bank-account linkage, entered directly by the member.</li>
+        <li><strong>Super-admin provisioning</strong> — every non-Member staff account and its tenant link.</li>
+        <li><strong>Admin-managed reference data</strong> — the hospital directory and member-record corrections.</li>
+        <li><strong>Authenticated partner webhooks</strong> — real, live contribution notifications from Telecom and Bank systems, the primary source of ongoing financial transaction data.</li>
+        <li><strong>Vodacom M-Pesa gateway</strong> — the mobile-money channel's intended data source once the adapter's remaining wire call is unblocked.</li>
+        <li><strong>Seed/reference data</strong> — insurance providers and starter plans (NHIF, Diamond Trust Insurance, Jubilee Insurance) and contribution-rate rules, loaded via versioned migrations so they are reproducible across environments.</li>
+      </ul>
+    </section>
+
+    <!-- ============================================================ CHAPTER 2 -->
+    <div class="chapter-head" id="ch2">
+      <span class="num">Chapter 2</span>
+      <h1>SSAD — Structured System Analysis and Design</h1>
+    </div>
+
+    <section id="s21">
+      <h2><span class="num">2.1</span>Context diagram</h2>
+      <p>The context diagram treats Tujitunze as a single process and shows every external party that exchanges data with it. Six parties actively interact with the system; a seventh, Hospital, is drawn with a dashed outline because it is present only as reference data consulted by the system, not as an active participant (§1.1.6).</p>
+
+      <figure>
+        <span class="fignum">Figure 1</span>
+        <svg viewBox="0 0 900 660" role="img" aria-label="Context diagram showing Tujitunze HSIMS at the centre, connected to Member, Telecom Operator, Bank, Insurance Provider, Admin, and Super-admin, with Hospital shown as a dashed reference-only entity">
+          <defs>
+            <marker id="arrowA" markerWidth="9" markerHeight="9" refX="7" refY="4" orient="auto"><polygon points="0,0 8,4 0,8" fill="currentColor"/></marker>
+          </defs>
+          <!-- center -->
+          <rect x="330" y="270" width="240" height="110" rx="10" fill="none" stroke="currentColor" stroke-width="2"/>
+          <text x="450" y="316" text-anchor="middle" class="diagram-label" font-weight="600">0 — Tujitunze / HSIMS</text>
+          <text x="450" y="336" text-anchor="middle" class="diagram-sub">member wallet · contributions · allocation</text>
+
+          <!-- Member (top) -->
+          <rect x="365" y="30" width="170" height="56" rx="8" fill="none" stroke="currentColor" stroke-width="1.5"/>
+          <text x="450" y="63" text-anchor="middle" class="diagram-label">Member</text>
+          <line x1="450" y1="86" x2="450" y2="266" stroke="currentColor" stroke-width="1.3" marker-end="url(#arrowA)"/>
+          <line x1="440" y1="266" x2="440" y2="86" stroke="currentColor" stroke-width="1.3" marker-end="url(#arrowA)"/>
+          <text x="470" y="170" class="diagram-sub">registers, links accounts, tops up</text>
+          <text x="470" y="184" class="diagram-sub">wallet, claim &amp; cover data</text>
+
+          <!-- Telecom Operator (upper right) -->
+          <rect x="660" y="90" width="200" height="56" rx="8" fill="none" stroke="currentColor" stroke-width="1.5"/>
+          <text x="760" y="123" text-anchor="middle" class="diagram-label">Telecom Operator</text>
+          <line x1="662" y1="140" x2="560" y2="290" stroke="currentColor" stroke-width="1.3" marker-end="url(#arrowA)"/>
+          <line x1="672" y1="150" x2="570" y2="300" stroke="currentColor" stroke-width="1.3" marker-end="url(#arrowA)" transform="translate(0,0)"/>
+          <text x="605" y="215" class="diagram-sub">signed contribution webhook</text>
+          <text x="605" y="229" class="diagram-sub">reconciliation batch / ack</text>
+
+          <!-- Bank (right) -->
+          <rect x="700" y="330" width="170" height="56" rx="8" fill="none" stroke="currentColor" stroke-width="1.5"/>
+          <text x="785" y="363" text-anchor="middle" class="diagram-label">Bank</text>
+          <line x1="700" y1="358" x2="572" y2="345" stroke="currentColor" stroke-width="1.3" marker-end="url(#arrowA)"/>
+          <text x="600" y="400" class="diagram-sub">signed transaction webhook,</text>
+          <text x="600" y="414" class="diagram-sub">settlements, reconciliation</text>
+
+          <!-- Insurance Provider (bottom right) -->
+          <rect x="580" y="520" width="210" height="56" rx="8" fill="none" stroke="currentColor" stroke-width="1.5"/>
+          <text x="685" y="553" text-anchor="middle" class="diagram-label">Insurance Provider</text>
+          <line x1="620" y1="518" x2="530" y2="384" stroke="currentColor" stroke-width="1.3" marker-end="url(#arrowA)"/>
+          <text x="560" y="470" class="diagram-sub">allocation &amp; claim data,</text>
+          <text x="560" y="484" class="diagram-sub">claim status updates</text>
+
+          <!-- Admin (bottom left) -->
+          <rect x="120" y="520" width="180" height="56" rx="8" fill="none" stroke="currentColor" stroke-width="1.5"/>
+          <text x="210" y="553" text-anchor="middle" class="diagram-label">Admin</text>
+          <line x1="240" y1="518" x2="360" y2="384" stroke="currentColor" stroke-width="1.3" marker-end="url(#arrowA)"/>
+          <text x="200" y="470" class="diagram-sub">member mgmt, reconciliation,</text>
+          <text x="200" y="484" class="diagram-sub">reports, audit review</text>
+
+          <!-- Super-admin (left) -->
+          <rect x="30" y="330" width="180" height="56" rx="8" fill="none" stroke="currentColor" stroke-width="1.5"/>
+          <text x="120" y="363" text-anchor="middle" class="diagram-label">Super-admin</text>
+          <line x1="200" y1="356" x2="328" y2="345" stroke="currentColor" stroke-width="1.3" marker-end="url(#arrowA)"/>
+          <text x="140" y="400" class="diagram-sub">provisions staff, governs</text>
+          <text x="140" y="414" class="diagram-sub">roles &amp; permissions</text>
+
+          <!-- Hospital dashed (upper left) -->
+          <rect x="60" y="90" width="200" height="56" rx="8" fill="none" stroke="currentColor" stroke-width="1.3" stroke-dasharray="5 4"/>
+          <text x="160" y="118" text-anchor="middle" class="diagram-label">Hospital</text>
+          <text x="160" y="134" text-anchor="middle" class="diagram-sub">reference data only</text>
+          <line x1="245" y1="146" x2="345" y2="290" stroke="currentColor" stroke-width="1.2" stroke-dasharray="5 4" marker-end="url(#arrowA)"/>
+          <text x="260" y="215" class="diagram-sub">directory read by Member</text>
+          <text x="260" y="229" class="diagram-sub">screens — no staff interface</text>
+        </svg>
+        <figcaption>The system boundary and its six active external entities, plus Hospital as a dashed, read-only reference-data source rather than an active participant.</figcaption>
+      </figure>
+    </section>
+
+    <section id="s22">
+      <h2><span class="num">2.2</span>Level 0 data flow diagram</h2>
+      <p>Decomposing the single context-diagram process into its five major internal processes and the data stores they read and write.</p>
+      <figure>
+        <span class="fignum">Figure 2</span>
+        <svg viewBox="0 0 960 560" role="img" aria-label="Level 0 data flow diagram showing five processes: Identity and Access, Contribution Intake, Wallet and Allocation, Reconciliation and Reporting, and Platform Administration, connected to five data stores">
+          <defs>
+            <marker id="arrowB" markerWidth="9" markerHeight="9" refX="7" refY="4" orient="auto"><polygon points="0,0 8,4 0,8" fill="currentColor"/></marker>
+          </defs>
+          <!-- processes row -->
+          <g>
+            <circle cx="120" cy="90" r="66" fill="none" stroke="currentColor" stroke-width="1.6"/>
+            <text x="120" y="82" text-anchor="middle" class="diagram-label" font-weight="600">1.0</text>
+            <text x="120" y="99" text-anchor="middle" class="diagram-sub">Identity &amp;</text>
+            <text x="120" y="112" text-anchor="middle" class="diagram-sub">Access</text>
+          </g>
+          <g>
+            <circle cx="360" cy="90" r="66" fill="none" stroke="currentColor" stroke-width="1.6"/>
+            <text x="360" y="80" text-anchor="middle" class="diagram-label" font-weight="600">2.0</text>
+            <text x="360" y="97" text-anchor="middle" class="diagram-sub">Contribution</text>
+            <text x="360" y="110" text-anchor="middle" class="diagram-sub">Intake</text>
+          </g>
+          <g>
+            <circle cx="600" cy="90" r="66" fill="none" stroke="currentColor" stroke-width="1.6"/>
+            <text x="600" y="80" text-anchor="middle" class="diagram-label" font-weight="600">3.0</text>
+            <text x="600" y="97" text-anchor="middle" class="diagram-sub">Wallet &amp;</text>
+            <text x="600" y="110" text-anchor="middle" class="diagram-sub">Allocation</text>
+          </g>
+          <g>
+            <circle cx="840" cy="90" r="66" fill="none" stroke="currentColor" stroke-width="1.6"/>
+            <text x="840" y="76" text-anchor="middle" class="diagram-label" font-weight="600">4.0</text>
+            <text x="840" y="93" text-anchor="middle" class="diagram-sub">Reconciliation</text>
+            <text x="840" y="106" text-anchor="middle" class="diagram-sub">&amp; Reporting</text>
+          </g>
+          <g>
+            <circle cx="480" cy="300" r="66" fill="none" stroke="currentColor" stroke-width="1.6"/>
+            <text x="480" y="290" text-anchor="middle" class="diagram-label" font-weight="600">5.0</text>
+            <text x="480" y="307" text-anchor="middle" class="diagram-sub">Platform</text>
+            <text x="480" y="320" text-anchor="middle" class="diagram-sub">Administration</text>
+          </g>
+
+          <!-- flows between processes -->
+          <line x1="186" y1="90" x2="294" y2="90" stroke="currentColor" stroke-width="1.3" marker-end="url(#arrowB)"/>
+          <text x="240" y="80" text-anchor="middle" class="diagram-sub">member id</text>
+          <line x1="426" y1="90" x2="534" y2="90" stroke="currentColor" stroke-width="1.3" marker-end="url(#arrowB)"/>
+          <text x="480" y="80" text-anchor="middle" class="diagram-sub">valid contribution</text>
+          <line x1="666" y1="90" x2="774" y2="90" stroke="currentColor" stroke-width="1.3" marker-end="url(#arrowB)"/>
+          <text x="720" y="80" text-anchor="middle" class="diagram-sub">ledger entries</text>
+
+          <!-- data stores -->
+          <g>
+            <line x1="40" y1="440" x2="200" y2="440" stroke="currentColor" stroke-width="1.6"/>
+            <line x1="40" y1="470" x2="200" y2="470" stroke="currentColor" stroke-width="1.6"/>
+            <line x1="40" y1="440" x2="40" y2="470" stroke="currentColor" stroke-width="1.6"/>
+            <text x="120" y="460" text-anchor="middle" class="diagram-sub">D1 Users / Roles</text>
+          </g>
+          <g>
+            <line x1="240" y1="440" x2="400" y2="440" stroke="currentColor" stroke-width="1.6"/>
+            <line x1="240" y1="470" x2="400" y2="470" stroke="currentColor" stroke-width="1.6"/>
+            <line x1="240" y1="440" x2="240" y2="470" stroke="currentColor" stroke-width="1.6"/>
+            <text x="320" y="460" text-anchor="middle" class="diagram-sub">D2 Wallet Ledger</text>
+          </g>
+          <g>
+            <line x1="440" y1="440" x2="620" y2="440" stroke="currentColor" stroke-width="1.6"/>
+            <line x1="440" y1="470" x2="620" y2="470" stroke="currentColor" stroke-width="1.6"/>
+            <line x1="440" y1="440" x2="440" y2="470" stroke="currentColor" stroke-width="1.6"/>
+            <text x="530" y="460" text-anchor="middle" class="diagram-sub">D3 Contribution / Payment Records</text>
+          </g>
+          <g>
+            <line x1="660" y1="440" x2="820" y2="440" stroke="currentColor" stroke-width="1.6"/>
+            <line x1="660" y1="470" x2="820" y2="470" stroke="currentColor" stroke-width="1.6"/>
+            <line x1="660" y1="440" x2="660" y2="470" stroke="currentColor" stroke-width="1.6"/>
+            <text x="740" y="460" text-anchor="middle" class="diagram-sub">D4 Insurance Allocations</text>
+          </g>
+          <g>
+            <line x1="840" y1="440" x2="920" y2="440" stroke="currentColor" stroke-width="1.6"/>
+            <line x1="840" y1="470" x2="920" y2="470" stroke="currentColor" stroke-width="1.6"/>
+            <line x1="840" y1="440" x2="840" y2="470" stroke="currentColor" stroke-width="1.6"/>
+            <text x="880" y="460" text-anchor="middle" class="diagram-sub">D5 Audit Log</text>
+          </g>
+
+          <!-- process-to-store links -->
+          <line x1="110" y1="156" x2="105" y2="436" stroke="currentColor" stroke-width="1.1" marker-end="url(#arrowB)"/>
+          <line x1="330" y1="156" x2="310" y2="436" stroke="currentColor" stroke-width="1.1" marker-end="url(#arrowB)"/>
+          <line x1="590" y1="156" x2="540" y2="436" stroke="currentColor" stroke-width="1.1" marker-end="url(#arrowB)"/>
+          <line x1="610" y1="156" x2="730" y2="436" stroke="currentColor" stroke-width="1.1" marker-end="url(#arrowB)"/>
+          <line x1="830" y1="156" x2="870" y2="436" stroke="currentColor" stroke-width="1.1" marker-end="url(#arrowB)"/>
+          <line x1="480" y1="366" x2="120" y2="438" stroke="currentColor" stroke-width="1.1" stroke-dasharray="4 4" marker-end="url(#arrowB)"/>
+          <line x1="480" y1="366" x2="880" y2="438" stroke="currentColor" stroke-width="1.1" stroke-dasharray="4 4" marker-end="url(#arrowB)"/>
+          <text x="300" y="410" class="diagram-sub">writes / reads</text>
+        </svg>
+        <figcaption>1.0 authenticates and links a role/tenant to a request; 2.0 verifies and rule-computes a webhook contribution; 3.0 credits the wallet and creates an insurance allocation in one transaction; 4.0 matches partner batches against the ledger and produces reports; 5.0 (Platform Administration — staff and role governance) writes to every store, shown dashed since it spans identity, ledger, and audit data rather than owning one store exclusively.</figcaption>
+      </figure>
+    </section>
+
+    <section id="s23">
+      <h2><span class="num">2.3</span>Entity relationship diagram (overview)</h2>
+      <p>Given the size of the live schema (23 migrations, several dozen tables), this ERD groups tables by domain rather than listing every column — see §4.2.2 for how this maps onto physical database design.</p>
+      <figure>
+        <span class="fignum">Figure 3</span>
+        <svg viewBox="0 0 1000 500" role="img" aria-label="Entity relationship overview grouping the schema into eight domain boxes: Identity and Access, Member and Wallet, Telecom, Bank, Insurance, Payments, Hospital reference data, and Platform, with labelled relationships between them">
+          <defs>
+            <marker id="arrowC" markerWidth="9" markerHeight="9" refX="7" refY="4" orient="auto"><polygon points="0,0 8,4 0,8" fill="currentColor"/></marker>
+          </defs>
+          <!-- row1 -->
+          <g>
+            <rect x="20" y="30" width="225" height="118" rx="8" fill="none" stroke="currentColor" stroke-width="1.6"/>
+            <text x="34" y="54" class="diagram-label" font-weight="600">Identity &amp; Access</text>
+            <text x="34" y="76" class="diagram-sub">users · roles · permissions</text>
+            <text x="34" y="90" class="diagram-sub">member_roles</text>
+          </g>
+          <g>
+            <rect x="265" y="30" width="225" height="118" rx="8" fill="none" stroke="currentColor" stroke-width="1.6"/>
+            <text x="279" y="54" class="diagram-label" font-weight="600">Member &amp; Wallet</text>
+            <text x="279" y="76" class="diagram-sub">health_wallets</text>
+            <text x="279" y="90" class="diagram-sub">wallet_transactions · phone_numbers</text>
+          </g>
+          <g>
+            <rect x="510" y="30" width="225" height="118" rx="8" fill="none" stroke="currentColor" stroke-width="1.6"/>
+            <text x="524" y="54" class="diagram-label" font-weight="600">Telecom</text>
+            <text x="524" y="76" class="diagram-sub">telecom_operators</text>
+            <text x="524" y="90" class="diagram-sub">telecom_contributions</text>
+            <text x="524" y="104" class="diagram-sub">contribution_rules</text>
+          </g>
+          <g>
+            <rect x="755" y="30" width="225" height="118" rx="8" fill="none" stroke="currentColor" stroke-width="1.6"/>
+            <text x="769" y="54" class="diagram-label" font-weight="600">Bank</text>
+            <text x="769" y="76" class="diagram-sub">banks · bank_transactions</text>
+            <text x="769" y="90" class="diagram-sub">settlements · fund_accounts</text>
+          </g>
+          <!-- row2 -->
+          <g>
+            <rect x="20" y="220" width="225" height="118" rx="8" fill="none" stroke="currentColor" stroke-width="1.6"/>
+            <text x="34" y="244" class="diagram-label" font-weight="600">Insurance</text>
+            <text x="34" y="266" class="diagram-sub">insurance_providers · plans</text>
+            <text x="34" y="280" class="diagram-sub">member_insurance</text>
+            <text x="34" y="294" class="diagram-sub">insurance_allocations</text>
+          </g>
+          <g>
+            <rect x="265" y="220" width="225" height="118" rx="8" fill="none" stroke="currentColor" stroke-width="1.6"/>
+            <text x="279" y="244" class="diagram-label" font-weight="600">Payments (new layer)</text>
+            <text x="279" y="266" class="diagram-sub">payment_transactions</text>
+            <text x="279" y="284" class="diagram-sub" fill="var(--accent)">payment-lifecycle status</text>
+          </g>
+          <g>
+            <rect x="510" y="220" width="225" height="118" rx="8" fill="none" stroke="currentColor" stroke-width="1.3" stroke-dasharray="5 4"/>
+            <text x="524" y="244" class="diagram-label" font-weight="600">Hospital (reference)</text>
+            <text x="524" y="266" class="diagram-sub">hospitals</text>
+            <text x="524" y="280" class="diagram-sub">healthcare_claims</text>
+            <text x="524" y="294" class="diagram-sub">healthcare_verifications</text>
+          </g>
+          <g>
+            <rect x="755" y="220" width="225" height="118" rx="8" fill="none" stroke="currentColor" stroke-width="1.6"/>
+            <text x="769" y="244" class="diagram-label" font-weight="600">Platform</text>
+            <text x="769" y="266" class="diagram-sub">audit_logs · notifications</text>
+            <text x="769" y="280" class="diagram-sub">sessions</text>
+          </g>
+
+          <!-- relationships -->
+          <line x1="245" y1="90" x2="263" y2="90" stroke="currentColor" stroke-width="1.3" marker-end="url(#arrowC)"/>
+          <text x="253" y="80" text-anchor="middle" class="diagram-sub" font-size="9">owns</text>
+
+          <line x1="490" y1="90" x2="508" y2="90" stroke="currentColor" stroke-width="1.3" marker-start="url(#arrowC)"/>
+          <text x="500" y="80" text-anchor="middle" class="diagram-sub" font-size="9">funds</text>
+
+          <line x1="735" y1="90" x2="753" y2="90" stroke="currentColor" stroke-width="1.3" marker-start="url(#arrowC)"/>
+          <text x="744" y="80" text-anchor="middle" class="diagram-sub" font-size="9">funds</text>
+
+          <line x1="622" y1="148" x2="500" y2="218" stroke="currentColor" stroke-width="1.3" marker-end="url(#arrowC)"/>
+          <line x1="867" y1="148" x2="500" y2="225" stroke="currentColor" stroke-width="1.3" marker-end="url(#arrowC)"/>
+          <text x="600" y="190" class="diagram-sub" font-size="9">produces payment_transactions</text>
+
+          <line x1="378" y1="220" x2="378" y2="148" stroke="currentColor" stroke-width="1.3" marker-end="url(#arrowC)"/>
+          <text x="386" y="185" class="diagram-sub" font-size="9">credits wallet_transactions</text>
+
+          <line x1="245" y1="280" x2="263" y2="280" stroke="currentColor" stroke-width="1.3" marker-start="url(#arrowC)"/>
+          <text x="253" y="270" text-anchor="middle" class="diagram-sub" font-size="9">allocates</text>
+
+          <line x1="132" y1="220" x2="378" y2="148" stroke="currentColor" stroke-width="1.1" stroke-dasharray="4 4" marker-end="url(#arrowC)"/>
+          <text x="180" y="175" class="diagram-sub" font-size="9">member_insurance links to Member</text>
+
+          <line x1="622" y1="220" x2="378" y2="148" stroke="currentColor" stroke-width="1.1" stroke-dasharray="4 4" marker-end="url(#arrowC)"/>
+          <text x="470" y="200" class="diagram-sub" font-size="9">browsed / verified by Member (read-only)</text>
+
+          <line x1="132" y1="30" x2="769" y2="222" stroke="currentColor" stroke-width="1" stroke-dasharray="3 5" marker-end="url(#arrowC)"/>
+          <text x="700" y="185" class="diagram-sub" font-size="9">written by every domain (audit trail)</text>
+        </svg>
+        <figcaption>Domain-grouped entity overview. Solid arrows are the live ledger chain (Telecom/Bank → Payments → Member &amp; Wallet → Insurance); dashed arrows are read-only or cross-cutting relationships. Full column-level detail lives in the migration files, not in this document.</figcaption>
+      </figure>
+    </section>
+
+    <section id="s24">
+      <h2><span class="num">2.4</span>Logic diagrams</h2>
+
+      <h3 id="s241"><span class="num">2.4.1</span>Process flowchart — contribution to insurance allocation</h3>
+      <figure>
+        <span class="fignum">Figure 4</span>
+        <svg viewBox="0 0 920 980" role="img" aria-label="Flowchart from an inbound telecom or bank webhook through signature verification, duplicate check, rule computation, ledger write, wallet credit, and conditional insurance allocation, ending in member notification">
+          <defs>
+            <marker id="arrowD" markerWidth="9" markerHeight="9" refX="7" refY="4" orient="auto"><polygon points="0,0 8,4 0,8" fill="currentColor"/></marker>
+          </defs>
+          <!-- step 1 -->
+          <rect x="170" y="20" width="280" height="60" rx="8" fill="none" stroke="currentColor" stroke-width="1.6"/>
+          <text x="310" y="55" text-anchor="middle" class="diagram-label">Telecom / Bank sends contribution webhook</text>
+          <line x1="310" y1="80" x2="310" y2="120" stroke="currentColor" stroke-width="1.3" marker-end="url(#arrowD)"/>
+
+          <!-- decision 1 -->
+          <polygon points="310,120 430,180 310,240 190,180" fill="none" stroke="currentColor" stroke-width="1.5"/>
+          <text x="310" y="176" text-anchor="middle" class="diagram-sub">API key + HMAC</text>
+          <text x="310" y="190" text-anchor="middle" class="diagram-sub">signature valid?</text>
+          <line x1="430" y1="180" x2="620" y2="180" stroke="currentColor" stroke-width="1.3" marker-end="url(#arrowD)"/>
+          <text x="470" y="170" class="diagram-sub">no</text>
+          <rect x="620" y="150" width="260" height="60" rx="8" fill="none" stroke="currentColor" stroke-width="1.5"/>
+          <text x="750" y="184" text-anchor="middle" class="diagram-label">401 — request rejected</text>
+          <line x1="310" y1="240" x2="310" y2="280" stroke="currentColor" stroke-width="1.3" marker-end="url(#arrowD)"/>
+          <text x="320" y="260" class="diagram-sub">yes</text>
+
+          <!-- decision 2 -->
+          <polygon points="310,280 430,340 310,400 190,340" fill="none" stroke="currentColor" stroke-width="1.5"/>
+          <text x="310" y="333" text-anchor="middle" class="diagram-sub">Duplicate external</text>
+          <text x="310" y="347" text-anchor="middle" class="diagram-sub">reference?</text>
+          <line x1="430" y1="340" x2="620" y2="340" stroke="currentColor" stroke-width="1.3" marker-end="url(#arrowD)"/>
+          <text x="470" y="330" class="diagram-sub">yes</text>
+          <rect x="620" y="310" width="270" height="60" rx="8" fill="none" stroke="currentColor" stroke-width="1.5"/>
+          <text x="755" y="336" text-anchor="middle" class="diagram-label">Return prior result —</text>
+          <text x="755" y="352" text-anchor="middle" class="diagram-label">no second credit</text>
+          <line x1="310" y1="400" x2="310" y2="440" stroke="currentColor" stroke-width="1.3" marker-end="url(#arrowD)"/>
+          <text x="320" y="420" class="diagram-sub">no</text>
+
+          <!-- step: rule engine -->
+          <rect x="150" y="440" width="320" height="60" rx="8" fill="none" stroke="currentColor" stroke-width="1.6"/>
+          <text x="310" y="475" text-anchor="middle" class="diagram-label">Rule engine computes contribution amount</text>
+          <line x1="310" y1="500" x2="310" y2="540" stroke="currentColor" stroke-width="1.3" marker-end="url(#arrowD)"/>
+
+          <!-- ledger row -->
+          <rect x="130" y="540" width="360" height="60" rx="8" fill="none" stroke="currentColor" stroke-width="1.6"/>
+          <text x="310" y="575" text-anchor="middle" class="diagram-label">Contribution ledger row written</text>
+          <line x1="310" y1="600" x2="310" y2="640" stroke="currentColor" stroke-width="1.3" marker-end="url(#arrowD)"/>
+
+          <!-- wallet credit -->
+          <rect x="130" y="640" width="360" height="60" rx="8" fill="none" stroke="currentColor" stroke-width="1.6"/>
+          <text x="310" y="675" text-anchor="middle" class="diagram-label">Wallet credited (unified ledger)</text>
+          <line x1="310" y1="700" x2="310" y2="740" stroke="currentColor" stroke-width="1.3" marker-end="url(#arrowD)"/>
+
+          <!-- decision 3 -->
+          <polygon points="310,740 440,800 310,860 180,800" fill="none" stroke="currentColor" stroke-width="1.5"/>
+          <text x="310" y="793" text-anchor="middle" class="diagram-sub">Active insurance</text>
+          <text x="310" y="807" text-anchor="middle" class="diagram-sub">policy?</text>
+          <line x1="440" y1="800" x2="640" y2="800" stroke="currentColor" stroke-width="1.3" marker-end="url(#arrowD)"/>
+          <text x="480" y="790" class="diagram-sub">no</text>
+          <rect x="640" y="770" width="240" height="60" rx="8" fill="none" stroke="currentColor" stroke-width="1.5"/>
+          <text x="760" y="805" text-anchor="middle" class="diagram-label">Held in wallet only</text>
+          <line x1="310" y1="860" x2="310" y2="900" stroke="currentColor" stroke-width="1.3" marker-end="url(#arrowD)"/>
+          <text x="320" y="880" class="diagram-sub">yes</text>
+
+          <!-- allocation -->
+          <rect x="110" y="900" width="400" height="60" rx="8" fill="none" stroke="currentColor" stroke-width="1.8"/>
+          <text x="310" y="928" text-anchor="middle" class="diagram-label" font-weight="600">Insurance allocation created</text>
+          <text x="310" y="946" text-anchor="middle" class="diagram-sub">traceable to this contribution</text>
+        </svg>
+        <figcaption>Every inbound contribution passes signature verification and an idempotency check before the rule engine, ledger write, wallet credit, and — where a policy is active — insurance allocation all occur in one transaction.</figcaption>
+      </figure>
+
+      <h3 id="s242"><span class="num">2.4.2</span>State diagram — payment transaction lifecycle</h3>
+      <figure>
+        <span class="fignum">Figure 5</span>
+        <svg viewBox="0 0 900 520" role="img" aria-label="State diagram of the payment_transactions lifecycle: INITIATED to PENDING to SUCCESSFUL, branching to FAILED, PENDING_REVIEW, REVERSED, REFUNDED, and DISPUTED">
+          <defs>
+            <marker id="arrowE" markerWidth="9" markerHeight="9" refX="7" refY="4" orient="auto"><polygon points="0,0 8,4 0,8" fill="currentColor"/></marker>
+          </defs>
+          <rect x="20" y="260" width="150" height="56" rx="28" fill="none" stroke="currentColor" stroke-width="1.6"/>
+          <text x="95" y="293" text-anchor="middle" class="diagram-label">INITIATED</text>
+
+          <rect x="250" y="260" width="150" height="56" rx="28" fill="none" stroke="currentColor" stroke-width="1.6"/>
+          <text x="325" y="293" text-anchor="middle" class="diagram-label">PENDING</text>
+
+          <rect x="480" y="260" width="170" height="56" rx="28" fill="none" stroke="var(--good)" stroke-width="2"/>
+          <text x="565" y="293" text-anchor="middle" class="diagram-label" fill="var(--good)">SUCCESSFUL</text>
+
+          <rect x="250" y="420" width="150" height="56" rx="10" fill="none" stroke="var(--bad)" stroke-width="1.8"/>
+          <text x="325" y="453" text-anchor="middle" class="diagram-label" fill="var(--bad)">FAILED</text>
+
+          <rect x="250" y="90" width="170" height="56" rx="10" fill="none" stroke="var(--defer)" stroke-width="1.8" stroke-dasharray="5 3"/>
+          <text x="335" y="123" text-anchor="middle" class="diagram-label" fill="var(--defer)">PENDING_REVIEW</text>
+
+          <rect x="740" y="150" width="150" height="52" rx="10" fill="none" stroke="currentColor" stroke-width="1.5"/>
+          <text x="815" y="181" text-anchor="middle" class="diagram-label">REVERSED</text>
+          <rect x="740" y="260" width="150" height="52" rx="10" fill="none" stroke="currentColor" stroke-width="1.5"/>
+          <text x="815" y="291" text-anchor="middle" class="diagram-label">REFUNDED</text>
+          <rect x="740" y="370" width="150" height="52" rx="10" fill="none" stroke="currentColor" stroke-width="1.5"/>
+          <text x="815" y="401" text-anchor="middle" class="diagram-label">DISPUTED</text>
+
+          <line x1="170" y1="288" x2="248" y2="288" stroke="currentColor" stroke-width="1.3" marker-end="url(#arrowE)"/>
+          <text x="209" y="278" text-anchor="middle" class="diagram-sub">provider accepted</text>
+
+          <line x1="400" y1="288" x2="478" y2="288" stroke="currentColor" stroke-width="1.3" marker-end="url(#arrowE)"/>
+          <text x="440" y="278" text-anchor="middle" class="diagram-sub">confirmed success</text>
+
+          <line x1="325" y1="316" x2="325" y2="418" stroke="currentColor" stroke-width="1.3" marker-end="url(#arrowE)"/>
+          <text x="335" y="370" class="diagram-sub">provider declines /</text>
+          <text x="335" y="384" class="diagram-sub">timeout, unresolved</text>
+
+          <line x1="95" y1="260" x2="290" y2="450" stroke="currentColor" stroke-width="1.1" marker-end="url(#arrowE)"/>
+          <text x="150" y="370" class="diagram-sub">network / validation error</text>
+
+          <line x1="335" y1="260" x2="335" y2="148" stroke="var(--defer)" stroke-width="1.3" marker-end="url(#arrowE)" stroke-dasharray="4 3"/>
+          <text x="345" y="200" class="diagram-sub" fill="var(--defer)">ambiguous member match</text>
+          <line x1="290" y1="146" x2="270" y2="258" stroke="var(--defer)" stroke-width="1.3" marker-end="url(#arrowE)" stroke-dasharray="4 3"/>
+          <text x="150" y="200" class="diagram-sub" fill="var(--defer)">resolved by Admin — re-enters PENDING</text>
+
+          <line x1="650" y1="278" x2="738" y2="185" stroke="currentColor" stroke-width="1.2" marker-end="url(#arrowE)"/>
+          <text x="700" y="230" class="diagram-sub">reversal issued</text>
+          <line x1="650" y1="288" x2="738" y2="288" stroke="currentColor" stroke-width="1.2" marker-end="url(#arrowE)"/>
+          <text x="695" y="278" class="diagram-sub">refund issued</text>
+          <line x1="650" y1="298" x2="738" y2="385" stroke="currentColor" stroke-width="1.2" marker-end="url(#arrowE)"/>
+          <text x="700" y="345" class="diagram-sub">dispute raised</text>
+        </svg>
+        <figcaption>The eight-value payment status vocabulary <code>payment_transactions</code> is built around. A database constraint enforces that only a real provider transaction ID can move a row to <code>SUCCESSFUL</code> — the state machine cannot be talked into a false-positive success by application code alone.</figcaption>
+      </figure>
+    </section>
+
+    <!-- ============================================================ CHAPTER 4 -->
+    <div class="chapter-head" id="ch4">
+      <span class="num">Chapter 4</span>
+      <h1>System Design</h1>
+    </div>
+
+    <section id="s41">
+      <h2><span class="num">4.1</span>System architecture</h2>
+      <p>Tujitunze follows a layered architecture: a Next.js presentation tier, a NestJS application tier enforcing every real authorization decision, a PostgreSQL data tier reached only through TypeORM, and an external-integration edge that fails closed whenever a provider isn't configured.</p>
+      <figure>
+        <span class="fignum">Figure 6</span>
+        <svg viewBox="0 0 980 620" role="img" aria-label="Layered architecture diagram: Next.js presentation tier with role route groups, NestJS application tier with guarded controllers and a separate webhook intake path, PostgreSQL data tier, and an external integrations column for Vodacom M-Pesa, SMTP mail, and SMS">
+          <defs>
+            <marker id="arrowF" markerWidth="9" markerHeight="9" refX="7" refY="4" orient="auto"><polygon points="0,0 8,4 0,8" fill="currentColor"/></marker>
+          </defs>
+
+          <!-- Tier 1 -->
+          <rect x="20" y="20" width="700" height="130" rx="10" fill="none" stroke="currentColor" stroke-width="1.8"/>
+          <text x="36" y="44" class="diagram-label" font-weight="600">Presentation — Next.js App Router</text>
+          <text x="36" y="62" class="diagram-sub">ProtectedRoute — client-side UX gate only, not a security boundary</text>
+          <g class="diagram-sub">
+            <rect x="36" y="76" width="95" height="30" rx="6" fill="none" stroke="currentColor" stroke-width="1"/><text x="83" y="95" text-anchor="middle" font-size="10.5">(member)</text>
+            <rect x="141" y="76" width="95" height="30" rx="6" fill="none" stroke="currentColor" stroke-width="1"/><text x="188" y="95" text-anchor="middle" font-size="10.5">(admin)</text>
+            <rect x="246" y="76" width="95" height="30" rx="6" fill="none" stroke="currentColor" stroke-width="1"/><text x="293" y="95" text-anchor="middle" font-size="10.5">(bank)</text>
+            <rect x="351" y="76" width="95" height="30" rx="6" fill="none" stroke="currentColor" stroke-width="1"/><text x="398" y="95" text-anchor="middle" font-size="10.5">(telecom)</text>
+            <rect x="456" y="76" width="95" height="30" rx="6" fill="none" stroke="currentColor" stroke-width="1"/><text x="503" y="95" text-anchor="middle" font-size="10.5">(insurance)</text>
+            <rect x="561" y="76" width="140" height="30" rx="6" fill="none" stroke="currentColor" stroke-width="1"/><text x="631" y="95" text-anchor="middle" font-size="10.5">(super-admin)</text>
+          </g>
+          <text x="36" y="126" class="diagram-sub">each dashboard shares one sidebar shell; role paths are prefixed (/bank/…, /telecom/…) to avoid route-group collisions</text>
+
+          <!-- Tier 2 -->
+          <rect x="20" y="190" width="700" height="190" rx="10" fill="none" stroke="currentColor" stroke-width="1.8"/>
+          <text x="36" y="214" class="diagram-label" font-weight="600">Application — NestJS</text>
+          <rect x="36" y="228" width="330" height="66" rx="6" fill="none" stroke="currentColor" stroke-width="1.2"/>
+          <text x="46" y="248" class="diagram-sub" font-weight="600">Per-role controllers</text>
+          <text x="46" y="264" class="diagram-sub">JwtAuthGuard + RolesGuard + tenant scope</text>
+          <text x="46" y="278" class="diagram-sub">members · admin · bank · telecom · insurance · super-admin</text>
+
+          <rect x="386" y="228" width="315" height="66" rx="6" fill="none" stroke="var(--accent)" stroke-width="1.4"/>
+          <text x="396" y="248" class="diagram-sub" font-weight="600" fill="var(--accent-ink)">Webhook intake (no JWT)</text>
+          <text x="396" y="264" class="diagram-sub">Per-tenant API key + HMAC signature guard</text>
+          <text x="396" y="278" class="diagram-sub">telecom-webhooks · bank-webhooks controllers</text>
+
+          <rect x="36" y="308" width="665" height="52" rx="6" fill="none" stroke="currentColor" stroke-width="1.1" stroke-dasharray="4 3"/>
+          <text x="46" y="328" class="diagram-sub" font-weight="600">Shared services</text>
+          <text x="46" y="344" class="diagram-sub">WalletsService.creditContribution · AuditLogsService · NotificationsService — one path, every channel</text>
+
+          <!-- Tier 3 -->
+          <rect x="20" y="470" width="700" height="110" rx="10" fill="none" stroke="currentColor" stroke-width="1.8"/>
+          <text x="36" y="494" class="diagram-label" font-weight="600">Data — PostgreSQL via TypeORM</text>
+          <text x="36" y="516" class="diagram-sub">Repository / query-builder access only — no string-concatenated SQL</text>
+          <text x="36" y="532" class="diagram-sub">23 versioned, additive migrations — synchronize:true only in local dev (§1.3.2)</text>
+
+          <!-- side column: external integrations -->
+          <rect x="750" y="190" width="210" height="390" rx="10" fill="none" stroke="var(--defer)" stroke-width="1.6" stroke-dasharray="5 3"/>
+          <text x="762" y="214" class="diagram-sub" font-weight="600" fill="var(--defer)">External integrations</text>
+          <rect x="764" y="230" width="182" height="58" rx="6" fill="none" stroke="currentColor" stroke-width="1"/>
+          <text x="774" y="250" class="diagram-sub">Vodacom M-Pesa</text>
+          <text x="774" y="264" class="diagram-sub">session · C2B · status query</text>
+          <text x="774" y="278" class="diagram-sub" fill="var(--warn)">wire call: docs pending</text>
+          <rect x="764" y="300" width="182" height="46" rx="6" fill="none" stroke="currentColor" stroke-width="1"/>
+          <text x="774" y="320" class="diagram-sub">SMTP mail (reset)</text>
+          <text x="774" y="334" class="diagram-sub" fill="var(--warn)">fails closed if unset</text>
+          <rect x="764" y="360" width="182" height="46" rx="6" fill="none" stroke="currentColor" stroke-width="1"/>
+          <text x="774" y="380" class="diagram-sub">Africa's Talking SMS</text>
+          <text x="774" y="394" class="diagram-sub" fill="var(--warn)">fails closed if unset</text>
+
+          <!-- flows -->
+          <line x1="370" y1="150" x2="370" y2="188" stroke="currentColor" stroke-width="1.4" marker-end="url(#arrowF)"/>
+          <text x="382" y="172" class="diagram-sub">HTTPS / JSON, JWT bearer</text>
+          <line x1="370" y1="380" x2="370" y2="468" stroke="currentColor" stroke-width="1.4" marker-end="url(#arrowF)"/>
+          <text x="382" y="430" class="diagram-sub">TypeORM repositories</text>
+          <line x1="701" y1="270" x2="748" y2="270" stroke="var(--defer)" stroke-width="1.3" marker-end="url(#arrowF)"/>
+          <text x="700" y="290" class="diagram-sub" fill="var(--defer)">outbound, config-gated</text>
+        </svg>
+        <figcaption>Every real authorization decision lives in the application tier, not the frontend gate. Webhook intake is a deliberately separate, non-JWT path with its own credential model. External providers are called from the application tier and fail closed (503) rather than silently no-op when unconfigured.</figcaption>
+      </figure>
+    </section>
+
+    <section id="s42">
+      <h2><span class="num">4.2</span>Detailed system design</h2>
+
+      <h3 id="s421"><span class="num">4.2.1</span>Physical design</h3>
+      <div class="tablewrap">
+        <table>
+          <thead><tr><th>Layer</th><th>Requirement</th></tr></thead>
+          <tbody>
+            <tr><td>Application server</td><td>Node.js runtime hosting the NestJS backend and the Next.js frontend (or a Next.js edge/server deployment target)</td></tr>
+            <tr><td>Database server</td><td>PostgreSQL instance, reachable from the application server, holding all persistent state</td></tr>
+            <tr><td>Client</td><td>Any modern desktop or mobile browser; the frontend is responsive, no native app</td></tr>
+            <tr><td>Network</td><td>HTTPS in any non-local deployment; explicit CORS allowlist configured in <code>main.ts</code>; inbound webhook traffic from partner telecom/bank systems</td></tr>
+            <tr><td>Development tooling</td><td>NestJS CLI, TypeORM migration runner, Jest (unit + e2e), npm — the diagrams in this document are authored directly as part of the specification rather than exported from a separate modelling tool</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3 id="s422"><span class="num">4.2.2</span>Database design (overview)</h3>
+      <div class="callout data">
+        <span class="tag">Why this section stops at an overview</span>
+        <p>The live schema has grown past the point where a column-by-column data dictionary belongs in a requirements document: 23 sequential migrations on top of the base schema, spanning identity, wallet, telecom, bank, insurance, payments, and audit domains. Per the scope agreed for this document, this section describes the design at the level of table groups and the relationships between them (mirroring §2.3's ERD); <code>database/schema/tujitunze.sql</code> and <code>database/migrations/</code> remain the single source of truth for exact columns, types, and constraints.</p>
+      </div>
+      <p>The most consequential design decision in the schema is the four-layer contribution chain, added incrementally rather than designed monolithically up front:</p>
+      <ol>
+        <li><strong><code>telecom_contributions</code> / <code>bank_transactions</code></strong> — the original per-channel contribution ledger, workflow-staged (Pending → Received → Validated → Allocated → Failed → Reversed).</li>
+        <li><strong><code>wallet_transactions</code></strong> — the unifying ledger every channel credits through one shared method; the wallet's displayed balance is always a derived total, never itself the source of truth.</li>
+        <li><strong><code>insurance_allocations</code></strong> — created in the same transaction as a contribution credit whenever the member holds an active policy, giving a provably traceable contribution → wallet entry → allocation → provider chain.</li>
+        <li><strong><code>payment_transactions</code></strong> — a newer layer sitting above the other three, recording a provider's own payment-lifecycle status (<code>INITIATED</code>/<code>PENDING</code>/<code>SUCCESSFUL</code>/<code>FAILED</code>/<code>REVERSED</code>/<code>REFUNDED</code>/<code>DISPUTED</code>/<code>PENDING_REVIEW</code>) distinctly from the ledger's own workflow vocabulary — see Figure 5.</li>
+      </ol>
+      <p>A related, deliberately unwired addition is <code>telecom_usage_events</code>: a table for a usage-quantity-based contribution model (6% of voice minutes / SMS / data consumed, converted to TZS only at a provider-authorised rate — never an invented per-unit price). It holds zero rows and is not read by any controller today; it exists as a reviewed, corrected schema ahead of the application code that will use it.</p>
+      <p>All schema changes are additive SQL migrations, never a destructive rewrite of a table already carrying data — several migrations in the history explicitly verify "zero rows, safe to correct in place" before altering a table, and none drops or recreates a table that held live data.</p>
+
+      <h3 id="s423"><span class="num">4.2.3</span>Interface design</h3>
+      <p>Every staff role shares one dashboard shell — a persistent sidebar plus a consistent page layout — so a role's navigation stays uniform across every page in its route group, not only its landing dashboard. A route group only lists a navigation entry for a page that actually exists, to avoid linking into an unbuilt stub.</p>
+
+      <div class="rolegrid">
+        <div class="rolecard">
+          <h4>Member <span class="stat stat-real">Real, most complete</span></h4>
+          <ul><li>Dashboard, membership, profile, notifications</li><li>Wallet, wallet/deposit, wallet/transactions</li><li>Insurance/claims, insurance/plans, verifications</li><li>Onboarding/mobile-money</li></ul>
+        </div>
+        <div class="rolecard">
+          <h4>Admin <span class="stat stat-real">Real</span></h4>
+          <ul><li>Dashboard, reports, audit-logs</li><li>Members (list + detail)</li></ul>
+        </div>
+        <div class="rolecard">
+          <h4>Bank <span class="stat stat-real">Real, matches backend</span></h4>
+          <ul><li>Dashboard, profile, fund-accounts</li><li>Transactions, settlements</li><li>Reconciliation (+ detail), reports, audit-logs</li></ul>
+        </div>
+        <div class="rolecard">
+          <h4>Telecom <span class="stat stat-real">Real, matches backend</span></h4>
+          <ul><li>Dashboard, operator, members</li><li>Contributions, contribution-rules</li><li>Reconciliation (+ detail), reports, audit-logs</li></ul>
+        </div>
+        <div class="rolecard">
+          <h4>Insurance <span class="stat stat-gap">Dashboard only</span></h4>
+          <ul><li>Dashboard — real</li><li>Claims, settlements, allocations, reports: backend real, <strong>no frontend page yet</strong></li></ul>
+        </div>
+        <div class="rolecard">
+          <h4>Super-admin <span class="stat stat-real">Real</span></h4>
+          <ul><li>Dashboard</li><li>Administrators (provisioning)</li><li>Roles &amp; permissions</li></ul>
+        </div>
+      </div>
+
+      <p><strong>Still placeholder on the Member side:</strong> QR, reports, telecom airtime/bundles/payments, wallet transfer, and wallet withdraw render a coming-soon state with no backend behind them.</p>
+      <div class="callout gap">
+        <span class="tag">Hospital interface — none</span>
+        <p>There is no <code>(hospital)</code> route group and no page a hospital staff member could sign into. Hospital-related interface today is entirely Member-facing: a read-only hospital directory and a member's own verification history, both sourced from the reference tables in §2.3.</p>
+      </div>
+    </section>
+
+    <p class="backrefs">Prepared from a direct audit of the Tujitunze/HSIMS repository (backend, frontend, and <code>database/migrations/</code>) on 27 August 2026. Where this document and previously circulated project notes disagreed, the live source tree was treated as authoritative and the discrepancy was called out explicitly rather than silently reconciled.</p>
+
+  </main>
+</div>
+
+</body></html>

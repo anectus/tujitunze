@@ -69,7 +69,9 @@ export class AdminDashboardController {
       bankId: bankId ? Number(bankId) : undefined,
       channel: channel || undefined,
       status: status || undefined,
-      insuranceProviderId: insuranceProviderId ? Number(insuranceProviderId) : undefined,
+      insuranceProviderId: insuranceProviderId
+        ? Number(insuranceProviderId)
+        : undefined,
       reference: reference || undefined,
     };
   }

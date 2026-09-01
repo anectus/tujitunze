@@ -103,8 +103,12 @@ describe('Insurance allocation workflow (e2e)', () => {
     jwtService = app.get(JwtService);
     dataSource = app.get(DataSource);
 
+    // Deliberately excludes Vodacom: that operator's webhook contribution
+    // now routes through the real (genuinely credentialed) M-Pesa
+    // collection rail — this test exercises the pre-existing direct-
+    // credit path shared by every other operator, not Vodacom itself.
     const [operator] = await dataSource.query<{ operator_id: number }[]>(
-      `SELECT operator_id FROM telecom_operators LIMIT 1`,
+      `SELECT operator_id FROM telecom_operators WHERE operator_name != 'Vodacom' LIMIT 1`,
     );
     operatorId = operator.operator_id;
 
@@ -353,7 +357,11 @@ describe('Insurance allocation workflow (e2e)', () => {
       const otherStaffId = await createUser('OtherProviderStaff', 4, {
         insurance_provider_id: suspendedProviderId,
       });
-      const token = signToken(otherStaffId, ['Insurance'], 'OtherProviderStaff');
+      const token = signToken(
+        otherStaffId,
+        ['Insurance'],
+        'OtherProviderStaff',
+      );
       await request(app.getHttpServer())
         .get(`/insurance/allocations/${allocationId}/trace`)
         .set('Authorization', `Bearer ${token}`)

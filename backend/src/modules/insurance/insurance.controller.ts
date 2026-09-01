@@ -31,6 +31,17 @@ export class InsuranceController {
     return this.insuranceService.getDashboard(user.userId);
   }
 
+  // Consolidated dashboard payload — contributions (+ per-operator/
+  // per-bank breakdown), allocations, member coverage, claims, and
+  // recent activity in one call. The Insurance dashboard page fetches
+  // this instead of separately calling GET /insurance/dashboard and
+  // GET /insurance/contributions/summary (both kept, unchanged, for any
+  // other/future consumer that wants just one narrower slice).
+  @Get('dashboard/summary')
+  async getDashboardSummary(@CurrentUser() user: AuthenticatedUser) {
+    return this.insuranceService.getDashboardSummary(user.userId);
+  }
+
   @Get('claims')
   async listClaims(
     @CurrentUser() user: AuthenticatedUser,
@@ -62,16 +73,24 @@ export class InsuranceController {
     return this.insuranceService.listSettlements(user.userId, status);
   }
 
+  @Get('contributions/summary')
+  async getContributionsSummary(@CurrentUser() user: AuthenticatedUser) {
+    return this.insuranceService.getContributionsSummary(user.userId);
+  }
+
   @Get('allocations')
   async listAllocations(
     @CurrentUser() user: AuthenticatedUser,
     @Query('status') status: string | undefined,
+    @Query('channel') channel: 'AIRTIME' | 'BANK_TRANSFER' | undefined,
+    @Query('dateFrom') dateFrom: string | undefined,
+    @Query('dateTo') dateTo: string | undefined,
     @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
     @Query('pageSize', new DefaultValuePipe(20), ParseIntPipe) pageSize: number,
   ) {
     return this.insuranceService.listAllocations(
       user.userId,
-      status,
+      { status, channel, dateFrom, dateTo },
       page,
       pageSize,
     );

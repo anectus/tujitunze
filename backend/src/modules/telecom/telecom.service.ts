@@ -4,7 +4,9 @@ import {
   ForbiddenException,
   Injectable,
   NotFoundException,
+  ServiceUnavailableException,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { DataSource } from 'typeorm';
 import * as bcrypt from 'bcrypt';
 import * as crypto from 'crypto';
@@ -14,11 +16,31 @@ import { ConfigureWebhookDto } from './dto/configure-webhook.dto';
 import { UploadReconciliationDto } from './dto/upload-reconciliation.dto';
 import { RecordContributionDto } from './dto/record-contribution.dto';
 import { WebhookContributionDto } from './dto/webhook-contribution.dto';
+import { WebhookUsageEventDto } from './dto/webhook-usage-event.dto';
+import {
+  buildUsageContributionReference,
+  calculateContributionQuantity,
+  mapTelecomUsageEventRow,
+  TelecomUsageEventRow,
+  UsageType,
+} from './telecom-usage-event.types';
 import { AuditLogsService } from '../audit-logs/audit-logs.service';
 import { WalletsService } from '../wallets/wallets.service';
+import { VodacomC2BService } from './vodacom/vodacom-c2b.service';
+import {
+  SESSION_CREATION_FAILED_CODE,
+  VodacomSessionKeyService,
+} from './vodacom/vodacom-session-key.service';
+import {
+  buildGetSessionPath,
+  isVodacomMpesaConnectionConfigured,
+  isVodacomMpesaPublicKeyConfigured,
+  loadVodacomMpesaConnectionConfig,
+} from './vodacom/vodacom-mpesa-connection.config';
 
 interface ContributionRow {
   contribution_id: number;
+  member_id?: number;
   reference_number: string | null;
   internal_reference?: string | null;
   contribution_amount: string;
@@ -92,12 +114,39 @@ interface ApiAccessLogRow {
   created_at: Date;
 }
 
+// Normalized result of testing one operator's real integration —
+// independent of which provider produced it, so testConnection() can
+// log and respond the same way regardless of operator.
+type ConnectionTestState =
+  | 'connected'
+  | 'connection_failed'
+  | 'credentials_missing'
+  | 'integration_not_configured'
+  | 'timeout'
+  | 'authentication_failed';
+
+interface ConnectionTestOutcome {
+  state: ConnectionTestState;
+  success: boolean;
+  responseStatus: number | null;
+  endpoint: string | null;
+  message: string;
+  environment?: string;
+  // Structured, machine-readable env-var names for a credentials_missing
+  // outcome — the message string already says this in prose, but a
+  // caller (frontend, future automation) shouldn't have to parse it.
+  missing?: string[];
+}
+
 @Injectable()
 export class TelecomService {
   constructor(
     private readonly dataSource: DataSource,
     private readonly auditLogsService: AuditLogsService,
     private readonly walletsService: WalletsService,
+    private readonly vodacomC2BService: VodacomC2BService,
+    private readonly vodacomSessionKeyService: VodacomSessionKeyService,
+    private readonly configService: ConfigService,
   ) {}
 
   private isUniqueViolation(error: unknown): boolean {
@@ -133,6 +182,26 @@ export class TelecomService {
     ipAddress: string | null = null,
   ) {
     const operatorId = await this.getAssignedOperatorId(userId);
+
+    // This block only matters for Vodacom: it's the one operator with a
+    // real payment-collection rail (VodacomC2BService) a staff member
+    // could otherwise bypass by hand-typing "yes, Vodacom confirmed
+    // this" without any genuine M-Pesa confirmation. Every other
+    // operator's purchase-type contribution carries the same trust level
+    // through either path (staff entry or webhook — neither is backed by
+    // a real payment rail for them yet), so gating only Vodacom here
+    // preserves their pre-existing direct staff-entry option instead of
+    // silently blocking it for no real integrity gain.
+    if (
+      (await this.vodacomC2BService.isVodacomOperator(operatorId)) &&
+      ['Airtime', 'Data Bundle', 'Mobile Money Transfer'].includes(
+        dto.contributionSource ?? 'Airtime',
+      )
+    ) {
+      throw new BadRequestException(
+        'Telecom purchase contributions must arrive through the operator event flow and confirmed M-Pesa collection.',
+      );
+    }
 
     try {
       return await this.dataSource.transaction(async (manager) => {
@@ -239,29 +308,78 @@ export class TelecomService {
     }
   }
 
-  // Real inbound webhook — authenticated by TelecomApiKeyGuard against
-  // the operator's own api_key_hash (machine-to-machine), NOT a staff
-  // JWT. Unlike recordContribution() above (staff manually states the
-  // exact contribution amount), the webhook receives the RAW airtime/
-  // data/mobile-money transaction amount and computes the actual
-  // contribution itself via contribution_rules — the rule engine, not a
-  // hardcoded rate, per CLAUDE.md. True webhook idempotency: redelivering
-  // the same externalTransactionId returns the original result (200),
-  // it does not error and does not create a second contribution.
+  // Real inbound airtime event boundary. The event is only evidence that
+  // an operator observed a purchase; it is never treated as settled money.
+  //
+  // Only Vodacom has a real payment-collection rail today
+  // (VodacomC2BService — genuine M-Pesa Single Stage sandbox calls): for
+  // that operator, the contribution row starts 'Pending' and the wallet
+  // is credited only after Vodacom confirms SUCCESSFUL. Every other
+  // seeded operator (Airtel, Yas Money, Halotel, TTCL) has no real
+  // collection integration yet (see CLAUDE.md's Telecom section), so
+  // this preserves their pre-existing direct-credit behavior — the event
+  // itself, from an authenticated/signed operator webhook, is treated as
+  // sufficient evidence to credit the wallet immediately, same as before
+  // Vodacom's real integration was added. Routing every operator through
+  // a Vodacom-only rail would silently break contribution recording for
+  // the other four operators; this branch is what avoids that.
   async handleContributionWebhook(
     operatorId: number,
     dto: WebhookContributionDto,
     ipAddress: string | null = null,
     signatureVerified: boolean = false,
   ) {
+    const isVodacom = await this.vodacomC2BService.isVodacomOperator(operatorId);
+
     const [existing] = await this.dataSource.query<ContributionRow[]>(
-      `SELECT contribution_id, reference_number, internal_reference, contribution_amount, contribution_source, processing_status, contribution_date
+      `SELECT contribution_id, member_id, reference_number, internal_reference, contribution_amount, contribution_source, processing_status, contribution_date
        FROM telecom_contributions
        WHERE reference_number = $1 AND operator_id = $2`,
       [dto.externalTransactionId, operatorId],
     );
 
     if (existing) {
+      // Only a Vodacom contribution can still be sitting 'Pending' with
+      // no payment_transactions row yet — the direct-credit path below
+      // never leaves a contribution in that state.
+      if (isVodacom && existing.processing_status === 'Pending' && existing.member_id) {
+        const [payment] = await this.dataSource.query<
+          { payment_transaction_id: number }[]
+        >(
+          `SELECT payment_transaction_id
+           FROM payment_transactions
+           WHERE contribution_id = $1
+           LIMIT 1`,
+          [existing.contribution_id],
+        );
+        if (!payment) {
+          const collection = await this.vodacomC2BService.contribute(
+            existing.member_id,
+            Number(existing.contribution_amount),
+            `${existing.contribution_source} contribution via ${dto.phoneNumber}.`,
+            {
+              contributionId: existing.contribution_id,
+              contributionSource: existing.contribution_source,
+              internalReference: existing.internal_reference ?? undefined,
+            },
+          );
+          return {
+            duplicate: true,
+            contributionId: existing.contribution_id,
+            amount: existing.contribution_amount,
+            externalReference: existing.reference_number,
+            internalReference: existing.internal_reference,
+            processingStatus:
+              collection.status === 'SUCCESSFUL'
+                ? 'Allocated'
+                : collection.status === 'FAILED'
+                  ? 'Failed'
+                  : 'Pending',
+            payment: collection,
+            contributionDate: existing.contribution_date,
+          };
+        }
+      }
       return {
         duplicate: true,
         contributionId: existing.contribution_id,
@@ -303,13 +421,153 @@ export class TelecomService {
         dto.transactionAmount * (Number(rule.rate_percent) / 100) * 100,
       ) / 100;
 
+    if (!isVodacom) {
+      return this.handleNonVodacomContribution(
+        operatorId,
+        dto,
+        rule.rate_percent,
+        contributionAmount,
+        ipAddress,
+        signatureVerified,
+      );
+    }
+
+    try {
+      const contribution = await this.dataSource.transaction(
+        async (manager) => {
+          const [phone] = await manager.query<
+            { phone_id: number; user_id: number }[]
+          >(
+            `SELECT phone_id, user_id FROM phone_numbers
+           WHERE phone_number = $1 AND operator_id = $2 AND phone_status = 'Active'`,
+            [dto.phoneNumber, operatorId],
+          );
+
+          if (!phone) {
+            throw new NotFoundException(
+              'No member found with that phone number for your operator',
+            );
+          }
+
+          const internalReference = this.generateInternalReference('AIR');
+
+          // Pending means the event and rule are valid, but the separate
+          // M-Pesa collection has not yet been confirmed.
+          const [contribution] = await manager.query<ContributionRow[]>(
+            `INSERT INTO telecom_contributions
+             (member_id, phone_id, operator_id, contribution_amount, contribution_source, reference_number, internal_reference, processing_status)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, 'Pending')
+           RETURNING contribution_id, reference_number, internal_reference, contribution_amount, contribution_source, processing_status, contribution_date`,
+            [
+              phone.user_id,
+              phone.phone_id,
+              operatorId,
+              contributionAmount,
+              dto.transactionType,
+              dto.externalTransactionId,
+              internalReference,
+            ],
+          );
+
+          await this.auditLogsService.record(manager, {
+            memberId: phone.user_id,
+            actionType: 'telecom.webhook_contribution',
+            affectedTable: 'telecom_contributions',
+            affectedRecordId: contribution.contribution_id,
+            newValue: {
+              transactionAmount: dto.transactionAmount,
+              contributionAmount,
+              ratePercent: rule.rate_percent,
+              transactionType: dto.transactionType,
+              externalTransactionId: dto.externalTransactionId,
+              internalReference,
+              operatorId,
+              paymentStatus: 'PENDING',
+              signatureVerified,
+            },
+            ipAddress,
+          });
+
+          return {
+            duplicate: false,
+            contributionCreated: true,
+            contributionId: contribution.contribution_id,
+            memberId: phone.user_id,
+            transactionAmount: dto.transactionAmount,
+            contributionAmount,
+            currency: 'TZS',
+            ratePercentApplied: rule.rate_percent,
+            externalReference: contribution.reference_number,
+            internalReference: contribution.internal_reference,
+            processingStatus: contribution.processing_status,
+            contributionDate: contribution.contribution_date,
+            signatureVerified,
+          };
+        },
+      );
+
+      const payment = await this.vodacomC2BService.contribute(
+        contribution.memberId,
+        Number(contribution.contributionAmount),
+        `${dto.transactionType} contribution via ${dto.phoneNumber}.`,
+        {
+          contributionId: contribution.contributionId,
+          contributionSource: dto.transactionType,
+        },
+      );
+
+      return {
+        duplicate: false,
+        contributionCreated: true,
+        contributionId: contribution.contributionId,
+        memberId: contribution.memberId,
+        transactionAmount: dto.transactionAmount,
+        contributionAmount: contribution.contributionAmount,
+        currency: 'TZS',
+        ratePercentApplied: rule.rate_percent,
+        externalReference: contribution.externalReference,
+        internalReference: contribution.internalReference,
+        processingStatus:
+          payment.status === 'SUCCESSFUL'
+            ? 'Allocated'
+            : payment.status === 'FAILED'
+              ? 'Failed'
+              : 'Pending',
+        payment,
+        signatureVerified,
+      };
+    } catch (error) {
+      if (this.isUniqueViolation(error)) {
+        return this.fetchRacedDuplicateContribution(
+          operatorId,
+          dto.externalTransactionId,
+        );
+      }
+      throw error;
+    }
+  }
+
+  // Pre-existing (pre-Vodacom-integration) direct-credit contribution
+  // path, preserved verbatim in behavior for every operator that has no
+  // real payment-collection rail: the webhook event itself, once past
+  // TelecomApiKeyGuard/TelecomWebhookSignatureGuard, is the same trust
+  // boundary this always ran behind — nothing about adding Vodacom's
+  // genuine M-Pesa collection changes what these operators are owed.
+  private async handleNonVodacomContribution(
+    operatorId: number,
+    dto: WebhookContributionDto,
+    ratePercent: string,
+    contributionAmount: number,
+    ipAddress: string | null,
+    signatureVerified: boolean,
+  ) {
     try {
       return await this.dataSource.transaction(async (manager) => {
         const [phone] = await manager.query<
           { phone_id: number; user_id: number }[]
         >(
           `SELECT phone_id, user_id FROM phone_numbers
-           WHERE phone_number = $1 AND operator_id = $2`,
+           WHERE phone_number = $1 AND operator_id = $2 AND phone_status = 'Active'`,
           [dto.phoneNumber, operatorId],
         );
 
@@ -378,7 +636,7 @@ export class TelecomService {
           newValue: {
             transactionAmount: dto.transactionAmount,
             contributionAmount,
-            ratePercent: rule.rate_percent,
+            ratePercent,
             transactionType: dto.transactionType,
             externalTransactionId: dto.externalTransactionId,
             internalReference,
@@ -397,7 +655,7 @@ export class TelecomService {
           transactionAmount: dto.transactionAmount,
           contributionAmount,
           currency: 'TZS',
-          ratePercentApplied: rule.rate_percent,
+          ratePercentApplied: ratePercent,
           externalReference: contribution.reference_number,
           internalReference: contribution.internal_reference,
           processingStatus: finalStatus,
@@ -409,27 +667,38 @@ export class TelecomService {
       });
     } catch (error) {
       if (this.isUniqueViolation(error)) {
-        // Lost a race with a concurrent identical delivery — fetch and
-        // return what the other request just committed, same as the
-        // pre-check above, so this is still a 200 not an error.
-        const [raced] = await this.dataSource.query<ContributionRow[]>(
-          `SELECT contribution_id, reference_number, internal_reference, contribution_amount, contribution_source, processing_status, contribution_date
-           FROM telecom_contributions
-           WHERE reference_number = $1 AND operator_id = $2`,
-          [dto.externalTransactionId, operatorId],
+        return this.fetchRacedDuplicateContribution(
+          operatorId,
+          dto.externalTransactionId,
         );
-        return {
-          duplicate: true,
-          contributionId: raced?.contribution_id,
-          amount: raced?.contribution_amount,
-          externalReference: raced?.reference_number,
-          internalReference: raced?.internal_reference,
-          processingStatus: raced?.processing_status,
-          contributionDate: raced?.contribution_date,
-        };
       }
       throw error;
     }
+  }
+
+  // Shared by both contribution paths' unique-violation recovery: lost a
+  // race with a concurrent identical delivery — fetch and return what
+  // the other request just committed, so this is still a 200, not an
+  // error.
+  private async fetchRacedDuplicateContribution(
+    operatorId: number,
+    externalTransactionId: string,
+  ) {
+    const [raced] = await this.dataSource.query<ContributionRow[]>(
+      `SELECT contribution_id, member_id, reference_number, internal_reference, contribution_amount, contribution_source, processing_status, contribution_date
+       FROM telecom_contributions
+       WHERE reference_number = $1 AND operator_id = $2`,
+      [externalTransactionId, operatorId],
+    );
+    return {
+      duplicate: true,
+      contributionId: raced?.contribution_id,
+      amount: raced?.contribution_amount,
+      externalReference: raced?.reference_number,
+      internalReference: raced?.internal_reference,
+      processingStatus: raced?.processing_status,
+      contributionDate: raced?.contribution_date,
+    };
   }
 
   // Only a Confirmed contribution can be reversed, and only once —
@@ -891,48 +1160,27 @@ export class TelecomService {
     };
   }
 
-  // Outbound connectivity check against the operator's own api_endpoint —
-  // a real HTTP call, not a stub. Doesn't touch money or write any
-  // member/contribution data.
+  // Real connection test, dispatched to whichever integration is
+  // actually configured for the calling Telecom user's own assigned
+  // operator (users.telecom_operator_id — never a body-supplied id, so
+  // a staff account can only ever test its own tenant). Never touches
+  // money, a wallet, or a contribution — see testVodacomConnection().
   async testConnection(userId: number) {
     const operatorId = await this.getAssignedOperatorId(userId);
 
     const [operator] = await this.dataSource.query<
-      { api_endpoint: string | null }[]
-    >(`SELECT api_endpoint FROM telecom_operators WHERE operator_id = $1`, [
+      { operator_name: string }[]
+    >(`SELECT operator_name FROM telecom_operators WHERE operator_id = $1`, [
       operatorId,
     ]);
 
-    if (!operator?.api_endpoint) {
-      throw new BadRequestException(
-        'No API endpoint is configured for this operator yet',
-      );
+    if (!operator) {
+      throw new NotFoundException('Assigned telecom operator not found');
     }
 
-    const startedAt = Date.now();
-    let success = false;
-    let responseStatus: number | null = null;
-    let message: string;
-
-    try {
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 5000);
-
-      const response = await fetch(operator.api_endpoint, {
-        method: 'GET',
-        signal: controller.signal,
-      });
-
-      clearTimeout(timeout);
-
-      responseStatus = response.status;
-      success = response.ok;
-      message = success
-        ? `Reached ${operator.api_endpoint} in ${Date.now() - startedAt}ms`
-        : `Endpoint responded with HTTP ${response.status}`;
-    } catch (err) {
-      message = err instanceof Error ? err.message : 'Connection failed';
-    }
+    const outcome = await this.runOperatorConnectionTest(
+      operator.operator_name,
+    );
 
     await this.dataSource.query(
       `INSERT INTO api_access_logs
@@ -941,14 +1189,156 @@ export class TelecomService {
       [
         operatorId,
         userId,
-        operator.api_endpoint,
-        responseStatus,
-        success,
-        message,
+        outcome.endpoint,
+        outcome.responseStatus,
+        outcome.success,
+        outcome.message,
       ],
     );
 
-    return { success, responseStatus, message };
+    return {
+      success: outcome.success,
+      state: outcome.state,
+      provider: operator.operator_name,
+      environment: outcome.environment,
+      responseStatus: outcome.responseStatus,
+      missing: outcome.missing,
+      message: outcome.message,
+    };
+  }
+
+  // Dispatch table for per-operator connection tests. Only Vodacom has
+  // a real, documented integration today (telecom/vodacom/) — every
+  // other seeded operator (Airtel, Yas Money, Halotel, TTCL) honestly
+  // reports "not configured yet" instead of the previous behaviour of
+  // firing an unverifying generic GET at telecom_operators.api_endpoint
+  // (which never proved TUJITUNZE could authenticate with anything).
+  // Adding a new operator's real integration later means adding one
+  // more case here, not touching the dispatch or logging logic.
+  private async runOperatorConnectionTest(
+    operatorName: string,
+  ): Promise<ConnectionTestOutcome> {
+    switch (operatorName.trim().toLowerCase()) {
+      case 'vodacom':
+        return this.testVodacomConnection();
+      default:
+        return {
+          state: 'integration_not_configured',
+          success: false,
+          responseStatus: null,
+          endpoint: null,
+          message: 'Operator integration is not configured yet.',
+        };
+    }
+  }
+
+  // Reuses the exact SAME session-key infrastructure VodacomC2BService
+  // uses for real payments (VodacomSessionKeyService ->
+  // VodacomMpesaHttpService), but calls generateSession() directly
+  // rather than through VodacomSessionCacheService — a connection test
+  // must prove live connectivity/authentication right now, not report
+  // a cached session obtained minutes ago. GET .../getSession/ is
+  // read-only: it cannot initiate a payment, credit a wallet, or create
+  // a contribution, so this is safe to call as often as the throttle on
+  // POST /telecom/operator/connection-test allows.
+  private async testVodacomConnection(): Promise<ConnectionTestOutcome> {
+    const config = loadVodacomMpesaConnectionConfig(this.configService);
+    const endpoint = config.baseUrl
+      ? `${config.baseUrl}${this.safeGetSessionPath(config)}`
+      : null;
+
+    try {
+      const result = await this.vodacomSessionKeyService.generateSession();
+
+      if (result.success) {
+        return {
+          state: 'connected',
+          success: true,
+          responseStatus: result.httpStatus,
+          endpoint,
+          environment: config.environment,
+          message: `Vodacom M-Pesa sandbox authentication successful (response ${result.responseCode}).`,
+        };
+      }
+
+      if (result.errorKind === 'TIMEOUT') {
+        return {
+          state: 'timeout',
+          success: false,
+          responseStatus: result.httpStatus,
+          endpoint,
+          environment: config.environment,
+          message: result.message,
+        };
+      }
+
+      // HTTP 401/403, or Vodacom's own documented "session creation
+      // failed" response code, both mean the credential itself was
+      // rejected — distinct from a network/connectivity problem.
+      const isAuthFailure =
+        result.responseCode === SESSION_CREATION_FAILED_CODE ||
+        result.httpStatus === 401 ||
+        result.httpStatus === 403;
+
+      return {
+        state: isAuthFailure ? 'authentication_failed' : 'connection_failed',
+        success: false,
+        responseStatus: result.httpStatus,
+        endpoint,
+        environment: config.environment,
+        message: result.message,
+      };
+    } catch (error) {
+      // VodacomSessionKeyService fails closed with this exact exception
+      // when a required env var is missing — never a fake success.
+      if (error instanceof ServiceUnavailableException) {
+        const response = error.getResponse();
+        const message =
+          typeof response === 'string'
+            ? response
+            : ((response as { message?: string })?.message ??
+              'Vodacom M-Pesa credentials are not configured.');
+
+        // Reconstructed independently of the thrown message (never
+        // parsed from prose) — the exact same checks
+        // VodacomSessionKeyService itself runs before throwing.
+        const missing: string[] = [];
+        if (!isVodacomMpesaConnectionConfigured(config)) {
+          if (!config.baseUrl) missing.push('VODACOM_MPESA_BASE_URL');
+          if (!config.market) missing.push('VODACOM_MPESA_MARKET');
+          if (!config.apiKey) missing.push('VODACOM_MPESA_API_KEY');
+          if (!config.origin) missing.push('VODACOM_MPESA_ORIGIN');
+        }
+        if (!isVodacomMpesaPublicKeyConfigured(config)) {
+          missing.push('VODACOM_MPESA_PUBLIC_KEY');
+        }
+
+        return {
+          state: 'credentials_missing',
+          success: false,
+          responseStatus: null,
+          endpoint,
+          environment: config.environment,
+          missing,
+          message,
+        };
+      }
+      throw error;
+    }
+  }
+
+  // buildGetSessionPath() throws for an unsupported (production)
+  // environment — the connection test still wants an endpoint value for
+  // the audit log in that case, so this degrades to null rather than
+  // letting a path-construction error mask the real test outcome.
+  private safeGetSessionPath(
+    config: ReturnType<typeof loadVodacomMpesaConnectionConfig>,
+  ): string {
+    try {
+      return buildGetSessionPath(config);
+    } catch {
+      return '';
+    }
   }
 
   // =====================================================
@@ -1069,6 +1459,457 @@ export class TelecomService {
        FROM contribution_rules
        ORDER BY rule_type, effective_date DESC`,
     );
+  }
+
+  // =====================================================
+  // Usage-Based Contributions — Model B (6% of qualifying VOICE/SMS/DATA
+  // usage, telecom_usage_events / migrations 0019-0020). See
+  // telecom-usage-event.types.ts for the full model writeup. Real
+  // inbound event boundary, same shape as handleContributionWebhook /
+  // BankService.handleTransactionWebhook: unlike the airtime flow (which
+  // hands off to VodacomC2BService for a separate M-Pesa collection),
+  // this is a direct-credit flow — the operator's own valuation IS the
+  // qualifying event, so the contribution, wallet credit, and insurance
+  // allocation all happen in the same transaction as the usage event
+  // itself, mirroring BankService.handleTransactionWebhook exactly.
+  // =====================================================
+
+  private assertUsageUnitMatchesType(
+    usageType: 'VOICE' | 'SMS' | 'DATA',
+    unit: 'MINUTES' | 'SMS' | 'MB',
+  ): void {
+    const expected: Record<typeof usageType, typeof unit> = {
+      VOICE: 'MINUTES',
+      SMS: 'SMS',
+      DATA: 'MB',
+    };
+    if (expected[usageType] !== unit) {
+      throw new BadRequestException(
+        `Usage type "${usageType}" must be reported in ${expected[usageType]}, not ${unit}.`,
+      );
+    }
+  }
+
+  // Real inbound usage-event boundary. Reuses the SAME idempotency
+  // check + unique-violation race handling shape as
+  // handleContributionWebhook/BankService.handleTransactionWebhook, keyed
+  // on telecom_usage_events' own idempotency index
+  // (telecom_operator_id, external_transaction_id, usage_type) rather
+  // than telecom_contributions.reference_number, since a usage event can
+  // exist (PENDING_REVIEW, unmatched member) before any contribution row
+  // does.
+  async handleUsageEventWebhook(
+    operatorId: number,
+    dto: WebhookUsageEventDto,
+    ipAddress: string | null = null,
+    signatureVerified: boolean = false,
+  ) {
+    this.assertUsageUnitMatchesType(dto.usageType, dto.unit);
+
+    const [existing] = await this.dataSource.query<TelecomUsageEventRow[]>(
+      `SELECT * FROM telecom_usage_events
+       WHERE telecom_operator_id = $1 AND external_transaction_id = $2 AND usage_type = $3`,
+      [operatorId, dto.externalTransactionId, dto.usageType],
+    );
+
+    if (existing) {
+      return {
+        duplicate: true,
+        usageEvent: mapTelecomUsageEventRow(existing),
+      };
+    }
+
+    const [rule] = await this.dataSource.query<
+      { rule_id: number; rate: string }[]
+    >(
+      `SELECT rule_id, rate
+       FROM contribution_rules
+       WHERE usage_type = $1 AND channel = 'TELECOM' AND is_active = true AND effective_date <= CURRENT_DATE
+       ORDER BY effective_date DESC
+       LIMIT 1`,
+      [dto.usageType],
+    );
+
+    if (!rule) {
+      throw new BadRequestException(
+        `No active contribution rule for usage type "${dto.usageType}"`,
+      );
+    }
+
+    const contributionRate = Number(rule.rate);
+    const contributionQuantity = calculateContributionQuantity(
+      dto.quantity,
+      contributionRate,
+    );
+
+    try {
+      return await this.dataSource.transaction(async (manager) => {
+        const [phone] = await manager.query<
+          { phone_id: number; user_id: number }[]
+        >(
+          `SELECT phone_id, user_id FROM phone_numbers
+           WHERE phone_number = $1 AND operator_id = $2 AND phone_status = 'Active'`,
+          [dto.phoneNumber, operatorId],
+        );
+
+        // No confident member match (unknown phone, or a phone that
+        // belongs to a different operator than the one authenticated for
+        // this call): recorded for reconciliation staff to resolve, but
+        // NEVER credited — the wallet must never be touched for a usage
+        // event that can't be attributed to a real member. Mirrors
+        // payment_transactions' identical PENDING_REVIEW precedent.
+        if (!phone) {
+          const [usageEvent] = await manager.query<TelecomUsageEventRow[]>(
+            `INSERT INTO telecom_usage_events
+               (external_transaction_id, member_id, phone_number, phone_id, telecom_operator_id,
+                usage_type, quantity, unit, contribution_rate, contribution_quantity,
+                provider_valuation_tzs, currency, usage_timestamp, status, provider_reference, metadata)
+             VALUES ($1, NULL, $2, NULL, $3, $4, $5, $6, $7, $8, $9, 'TZS', $10, 'PENDING_REVIEW', $11, $12)
+             RETURNING *`,
+            [
+              dto.externalTransactionId,
+              dto.phoneNumber,
+              operatorId,
+              dto.usageType,
+              dto.quantity,
+              dto.unit,
+              contributionRate,
+              contributionQuantity,
+              dto.providerValuationTzs,
+              new Date(dto.usageTimestamp),
+              dto.providerReference ?? null,
+              dto.metadata ?? null,
+            ],
+          );
+
+          await this.auditLogsService.record(manager, {
+            memberId: null,
+            actionType: 'telecom.usage_event_pending_review',
+            affectedTable: 'telecom_usage_events',
+            affectedRecordId: usageEvent.usage_event_id,
+            newValue: {
+              operatorId,
+              usageType: dto.usageType,
+              phoneNumber: dto.phoneNumber,
+              externalTransactionId: dto.externalTransactionId,
+              reason: 'No active member found with that phone number for this operator',
+              signatureVerified,
+            },
+            ipAddress,
+          });
+
+          return {
+            duplicate: false,
+            matched: false,
+            status: 'PENDING_REVIEW' as const,
+            usageEvent: mapTelecomUsageEventRow(usageEvent),
+          };
+        }
+
+        const [usageEvent] = await manager.query<TelecomUsageEventRow[]>(
+          `INSERT INTO telecom_usage_events
+             (external_transaction_id, member_id, phone_number, phone_id, telecom_operator_id,
+              usage_type, quantity, unit, contribution_rate, contribution_quantity,
+              provider_valuation_tzs, currency, usage_timestamp, status, provider_reference, metadata)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, 'TZS', $12, 'PENDING', $13, $14)
+           RETURNING *`,
+          [
+            dto.externalTransactionId,
+            phone.user_id,
+            dto.phoneNumber,
+            phone.phone_id,
+            operatorId,
+            dto.usageType,
+            dto.quantity,
+            dto.unit,
+            contributionRate,
+            contributionQuantity,
+            dto.providerValuationTzs,
+            new Date(dto.usageTimestamp),
+            dto.providerReference ?? null,
+            dto.metadata ?? null,
+          ],
+        );
+
+        const internalReference = this.generateInternalReference('USG');
+        const referenceNumber = buildUsageContributionReference(
+          dto.usageType,
+          dto.externalTransactionId,
+        );
+
+        // Received -> Validated -> (Allocated | stays Validated), same
+        // progression as the airtime/bank webhook flows — this is a
+        // direct-credit event, not a two-step collection, so it starts
+        // further along than the airtime flow's 'Pending'.
+        const [contribution] = await manager.query<ContributionRow[]>(
+          `INSERT INTO telecom_contributions
+             (member_id, phone_id, operator_id, contribution_amount, contribution_source,
+              reference_number, internal_reference, processing_status, currency)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, 'Received', 'TZS')
+           RETURNING contribution_id, reference_number, internal_reference, contribution_amount, contribution_source, processing_status, contribution_date`,
+          [
+            phone.user_id,
+            phone.phone_id,
+            operatorId,
+            dto.providerValuationTzs,
+            dto.usageType,
+            referenceNumber,
+            internalReference,
+          ],
+        );
+
+        await manager.query(
+          `UPDATE telecom_contributions SET processing_status = 'Validated' WHERE contribution_id = $1`,
+          [contribution.contribution_id],
+        );
+
+        const { walletTransaction, allocation } =
+          await this.walletsService.creditContribution(
+            manager,
+            phone.user_id,
+            dto.providerValuationTzs,
+            {
+              contributionId: contribution.contribution_id,
+              transactionType: `Contribution - ${dto.usageType} Usage`,
+              transactionReference: referenceNumber,
+              remarks: `${dto.usageType} usage contribution — 6% of ${dto.quantity} ${dto.unit} via ${dto.phoneNumber} (webhook).`,
+            },
+          );
+
+        const finalContributionStatus =
+          allocation?.status === 'Allocated' ? 'Allocated' : 'Validated';
+        if (finalContributionStatus === 'Allocated') {
+          await manager.query(
+            `UPDATE telecom_contributions SET processing_status = 'Allocated' WHERE contribution_id = $1`,
+            [contribution.contribution_id],
+          );
+        }
+
+        // manager.query() on an UPDATE ... RETURNING (unlike a plain
+        // SELECT/INSERT ... RETURNING) resolves to [rows, affectedRowCount]
+        // under this TypeORM version — double-destructure to get the row
+        // itself, same convention already established in
+        // insurance.service.ts's claim-status UPDATE.
+        const [[finalUsageEvent]] = await manager.query<
+          [TelecomUsageEventRow[], number]
+        >(
+          `UPDATE telecom_usage_events
+           SET status = 'SUCCESSFUL', contribution_id = $2, updated_at = NOW()
+           WHERE usage_event_id = $1
+           RETURNING *`,
+          [usageEvent.usage_event_id, contribution.contribution_id],
+        );
+
+        await this.auditLogsService.record(manager, {
+          memberId: phone.user_id,
+          actionType: 'telecom.usage_event_process',
+          affectedTable: 'telecom_usage_events',
+          affectedRecordId: usageEvent.usage_event_id,
+          newValue: {
+            operatorId,
+            usageType: dto.usageType,
+            quantity: dto.quantity,
+            unit: dto.unit,
+            contributionRate,
+            contributionQuantity,
+            providerValuationTzs: dto.providerValuationTzs,
+            externalTransactionId: dto.externalTransactionId,
+            internalReference,
+            contributionId: contribution.contribution_id,
+            walletTransactionId: walletTransaction.walletTransactionId,
+            allocated: !!allocation,
+            processingStatus: finalContributionStatus,
+            signatureVerified,
+          },
+          ipAddress,
+        });
+
+        return {
+          duplicate: false,
+          matched: true,
+          status: 'SUCCESSFUL' as const,
+          usageEvent: mapTelecomUsageEventRow(finalUsageEvent),
+          contribution: {
+            contributionId: contribution.contribution_id,
+            referenceNumber: contribution.reference_number,
+            internalReference,
+            amount: dto.providerValuationTzs,
+            currency: 'TZS',
+            processingStatus: finalContributionStatus,
+          },
+          walletTransactionId: walletTransaction.walletTransactionId,
+          allocation,
+          signatureVerified,
+        };
+      });
+    } catch (error) {
+      if (this.isUniqueViolation(error)) {
+        const [raced] = await this.dataSource.query<TelecomUsageEventRow[]>(
+          `SELECT * FROM telecom_usage_events
+           WHERE telecom_operator_id = $1 AND external_transaction_id = $2 AND usage_type = $3`,
+          [operatorId, dto.externalTransactionId, dto.usageType],
+        );
+        return {
+          duplicate: true,
+          usageEvent: raced ? mapTelecomUsageEventRow(raced) : null,
+        };
+      }
+      throw error;
+    }
+  }
+
+  async listUsageEvents(
+    userId: number,
+    filters: { status?: string; usageType?: string },
+    page: number,
+    pageSize: number,
+  ) {
+    const operatorId = await this.getAssignedOperatorId(userId);
+
+    const [{ count: total }] = await this.dataSource.query<{ count: number }[]>(
+      `SELECT COUNT(*)::int AS count
+       FROM telecom_usage_events
+       WHERE telecom_operator_id = $1
+         AND ($2::text IS NULL OR status = $2)
+         AND ($3::text IS NULL OR usage_type = $3)`,
+      [operatorId, filters.status ?? null, filters.usageType ?? null],
+    );
+
+    const rows = await this.dataSource.query<
+      (TelecomUsageEventRow & { reconciliation_status: string | null })[]
+    >(
+      `SELECT ue.*,
+              (SELECT rr.match_status FROM telecom_reconciliation_records rr
+               WHERE rr.matched_contribution_id = ue.contribution_id
+               ORDER BY rr.record_id DESC LIMIT 1) AS reconciliation_status
+       FROM telecom_usage_events ue
+       WHERE ue.telecom_operator_id = $1
+         AND ($2::text IS NULL OR ue.status = $2)
+         AND ($3::text IS NULL OR ue.usage_type = $3)
+       ORDER BY ue.usage_timestamp DESC
+       LIMIT $4 OFFSET $5`,
+      [
+        operatorId,
+        filters.status ?? null,
+        filters.usageType ?? null,
+        pageSize,
+        (page - 1) * pageSize,
+      ],
+    );
+
+    return {
+      items: rows.map((row) => ({
+        ...mapTelecomUsageEventRow(row),
+        reconciliationStatus: row.reconciliation_status,
+      })),
+      total,
+      page,
+      pageSize,
+    };
+  }
+
+  // Single-event detail with the full trace requested by the business
+  // requirement: usage event -> contribution -> wallet transaction ->
+  // insurance allocation.
+  async getUsageEvent(userId: number, usageEventId: number) {
+    const operatorId = await this.getAssignedOperatorId(userId);
+
+    const [usageEvent] = await this.dataSource.query<TelecomUsageEventRow[]>(
+      `SELECT * FROM telecom_usage_events
+       WHERE usage_event_id = $1 AND telecom_operator_id = $2`,
+      [usageEventId, operatorId],
+    );
+
+    if (!usageEvent) {
+      throw new NotFoundException('Usage event not found');
+    }
+
+    if (!usageEvent.contribution_id) {
+      return { usageEvent: mapTelecomUsageEventRow(usageEvent), trace: null };
+    }
+
+    const [trace] = await this.dataSource.query<
+      {
+        contribution_id: number;
+        reference_number: string | null;
+        contribution_amount: string;
+        processing_status: string;
+        wallet_transaction_id: number | null;
+        allocation_id: number | null;
+        allocation_status: string | null;
+        allocation_provider_id: number | null;
+        reconciliation_status: string | null;
+      }[]
+    >(
+      `SELECT tc.contribution_id, tc.reference_number, tc.contribution_amount, tc.processing_status,
+              wt.wallet_transaction_id,
+              ia.allocation_id, ia.allocation_status, ia.insurance_provider_id AS allocation_provider_id,
+              (SELECT rr.match_status FROM telecom_reconciliation_records rr
+               WHERE rr.matched_contribution_id = tc.contribution_id
+               ORDER BY rr.record_id DESC LIMIT 1) AS reconciliation_status
+       FROM telecom_contributions tc
+       LEFT JOIN wallet_transactions wt ON wt.contribution_id = tc.contribution_id
+       LEFT JOIN insurance_allocations ia ON ia.wallet_transaction_id = wt.wallet_transaction_id
+       WHERE tc.contribution_id = $1`,
+      [usageEvent.contribution_id],
+    );
+
+    return {
+      usageEvent: mapTelecomUsageEventRow(usageEvent),
+      trace: trace
+        ? {
+            contributionId: trace.contribution_id,
+            referenceNumber: trace.reference_number,
+            contributionAmount: trace.contribution_amount,
+            processingStatus: trace.processing_status,
+            walletTransactionId: trace.wallet_transaction_id,
+            allocationId: trace.allocation_id,
+            allocationStatus: trace.allocation_status,
+            allocationProviderId: trace.allocation_provider_id,
+            reconciliationStatus: trace.reconciliation_status,
+          }
+        : null,
+    };
+  }
+
+  // Voice/SMS/Data breakdown + status counts — feeds the Telecom
+  // dashboard's usage-contribution summary without the frontend having
+  // to aggregate raw rows itself.
+  async getUsageEventsSummary(userId: number) {
+    const operatorId = await this.getAssignedOperatorId(userId);
+
+    const byType = await this.dataSource.query<
+      { usage_type: UsageType; count: number; total_valuation: string }[]
+    >(
+      `SELECT usage_type, COUNT(*)::int AS count,
+              COALESCE(SUM(provider_valuation_tzs) FILTER (WHERE status = 'SUCCESSFUL'), 0) AS total_valuation
+       FROM telecom_usage_events
+       WHERE telecom_operator_id = $1
+       GROUP BY usage_type`,
+      [operatorId],
+    );
+
+    const byStatus = await this.dataSource.query<
+      { status: string; count: number }[]
+    >(
+      `SELECT status, COUNT(*)::int AS count
+       FROM telecom_usage_events
+       WHERE telecom_operator_id = $1
+       GROUP BY status`,
+      [operatorId],
+    );
+
+    return {
+      byUsageType: Object.fromEntries(
+        byType.map((row) => [
+          row.usage_type,
+          { count: row.count, totalValuationTzs: row.total_valuation },
+        ]),
+      ),
+      byStatus: Object.fromEntries(
+        byStatus.map((row) => [row.status, row.count]),
+      ),
+    };
   }
 
   // =====================================================

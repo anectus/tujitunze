@@ -8,6 +8,7 @@ import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { JwtStrategy } from './jwt.strategy';
 import { AuditLogsModule } from '../audit-logs/audit-logs.module';
+import { EmailModule } from '../email/email.module';
 import { PasswordResetToken } from './entities/password-reset-token.entity';
 import { PasswordResetOtp } from './entities/password-reset-otp.entity';
 import { SmsService } from './sms.service';
@@ -15,6 +16,7 @@ import { SmsService } from './sms.service';
 @Module({
   imports: [
     AuditLogsModule,
+    EmailModule,
     TypeOrmModule.forFeature([PasswordResetToken, PasswordResetOtp]),
     PassportModule,
     JwtModule.registerAsync({

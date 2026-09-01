@@ -37,10 +37,6 @@ export default function About() {
         <div className="grid md:grid-cols-2 gap-8 mt-12">
 
           <div className="bg-white rounded-2xl shadow-lg p-8">
-            <div className="text-5xl mb-5">
-              🎯
-            </div>
-
             <h2 className="text-2xl font-bold text-blue-700">
               {t.missionTitle}
             </h2>
@@ -51,10 +47,6 @@ export default function About() {
           </div>
 
           <div className="bg-white rounded-2xl shadow-lg p-8">
-            <div className="text-5xl mb-5">
-              🌍
-            </div>
-
             <h2 className="text-2xl font-bold text-blue-700">
               {t.visionTitle}
             </h2>
@@ -102,10 +94,6 @@ export default function About() {
 
             {/* Security */}
             <div className="bg-white rounded-2xl shadow-lg p-8 text-center">
-              <div className="text-5xl">
-                🔒
-              </div>
-
               <h3 className="mt-4 text-xl font-bold">
                 {t.securityTitle}
               </h3>
@@ -117,10 +105,6 @@ export default function About() {
 
             {/* Trust */}
             <div className="bg-white rounded-2xl shadow-lg p-8 text-center">
-              <div className="text-5xl">
-                🤝
-              </div>
-
               <h3 className="mt-4 text-xl font-bold">
                 {t.trustTitle}
               </h3>

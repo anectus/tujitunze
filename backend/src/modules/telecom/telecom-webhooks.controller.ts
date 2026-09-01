@@ -4,6 +4,7 @@ import { Throttle } from '@nestjs/throttler';
 
 import { TelecomService } from './telecom.service';
 import { WebhookContributionDto } from './dto/webhook-contribution.dto';
+import { WebhookUsageEventDto } from './dto/webhook-usage-event.dto';
 import { TelecomApiKeyGuard } from './guards/telecom-api-key.guard';
 import { TelecomWebhookSignatureGuard } from './guards/telecom-webhook-signature.guard';
 
@@ -15,21 +16,11 @@ import { TelecomWebhookSignatureGuard } from './guards/telecom-webhook-signature
 // ran. This controller carries ONLY the API-key guard, matching what an
 // operator's own backend actually sends.
 //
-// SANDBOX ADAPTER NOTE: this is TUJITUNZE's real intake boundary for the
-// AIRTIME/TELECOM contribution channel — full authentication, signature
-// verification, replay protection, idempotency, member identification,
-// contribution creation, and insurance allocation all run for real (see
-// TelecomService.handleContributionWebhook and
-// TelecomWebhookSignatureGuard). What is NOT real: there is no live
-// connection to an actual telecom operator's billing/payment rail behind
-// it, because no real operator API credentials exist in this
-// environment (same caveat CLAUDE.md's Known Security Gap #8 already
-// documents for the wallet ledger generally). Until a specific operator
-// is contracted and this endpoint is pointed at their real webhook
-// delivery, every call here is necessarily a simulated/sandbox event —
-// authenticated and recorded exactly like a real one, but asserting a
-// transaction the actual telecom network never processed. Do not
-// represent this as production money movement.
+// SANDBOX ADAPTER NOTE: this is TUJITUNZE's authenticated intake boundary
+// for an operator AIRTIME/TELECOM event. It records the event and starts a
+// separate M-Pesa collection; the event itself is never treated as proof
+// of money movement. Wallet credit and insurance allocation happen only
+// after Vodacom confirms the linked C2B payment.
 @Controller('telecom/webhooks')
 @UseGuards(TelecomApiKeyGuard)
 export class TelecomWebhooksController {
@@ -54,6 +45,30 @@ export class TelecomWebhooksController {
     },
   ) {
     return this.telecomService.handleContributionWebhook(
+      request.telecomOperatorId,
+      body,
+      request.ip,
+      request.telecomWebhookSignatureVerified ?? false,
+    );
+  }
+
+  // Model B usage-contribution intake (6% of qualifying VOICE/SMS/DATA
+  // usage) — same guard chain, throttle, and idempotent/replay-safe
+  // shape as the contribution endpoint above, just a distinct payload
+  // and a direct-credit processing path (see
+  // TelecomService.handleUsageEventWebhook).
+  @Throttle({ default: { limit: 60, ttl: 60_000 } })
+  @UseGuards(TelecomWebhookSignatureGuard)
+  @Post('usage')
+  async usage(
+    @Body() body: WebhookUsageEventDto,
+    @Req()
+    request: Request & {
+      telecomOperatorId: number;
+      telecomWebhookSignatureVerified?: boolean;
+    },
+  ) {
+    return this.telecomService.handleUsageEventWebhook(
       request.telecomOperatorId,
       body,
       request.ip,

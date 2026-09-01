@@ -21,7 +21,7 @@ export default function DashboardLayout({
 
       <Sidebar roleLabel={roleLabel} navItems={navItems} />
 
-      <div className="md:pl-64">{children}</div>
+      <div className="pt-14 md:pt-0 md:pl-64">{children}</div>
 
     </div>
   );

@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 
@@ -27,21 +28,32 @@ export default function Sidebar({ roleLabel, navItems }: SidebarProps) {
   const router = useRouter();
   const { firstName, logout } = useAuth();
   const { language } = useLanguage();
+  const [mobileOpen, setMobileOpen] = useState(false);
 
   const navLabels = navLabelTranslations[language];
   const roleLabels = roleLabelTranslations[language];
   const t = commonTranslations[language];
 
+  // Close the drawer on route changes so a nav tap doesn't leave it open
+  // behind the newly-loaded page.
+  useEffect(() => {
+    setMobileOpen(false);
+  }, [pathname]);
+
   const handleLogout = () => {
+    setMobileOpen(false);
     logout();
     router.push("/login");
   };
 
-  return (
-    <aside className="hidden md:flex md:w-64 md:flex-col md:fixed md:inset-y-0 border-r border-gray-100 bg-white">
-
+  const sidebarBody = (onNavigate?: () => void) => (
+    <>
       <div className="px-6 py-6 border-b border-gray-100">
-        <Link href="/" className="text-xl font-bold text-blue-700">
+        <Link
+          href="/"
+          onClick={onNavigate}
+          className="text-xl font-bold text-blue-700"
+        >
           Tujitunze
         </Link>
         {firstName && (
@@ -64,6 +76,7 @@ export default function Sidebar({ roleLabel, navItems }: SidebarProps) {
             <Link
               key={item.href}
               href={item.href}
+              onClick={onNavigate}
               className={`
               block
               rounded-lg
@@ -94,7 +107,93 @@ export default function Sidebar({ roleLabel, navItems }: SidebarProps) {
           {t.logOut}
         </button>
       </div>
+    </>
+  );
 
-    </aside>
+  return (
+    <>
+      {/* Mobile top bar — the sidebar proper is hidden below md, so this
+          fixed bar + toggle button is the only way to reach it on a phone
+          screen. */}
+      <div className="md:hidden fixed inset-x-0 top-0 z-40 flex h-14 items-center justify-between border-b border-gray-100 bg-white px-4">
+
+        <Link href="/" className="text-lg font-bold text-blue-700">
+          Tujitunze
+        </Link>
+
+        <button
+          type="button"
+          onClick={() => setMobileOpen(true)}
+          aria-label={t.openMenu}
+          aria-expanded={mobileOpen}
+          className="rounded-lg p-2 text-gray-600 transition hover:bg-gray-50 hover:text-blue-700"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth={1.8}
+            aria-hidden="true"
+            className="h-6 w-6"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M3.75 6.75h16.5M3.75 12h16.5M3.75 17.25h16.5"
+            />
+          </svg>
+        </button>
+
+      </div>
+
+      {/* Mobile overlay + slide-in drawer */}
+      {mobileOpen && (
+        <div className="md:hidden fixed inset-0 z-50">
+
+          <div
+            className="absolute inset-0 bg-black/40"
+            onClick={() => setMobileOpen(false)}
+          />
+
+          <aside className="absolute inset-y-0 left-0 flex w-64 flex-col bg-white shadow-xl">
+
+            <div className="flex items-center justify-end px-3 pt-3">
+              <button
+                type="button"
+                onClick={() => setMobileOpen(false)}
+                aria-label={t.closeMenu}
+                className="rounded-lg p-2 text-gray-600 transition hover:bg-gray-50 hover:text-blue-700"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth={1.8}
+                  aria-hidden="true"
+                  className="h-6 w-6"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M6 18L18 6M6 6l12 12"
+                  />
+                </svg>
+              </button>
+            </div>
+
+            {sidebarBody(() => setMobileOpen(false))}
+
+          </aside>
+
+        </div>
+      )}
+
+      {/* Desktop sidebar */}
+      <aside className="hidden md:flex md:w-64 md:flex-col md:fixed md:inset-y-0 border-r border-gray-100 bg-white">
+        {sidebarBody()}
+      </aside>
+    </>
   );
 }

@@ -185,8 +185,7 @@ export class AdminReconciliationService {
         });
       }
 
-      const amountMatches =
-        Number(contribution.contribution_amount) === amount;
+      const amountMatches = Number(contribution.contribution_amount) === amount;
       if (!amountMatches) {
         return this.buildResult(dto, amount, {
           status: 'AmountMismatch',
@@ -416,7 +415,7 @@ export class AdminReconciliationService {
             allocationAmountMatches: null,
             alreadyProcessed: false,
           },
-          status: 'Unknown' as ReconciliationStatus,
+          status: 'Unknown',
           detail:
             'TUJITUNZE has a contribution for this reference that was not present in the reported external batch.',
         }));
@@ -454,7 +453,7 @@ export class AdminReconciliationService {
           allocationAmountMatches: null,
           alreadyProcessed: false,
         },
-        status: 'Unknown' as ReconciliationStatus,
+        status: 'Unknown',
         detail:
           'TUJITUNZE has a transaction for this reference that was not present in the reported external batch.',
       }));
@@ -462,7 +461,9 @@ export class AdminReconciliationService {
 
   // Ad-hoc, unpersisted single check — answers the seven questions for
   // one external transaction on demand.
-  async checkSingle(dto: ReconciliationCheckDto): Promise<ReconciliationResult> {
+  async checkSingle(
+    dto: ReconciliationCheckDto,
+  ): Promise<ReconciliationResult> {
     return this.checkOne(this.dataSource.manager, dto);
   }
 
@@ -579,7 +580,13 @@ export class AdminReconciliationService {
         ipAddress,
       });
 
-      return { runId, totalRecords, matchedCount, exceptionCount, records: results };
+      return {
+        runId,
+        totalRecords,
+        matchedCount,
+        exceptionCount,
+        records: results,
+      };
     });
   }
 

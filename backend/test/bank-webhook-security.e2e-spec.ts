@@ -237,9 +237,10 @@ describe('Bank webhook security — signature & replay (e2e)', () => {
       transactionType: 'Bank Transfer',
       externalTransactionId: `BWHSEC-${ts}-valid`,
     };
-    const res = await sendWebhook(payload, buildSignatureHeader(payload)).expect(
-      201,
-    );
+    const res = await sendWebhook(
+      payload,
+      buildSignatureHeader(payload),
+    ).expect(201);
 
     expect(res.body).toMatchObject({
       duplicate: false,
@@ -269,9 +270,10 @@ describe('Bank webhook security — signature & replay (e2e)', () => {
       transactionType: 'Bank Transfer',
       externalTransactionId: `BWHSEC-${ts}-valid`,
     };
-    const res = await sendWebhook(payload, buildSignatureHeader(payload)).expect(
-      201,
-    );
+    const res = await sendWebhook(
+      payload,
+      buildSignatureHeader(payload),
+    ).expect(201);
 
     expect(res.body).toMatchObject({ duplicate: true });
 
@@ -362,9 +364,7 @@ describe('Bank webhook security — signature & replay (e2e)', () => {
 
     const [{ api_key_hash: otherOrigHash }] = await dataSource.query<
       { api_key_hash: string | null }[]
-    >(`SELECT api_key_hash FROM banks WHERE bank_id = $1`, [
-      otherBank.bank_id,
-    ]);
+    >(`SELECT api_key_hash FROM banks WHERE bank_id = $1`, [otherBank.bank_id]);
     const otherRawKey = `bk_e2e_nosig_${crypto.randomBytes(12).toString('hex')}`;
     await dataSource.query(
       `UPDATE banks SET api_key_hash = $2, status = 'Active' WHERE bank_id = $1`,

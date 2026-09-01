@@ -3,7 +3,6 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 
 import { getAccessToken } from "@/lib/utils/permissions";
 import Header from "@/components/common/Header";
@@ -11,13 +10,14 @@ import { useLanguage } from "@/lib/context/LanguageContext";
 import { memberDashboardTranslations } from "@/constants/translations/member-dashboard";
 
 export default function DashboardPage() {
-  const router = useRouter();
   const { language } = useLanguage();
   const t = memberDashboardTranslations[language];
 
   // null while loading. A Member who hasn't submitted the onboarding/
-  // mobile-money form yet (no `region` on their profile) is sent straight
-  // to that form instead of seeing the dashboard shell.
+  // mobile-money form yet (no `region` on their profile) still sees the
+  // dashboard shell — reaching that form is only via the "Complete
+  // Membership" entry in the header's account menu, never a forced
+  // redirect.
   const [membershipComplete, setMembershipComplete] = useState<boolean | null>(
     null
   );
@@ -37,13 +37,7 @@ export default function DashboardPage() {
       .catch(() => setMembershipComplete(false));
   }, []);
 
-  useEffect(() => {
-    if (membershipComplete === false) {
-      router.replace("/onboarding/mobile-money");
-    }
-  }, [membershipComplete, router]);
-
-  if (membershipComplete !== true) {
+  if (membershipComplete === null) {
     return (
       <>
         <Header />

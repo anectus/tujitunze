@@ -147,11 +147,7 @@ export class BankController {
     @Param('id', ParseIntPipe) id: number,
     @Req() request: Request,
   ) {
-    return this.bankService.markContributionFailed(
-      user.userId,
-      id,
-      request.ip,
-    );
+    return this.bankService.markContributionFailed(user.userId, id, request.ip);
   }
 
   @Get('transactions')

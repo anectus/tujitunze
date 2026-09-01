@@ -105,8 +105,12 @@ describe('Admin financial reconciliation (e2e)', () => {
     adminId = await createUser('ReconAdmin', 1);
     adminToken = signToken(adminId, ['Admin'], 'ReconAdmin');
 
+    // Deliberately excludes Vodacom: that operator's webhook contribution
+    // now routes through the real (genuinely credentialed) M-Pesa
+    // collection rail — this test exercises the pre-existing direct-
+    // credit path shared by every other operator, not Vodacom itself.
     const [operator] = await dataSource.query<{ operator_id: number }[]>(
-      `SELECT operator_id FROM telecom_operators LIMIT 1`,
+      `SELECT operator_id FROM telecom_operators WHERE operator_name != 'Vodacom' LIMIT 1`,
     );
     operatorId = operator.operator_id;
     telecomStaffId = await createUser('ReconTelecomStaff', 2, {
@@ -333,7 +337,11 @@ describe('Admin financial reconciliation (e2e)', () => {
       const res = await request(app.getHttpServer())
         .post('/admin/reconciliation/check')
         .set('Authorization', `Bearer ${adminToken}`)
-        .send({ channel: 'AIRTIME', externalReference: externalRef, amount: 20 })
+        .send({
+          channel: 'AIRTIME',
+          externalReference: externalRef,
+          amount: 20,
+        })
         .expect(201);
 
       expect(res.body).toMatchObject({
@@ -387,7 +395,11 @@ describe('Admin financial reconciliation (e2e)', () => {
       const res = await request(app.getHttpServer())
         .post('/admin/reconciliation/check')
         .set('Authorization', `Bearer ${adminToken}`)
-        .send({ channel: 'AIRTIME', externalReference: externalRef, amount: 999 })
+        .send({
+          channel: 'AIRTIME',
+          externalReference: externalRef,
+          amount: 999,
+        })
         .expect(201);
 
       expect(res.body).toMatchObject({

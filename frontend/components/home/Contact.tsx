@@ -140,10 +140,6 @@ export default function Contact() {
 
           <div className="bg-white rounded-2xl shadow-lg p-8">
 
-            <div className="text-4xl mb-4">
-              📍
-            </div>
-
             <h3 className="text-2xl font-bold text-blue-700">
               {t.headquartersTitle}
             </h3>
@@ -159,10 +155,6 @@ export default function Contact() {
           </div>
 
           <div className="bg-white rounded-2xl shadow-lg p-8">
-
-            <div className="text-4xl mb-4">
-              🕒
-            </div>
 
             <h3 className="text-2xl font-bold text-blue-700">
               {t.officeHoursTitle}
@@ -181,10 +173,6 @@ export default function Contact() {
           </div>
 
           <div className="bg-white rounded-2xl shadow-lg p-8">
-
-            <div className="text-4xl mb-4">
-              ⚡
-            </div>
 
             <h3 className="text-2xl font-bold text-blue-700">
               {t.responseTimeTitle}
@@ -260,23 +248,11 @@ export default function Contact() {
               <div>
 
                 <h3 className="font-semibold text-xl">
-                  {t.healthcareSupportTitle}
-                </h3>
-
-                <p className="mt-2 text-gray-600">
-                  healthcare@Tujitunze.co.tz
-                </p>
-
-              </div>
-
-              <div>
-
-                <h3 className="font-semibold text-xl">
                   {t.telephoneTitle}
                 </h3>
 
                 <p className="mt-2 text-gray-600">
-                  +255 XXX XXX XXX
+                  +255 617 672 872
                 </p>
 
               </div>

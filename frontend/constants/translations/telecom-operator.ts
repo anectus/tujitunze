@@ -38,10 +38,19 @@ export const telecomOperatorTranslations = {
     webhookPointedAt: (url: string) =>
       `Currently pointed at ${url}. No live events fire to it yet — the contribution engine that would trigger deliveries isn't built (see the wallet top-up known gap in CLAUDE.md).`,
     connectionTestingHeading: "Connection Testing",
-    connectionTestingBody: "Sends a real outbound request to the API endpoint above and reports back.",
+    connectionTestingBody:
+      "Tests the real integration configured for your operator and reports back — it never moves money or creates a contribution.",
+    vodacomTestHint: "For Vodacom, this authenticates against the live M-Pesa sandbox using your configured credentials.",
     testConnection: "Test Connection",
     testing: "Testing...",
-    noEndpointConfigured: "No API endpoint configured — nothing to test yet.",
+    connectionTestStateLabels: {
+      connected: "Connected",
+      connection_failed: "Connection failed",
+      authentication_failed: "Authentication failed",
+      credentials_missing: "Credentials missing",
+      timeout: "Request timed out",
+      integration_not_configured: "Integration not configured",
+    },
     securitySettingsHeading: "Security Settings",
     securitySettingsBody:
       "Coming soon — two-factor auth and session policy for staff accounts don't exist yet system-wide, not just for Telecom.",
@@ -83,15 +92,28 @@ export const telecomOperatorTranslations = {
     webhookPointedAt: (url: string) =>
       `Kwa sasa inaelekezwa kwa ${url}. Hakuna matukio ya moja kwa moja yanayotumwa bado — mfumo wa michango unaosababisha utumaji haujajengwa (angalia pengo linalojulikana la kuongeza fedha kwenye CLAUDE.md).`,
     connectionTestingHeading: "Kupima Muunganisho",
-    connectionTestingBody: "Hutuma ombi halisi la nje kwenda kituo cha API kilichotajwa hapo juu na kutoa taarifa.",
+    connectionTestingBody:
+      "Hupima muunganisho halisi uliosanidiwa kwa mtoa huduma wako na kutoa taarifa — haihamishi fedha wala kuunda mchango.",
+    vodacomTestHint: "Kwa Vodacom, hii huthibitisha dhidi ya sandbox halisi ya M-Pesa kwa kutumia vitambulisho vyako vilivyosanidiwa.",
     testConnection: "Pima Muunganisho",
     testing: "Inapima...",
-    noEndpointConfigured: "Hakuna kituo cha API kilichosanidiwa — hakuna cha kupima bado.",
+    connectionTestStateLabels: {
+      connected: "Imeunganishwa",
+      connection_failed: "Muunganisho umeshindwa",
+      authentication_failed: "Uthibitishaji umeshindwa",
+      credentials_missing: "Vitambulisho havipo",
+      timeout: "Muda wa ombi umeisha",
+      integration_not_configured: "Muunganisho haujasanidiwa",
+    },
     securitySettingsHeading: "Mipangilio ya Usalama",
     securitySettingsBody:
       "Inakuja hivi karibuni — uthibitishaji wa hatua mbili na sera ya vipindi kwa akaunti za wafanyakazi bado hazipo kwenye mfumo mzima, si kwa Simu tu.",
   },
 // Interpolation helpers below take varying parameter shapes (number/string) per key,
 // which TypeScript's function-parameter contravariance can't unify without `any` here.
+// connectionTestStateLabels is a nested lookup (keyed by backend connection-test state), not a flat string/function.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-} as const satisfies Record<Language, Record<string, string | ((...args: any[]) => string)>>;
+} as const satisfies Record<
+  Language,
+  Record<string, string | ((...args: any[]) => string) | Record<string, string>>
+>;

@@ -25,12 +25,17 @@ import { Roles } from '../auth/decorators/roles.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import type { AuthenticatedUser } from '../auth/jwt.strategy';
+import { VodacomC2BService } from './vodacom/vodacom-c2b.service';
+import { ReverseMpesaTransactionDto } from './dto/reverse-mpesa-transaction.dto';
 
 @Controller('telecom')
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles('Telecom')
 export class TelecomController {
-  constructor(private readonly telecomService: TelecomService) {}
+  constructor(
+    private readonly telecomService: TelecomService,
+    private readonly vodacomC2BService: VodacomC2BService,
+  ) {}
 
   @Get('dashboard')
   async getDashboard(@CurrentUser() user: AuthenticatedUser) {
@@ -161,6 +166,41 @@ export class TelecomController {
     return this.telecomService.listContributionRules();
   }
 
+  // Staff-facing read side of the Model B usage-contribution flow — the
+  // ingestion endpoint itself (POST /telecom/webhooks/usage) is operator-
+  // authenticated (TelecomApiKeyGuard), not staff-authenticated, and
+  // lives on TelecomWebhooksController; these stay under this
+  // controller's class-level JwtAuthGuard/RolesGuard('Telecom') like
+  // every other staff view.
+  @Get('usage-events/summary')
+  async getUsageEventsSummary(@CurrentUser() user: AuthenticatedUser) {
+    return this.telecomService.getUsageEventsSummary(user.userId);
+  }
+
+  @Get('usage-events')
+  async listUsageEvents(
+    @CurrentUser() user: AuthenticatedUser,
+    @Query('status') status: string | undefined,
+    @Query('usageType') usageType: string | undefined,
+    @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
+    @Query('pageSize', new DefaultValuePipe(20), ParseIntPipe) pageSize: number,
+  ) {
+    return this.telecomService.listUsageEvents(
+      user.userId,
+      { status, usageType },
+      page,
+      pageSize,
+    );
+  }
+
+  @Get('usage-events/:id')
+  async getUsageEvent(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id', ParseIntPipe) id: number,
+  ) {
+    return this.telecomService.getUsageEvent(user.userId, id);
+  }
+
   @Post('reconciliation/runs')
   async createReconciliationRun(
     @CurrentUser() user: AuthenticatedUser,
@@ -198,5 +238,30 @@ export class TelecomController {
   @Get('api-access-logs')
   async listApiAccessLogs(@CurrentUser() user: AuthenticatedUser) {
     return this.telecomService.listApiAccessLogs(user.userId);
+  }
+
+  @Throttle({ default: { limit: 20, ttl: 60_000 } })
+  @Post('mpesa/transactions/:id/query')
+  async queryMpesaTransaction(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id', ParseIntPipe) id: number,
+  ) {
+    return this.vodacomC2BService.queryTransactionStatus(user.userId, id);
+  }
+
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
+  @Post('mpesa/transactions/:id/reversal')
+  async reverseMpesaTransaction(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id', ParseIntPipe) id: number,
+    @Body() body: ReverseMpesaTransactionDto,
+    @Req() request: Request,
+  ) {
+    return this.vodacomC2BService.reverseTransaction(
+      user.userId,
+      id,
+      body,
+      request.ip,
+    );
   }
 }

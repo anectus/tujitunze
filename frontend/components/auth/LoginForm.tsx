@@ -90,12 +90,12 @@ export default function LoginForm() {
 
       const staffDashboardPath = getStaffDashboardPath(payload?.roles ?? []);
 
-      // A Member always lands on their dashboard, whether or not
-      // onboarding (the mobile-money form) is complete — the dashboard
-      // itself shows Active/Inactive and the account menu (top right)
-      // carries the "Complete Membership" action, rather than forcing
-      // a redirect straight into that form.
-      router.push(staffDashboardPath ?? "/dashboard");
+      // A Member lands on the home page after login, whether or not
+      // onboarding (the mobile-money form) is complete — the account menu
+      // (top right, via the header) carries the "Complete Membership"
+      // action, rather than forcing a redirect straight into that form.
+      // Staff roles still go straight to their own tenant dashboard.
+      router.push(staffDashboardPath ?? "/");
 
     } catch (error) {
       if (error instanceof Error) {
@@ -386,6 +386,10 @@ export default function LoginForm() {
           </div>
 
         </div>
+
+        <p className="mt-6 text-center text-sm text-gray-500">
+          {t.copyright}
+        </p>
 
       </div>
 

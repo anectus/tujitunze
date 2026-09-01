@@ -35,8 +35,14 @@ lerna-debug.log*
 !.vscode/launch.json
 !.vscode/extensions.json
 
-# dotenv environment variable files
+# dotenv environment variable files — blanket .env.* pattern (not just
+# the specific *.local names below) so a credential file under any
+# other name (e.g. backend/.env.txt) can never be committed by
+# accident; .env.example is explicitly re-allowed since it must stay
+# tracked (placeholders only, no real secrets).
 .env
+.env.*
+!.env.example
 .env.development.local
 .env.test.local
 .env.production.local

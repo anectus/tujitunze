@@ -10,12 +10,12 @@ export default function Footer() {
   const t = footerTranslations[language];
 
   return (
-    <footer className="bg-slate-950 text-gray-300 px-9">
+    <footer className="bg-slate-950 text-gray-300">
       {/* Main Footer */}
       <div className="max-w-7xl mx-auto px-6 py-14">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-10">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-10 divide-y divide-gray-800 sm:divide-y-0">
           {/* Brand Section */}
-          <div>
+          <div className="pt-10 first:pt-0 sm:pt-0">
             <Link href="/" className="text-3xl font-bold text-white">
               Tujitunze
             </Link>
@@ -67,7 +67,7 @@ export default function Footer() {
           </div>
 
           {/* Navigation */}
-          <div>
+          <div className="pt-10 first:pt-0 sm:pt-0">
             <h3
               className="
               text-white
@@ -81,7 +81,7 @@ export default function Footer() {
 
             <ul className="space-y-3">
               <li>
-                <Link href="home" className="hover:text-blue-400 transition">
+                <Link href="/" className="hover:text-blue-400 transition">
                   {t.home}
                 </Link>
               </li>
@@ -113,7 +113,7 @@ export default function Footer() {
           </div>
 
           {/* Tujitunze Services */}
-          <div>
+          <div className="pt-10 first:pt-0 sm:pt-0">
             <h3
               className="
               text-white
@@ -132,14 +132,12 @@ export default function Footer() {
 
               <li>{t.service3}</li>
 
-              <li>{t.service4}</li>
-
               <li>{t.service5}</li>
             </ul>
           </div>
 
           {/* Contact */}
-          <div>
+          <div className="pt-10 first:pt-0 sm:pt-0">
             <h3
               className="
               text-white
@@ -177,7 +175,7 @@ export default function Footer() {
       {/* Bottom Section */}
       <div
         className="
-        border-tr
+        border-t
         border-gray-800
       "
       >

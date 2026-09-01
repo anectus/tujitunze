@@ -23,6 +23,7 @@ export const navLabelTranslations = {
     operatorProfile: "Operator Profile",
     registeredMembers: "Registered Members",
     contributionTransactions: "Contribution Transactions",
+    usageContributions: "Usage Contributions",
     contributionRules: "Contribution Rules",
     administrators: "Administrators",
     rolesPermissions: "Roles & Permissions",
@@ -44,6 +45,7 @@ export const navLabelTranslations = {
     operatorProfile: "Wasifu wa Mtoa Huduma",
     registeredMembers: "Wanachama Waliosajiliwa",
     contributionTransactions: "Miamala ya Michango",
+    usageContributions: "Michango ya Matumizi",
     contributionRules: "Kanuni za Michango",
     administrators: "Wasimamizi",
     rolesPermissions: "Majukumu na Ruhusa",
@@ -103,6 +105,8 @@ export const commonTranslations = {
     notProvided: "Not provided",
     welcome: "Welcome",
     changeLanguage: "Change language",
+    openMenu: "Open menu",
+    closeMenu: "Close menu",
   },
   sw: {
     save: "Hifadhi",
@@ -134,5 +138,7 @@ export const commonTranslations = {
     notProvided: "Haijatolewa",
     welcome: "Karibu",
     changeLanguage: "Badilisha lugha",
+    openMenu: "Fungua menyu",
+    closeMenu: "Funga menyu",
   },
 } as const satisfies Record<Language, Record<string, string>>;

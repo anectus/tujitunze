@@ -31,6 +31,8 @@ export const statusLabelTranslations = {
       allocated: "Allocated",
       failed: "Failed",
       reversed: "Reversed",
+      successful: "Successful",
+      pending_review: "Pending Review",
     },
     member: {
       pending: "Pending Verification",
@@ -70,6 +72,8 @@ export const statusLabelTranslations = {
       allocated: "Imetengwa",
       failed: "Imeshindwa",
       reversed: "Imerejeshwa",
+      successful: "Imefanikiwa",
+      pending_review: "Inasubiri Ukaguzi",
     },
     member: {
       pending: "Inasubiri Uthibitisho",

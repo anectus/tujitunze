@@ -3,16 +3,13 @@
 import Link from "next/link";
 
 import { useLanguage } from "@/lib/context/LanguageContext";
-import { heroTranslations, headerTranslations } from "@/constants/translations/home";
+import { heroTranslations } from "@/constants/translations/home";
 import { useAuth } from "@/lib/hooks/useAuth";
-import { getStaffDashboardPath } from "@/lib/utils/permissions";
 
 export default function Hero() {
   const { language } = useLanguage();
   const t = heroTranslations[language];
-  const headerT = headerTranslations[language];
-  const { isAuthenticated, firstName, roles } = useAuth();
-  const accountPath = getStaffDashboardPath(roles) ?? "/profile";
+  const { isAuthenticated } = useAuth();
 
   return (
     <section className="pt-32 pb-20 bg-gradient-to-br from-blue-50 via-white to-blue-100 px-12">
@@ -51,38 +48,42 @@ export default function Hero() {
             <div className="mt-8 flex flex-wrap gap-4">
 
 
-              <Link
-                href={isAuthenticated ? accountPath : "/register"}
-                className="
-                bg-blue-700
-                text-white
-                px-8
-                py-3
-                rounded-lg
-                font-semibold
-                hover:bg-blue-800
-                transition"
-              >
-              {isAuthenticated ? firstName || headerT.profile : t.signUp}
-              </Link>
+              {!isAuthenticated && (
+                <Link
+                  href="/register"
+                  className="
+                  bg-blue-700
+                  text-white
+                  px-8
+                  py-3
+                  rounded-lg
+                  font-semibold
+                  hover:bg-blue-800
+                  transition"
+                >
+                  {t.signUp}
+                </Link>
+              )}
 
 
-              <Link
-                href="/login"
-                className="
-                border-2
-                border-blue-700
-                text-blue-700
-                px-8
-                py-3
-                rounded-lg
-                font-semibold
-                hover:bg-blue-700
-                hover:text-white
-                transition"
-              >
-                {t.login}
-              </Link>
+              {!isAuthenticated && (
+                <Link
+                  href="/login"
+                  className="
+                  border-2
+                  border-blue-700
+                  text-blue-700
+                  px-8
+                  py-3
+                  rounded-lg
+                  font-semibold
+                  hover:bg-blue-700
+                  hover:text-white
+                  transition"
+                >
+                  {t.login}
+                </Link>
+              )}
 
 
             </div>

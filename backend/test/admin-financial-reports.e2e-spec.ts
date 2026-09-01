@@ -106,20 +106,30 @@ describe('Admin financial reporting (e2e)', () => {
     const adminId = await createUser('FinReportAdmin', 1);
     adminToken = signToken(adminId, ['Admin'], 'FinReportAdmin');
 
+    // Deliberately excludes Vodacom: that operator's webhook contribution
+    // now routes through the real (genuinely credentialed) M-Pesa
+    // collection rail — this test exercises the pre-existing direct-
+    // credit path shared by every other operator, not Vodacom itself.
     const [operator] = await dataSource.query<{ operator_id: number }[]>(
-      `SELECT operator_id FROM telecom_operators LIMIT 1`,
+      `SELECT operator_id FROM telecom_operators WHERE operator_name != 'Vodacom' LIMIT 1`,
     );
     operatorId = operator.operator_id;
     telecomStaffId = await createUser('FinReportTelecomStaff', 2, {
       telecom_operator_id: operatorId,
     });
-    telecomToken = signToken(telecomStaffId, ['Telecom'], 'FinReportTelecomStaff');
+    telecomToken = signToken(
+      telecomStaffId,
+      ['Telecom'],
+      'FinReportTelecomStaff',
+    );
 
     const [bank] = await dataSource.query<{ bank_id: number }[]>(
       `SELECT bank_id FROM banks LIMIT 1`,
     );
     bankId = bank.bank_id;
-    bankStaffId = await createUser('FinReportBankStaff', 3, { bank_id: bankId });
+    bankStaffId = await createUser('FinReportBankStaff', 3, {
+      bank_id: bankId,
+    });
     bankToken = signToken(bankStaffId, ['Bank'], 'FinReportBankStaff');
 
     const [provider] = await dataSource.query<{ provider_id: number }[]>(
@@ -515,7 +525,9 @@ describe('Admin financial reporting (e2e)', () => {
         .query({ reference: REF, dateFrom: '2099-01-01T00:00:00.000Z' })
         .set('Authorization', `Bearer ${adminToken}`)
         .expect(200);
-      expect(futureRes.body).toMatchObject({ totalContributions: { count: 0 } });
+      expect(futureRes.body).toMatchObject({
+        totalContributions: { count: 0 },
+      });
     });
 
     it('reconciling A drops unreconciled from 6 to 5', async () => {

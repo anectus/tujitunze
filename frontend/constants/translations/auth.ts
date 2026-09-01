@@ -20,6 +20,7 @@ export const loginFormTranslations = {
     successMessage: "Login successful.",
     errorFallback: "Invalid NIDA number, email, or password.",
     genericErrorFallback: "Unable to login. Please try again.",
+    copyright: "© 2026 Tujitunze. Health Savings & Insurance Management System.",
   },
   sw: {
     title: "Ingia",
@@ -40,6 +41,7 @@ export const loginFormTranslations = {
     successMessage: "Umeingia kikamilifu.",
     errorFallback: "Namba ya NIDA, barua pepe, au nywila si sahihi.",
     genericErrorFallback: "Imeshindwa kuingia. Tafadhali jaribu tena.",
+    copyright: "© 2026 Tujitunze. Mfumo wa Akiba ya Afya na Usimamizi wa Bima.",
   },
 } as const satisfies Record<Language, Record<string, string>>;
 
@@ -131,6 +133,6 @@ export const forgotPasswordTranslations = {
 } as const satisfies Record<Language, Record<string, string>>;
 
 export const resetPasswordTranslations = {
-  en: { title: "Create a new password", description: "Choose a new password for your account.", password: "New password", confirmPassword: "Confirm new password", submit: "Reset password", submitting: "Resetting...", success: "Password reset successful. You can now log in.", error: "Unable to reset your password.", invalidLink: "This password reset link is invalid or expired.", passwordMismatch: "Passwords do not match.", backToLogin: "Go to login" },
-  sw: { title: "Tengeneza nywila mpya", description: "Chagua nywila mpya ya akaunti yako.", password: "Nywila mpya", confirmPassword: "Thibitisha nywila mpya", submit: "Badilisha nywila", submitting: "Inabadilisha...", success: "Nywila imebadilishwa. Sasa unaweza kuingia.", error: "Imeshindwa kubadilisha nywila.", invalidLink: "Kiungo hiki si sahihi au muda wake umeisha.", passwordMismatch: "Nywila hazifanani.", backToLogin: "Nenda kuingia" },
+  en: { title: "Create a new password", description: "Choose a new password for your account.", password: "New password", confirmPassword: "Confirm new password", submit: "Reset password", submitting: "Resetting...", success: "Password reset successful. You can now log in.", error: "Unable to reset your password.", invalidLink: "This password reset link is invalid or expired.", passwordMismatch: "Passwords do not match.", backToLogin: "Go to login", showPassword: "Show password", hidePassword: "Hide password" },
+  sw: { title: "Tengeneza nywila mpya", description: "Chagua nywila mpya ya akaunti yako.", password: "Nywila mpya", confirmPassword: "Thibitisha nywila mpya", submit: "Badilisha nywila", submitting: "Inabadilisha...", success: "Nywila imebadilishwa. Sasa unaweza kuingia.", error: "Imeshindwa kubadilisha nywila.", invalidLink: "Kiungo hiki si sahihi au muda wake umeisha.", passwordMismatch: "Nywila hazifanani.", backToLogin: "Nenda kuingia", showPassword: "Onyesha nywila", hidePassword: "Ficha nywila" },
 } as const satisfies Record<Language, Record<string, string>>;

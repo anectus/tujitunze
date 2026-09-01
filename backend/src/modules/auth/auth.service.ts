@@ -11,7 +11,6 @@ import { ConfigService } from '@nestjs/config';
 import { DataSource } from 'typeorm';
 import { IsNull, Not } from 'typeorm';
 import { createHash, randomBytes, randomInt } from 'crypto';
-import * as nodemailer from 'nodemailer';
 import { isEmail } from 'class-validator';
 
 import * as bcrypt from 'bcrypt';
@@ -26,6 +25,7 @@ import { PasswordResetOtp } from './entities/password-reset-otp.entity';
 import { VerifyResetOtpDto } from './dto/verify-reset-otp.dto';
 import { SmsService } from './sms.service';
 import { AuditLogsService } from '../audit-logs/audit-logs.service';
+import { EmailService } from '../email/email.service';
 
 @Injectable()
 export class AuthService {
@@ -37,6 +37,7 @@ export class AuthService {
     private readonly configService: ConfigService,
     private readonly auditLogsService: AuditLogsService,
     private readonly smsService: SmsService,
+    private readonly emailService: EmailService,
   ) {}
 
   async requestPasswordReset(
@@ -84,10 +85,15 @@ export class AuthService {
     if (!recipient) {
       return;
     }
-    const mailConfig = this.getMailConfig();
+    const frontendUrl = this.configService.get<string>('FRONTEND_URL');
+    if (!frontendUrl) {
+      throw new ServiceUnavailableException(
+        'Password reset email service is not configured.',
+      );
+    }
     const rawToken = randomBytes(32).toString('hex');
     const tokenHash = createHash('sha256').update(rawToken).digest('hex');
-    const expiresAt = new Date(Date.now() + 20 * 60 * 1000);
+    const expiresAt = new Date(Date.now() + 30 * 60 * 1000);
 
     await this.dataSource.transaction(async (manager) => {
       await manager.update(
@@ -111,21 +117,13 @@ export class AuthService {
     });
 
     try {
-      const transporter = nodemailer.createTransport({
-        host: mailConfig.host,
-        port: mailConfig.port,
-        secure: mailConfig.port === 465,
-        auth: { user: mailConfig.username, pass: mailConfig.password },
-      });
-      const info = await transporter.sendMail({
-        from: mailConfig.from,
+      const resetLink = `${frontendUrl}/reset-password?token=${rawToken}`;
+      await this.emailService.send({
         to: recipient,
-        subject: 'Reset your Tujitunze password',
-        text: `We received a request to reset your Tujitunze password.\n\nReset your password here: ${mailConfig.frontendUrl}/reset-password?token=${rawToken}\n\nThis link expires in 20 minutes and can only be used once. If you did not request this, you can safely ignore this email.`,
+        subject: 'TUJITUNZE Password Reset',
+        text: `You requested to reset your TUJITUNZE password.\n\nReset your password here: ${resetLink}\n\nThis link expires in 30 minutes and can only be used once. If you did not request this, you can safely ignore this email.`,
+        html: this.buildPasswordResetEmailHtml(resetLink),
       });
-      this.logger.log(
-        `EMAIL RESET: sendMail messageId=${info.messageId} accepted=${JSON.stringify(info.accepted)} rejected=${JSON.stringify(info.rejected)} response=${info.response}`,
-      );
     } catch (error) {
       this.logger.error(
         'Password reset email could not be sent.',
@@ -142,6 +140,57 @@ export class AuthService {
         'Unable to send the password reset email. Please try again later.',
       );
     }
+  }
+
+  // Plain-text (above) stays the primary content for text-only mail
+  // clients; this is the HTML companion nodemailer sends alongside it.
+  // Never embeds the member's password or the raw token anywhere but the
+  // single reset link href.
+  private buildPasswordResetEmailHtml(resetLink: string): string {
+    return `<!doctype html>
+<html>
+  <body style="margin:0;padding:0;background-color:#f3f4f6;font-family:Arial,Helvetica,sans-serif;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#f3f4f6;padding:32px 0;">
+      <tr>
+        <td align="center">
+          <table role="presentation" width="480" cellpadding="0" cellspacing="0" style="background-color:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.1);">
+            <tr>
+              <td style="background-color:#1d4ed8;padding:24px 32px;">
+                <span style="color:#ffffff;font-size:20px;font-weight:bold;">TUJITUNZE</span>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:32px;">
+                <h1 style="margin:0 0 16px;color:#111827;font-size:20px;">Password Reset Request</h1>
+                <p style="margin:0 0 16px;color:#374151;font-size:15px;line-height:1.6;">
+                  You requested to reset your TUJITUNZE password. Click the button below to choose a new one.
+                </p>
+                <p style="margin:0 0 24px;text-align:center;">
+                  <a href="${resetLink}" style="display:inline-block;background-color:#1d4ed8;color:#ffffff;text-decoration:none;font-weight:bold;font-size:15px;padding:12px 28px;border-radius:8px;">
+                    Reset Password
+                  </a>
+                </p>
+                <p style="margin:0 0 16px;color:#6b7280;font-size:13px;line-height:1.6;">
+                  This link expires in 30 minutes and can only be used once.
+                </p>
+                <p style="margin:0;color:#6b7280;font-size:13px;line-height:1.6;">
+                  If you did not request this, you can safely ignore this email — your password will not be changed.
+                </p>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:20px 32px;background-color:#f9fafb;border-top:1px solid #e5e7eb;">
+                <p style="margin:0;color:#9ca3af;font-size:12px;">
+                  TUJITUNZE — Health Savings and Insurance Management System, Tanzania
+                </p>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>`;
   }
 
   private async issuePhoneOtp(
@@ -269,7 +318,7 @@ export class AuthService {
         userId: phone.user.userId,
         tokenHash: createHash('sha256').update(rawResetToken).digest('hex'),
         channel: 'PHONE',
-        expiresAt: new Date(Date.now() + 10 * 60 * 1000),
+        expiresAt: new Date(Date.now() + 30 * 60 * 1000),
         usedAt: null,
       });
 
@@ -295,60 +344,6 @@ export class AuthService {
       phoneNumber,
       'If an account exists with that phone number, a new verification code has been sent.',
     );
-  }
-
-  private getMailConfig(): {
-    host: string;
-    port: number;
-    username: string;
-    password: string;
-    from: string;
-    frontendUrl: string;
-  } {
-    const host =
-      this.configService.get<string>('MAIL_HOST') ??
-      this.configService.get<string>('SMTP_HOST');
-    const username =
-      this.configService.get<string>('MAIL_USER') ??
-      this.configService.get<string>('SMTP_USERNAME');
-    const password =
-      this.configService.get<string>('MAIL_PASSWORD') ??
-      this.configService.get<string>('SMTP_PASSWORD');
-    const from =
-      this.configService.get<string>('MAIL_FROM') ??
-      this.configService.get<string>('SMTP_FROM');
-    const frontendUrl = this.configService.get<string>('FRONTEND_URL');
-    const configuredPort =
-      this.configService.get<string>('MAIL_PORT') ??
-      this.configService.get<string>('SMTP_PORT') ??
-      '587';
-    const port = Number(configuredPort);
-
-    this.logger.log(
-      `EMAIL RESET: SMTP host configured: ${host ? 'YES' : 'NO'}, ` +
-        `SMTP port: ${configuredPort}, ` +
-        `SMTP username configured: ${username ? 'YES' : 'NO'}, ` +
-        `SMTP password configured: ${password ? 'YES' : 'NO'}, ` +
-        `SMTP from configured: ${from ? 'YES' : 'NO'}, ` +
-        `frontend URL configured: ${frontendUrl ? 'YES' : 'NO'}`,
-    );
-
-    if (
-      !host ||
-      !username ||
-      !password ||
-      !from ||
-      !frontendUrl ||
-      !Number.isInteger(port) ||
-      port < 1 ||
-      port > 65535
-    ) {
-      throw new ServiceUnavailableException(
-        'Password reset email service is not configured.',
-      );
-    }
-
-    return { host, port, username, password, from, frontendUrl };
   }
 
   private normalizeTanzanianPhone(raw: string): string {

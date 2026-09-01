@@ -10,6 +10,14 @@ import { useLanguage } from "@/lib/context/LanguageContext";
 import { commonTranslations } from "@/constants/translations/common";
 import { telecomOperatorTranslations } from "@/constants/translations/telecom-operator";
 
+type ConnectionTestState =
+  | "connected"
+  | "connection_failed"
+  | "credentials_missing"
+  | "integration_not_configured"
+  | "timeout"
+  | "authentication_failed";
+
 interface OperatorProfile {
   operatorId: number;
   operatorName: string;
@@ -22,6 +30,15 @@ interface OperatorProfile {
   apiKey: { hasKey: boolean; preview: string | null; generatedAt: string | null };
   webhook: { hasWebhook: boolean; url: string | null; secretGeneratedAt: string | null };
 }
+
+const CONNECTION_TEST_STYLES: Record<ConnectionTestState, string> = {
+  connected: "bg-green-50 text-green-800 border border-green-200",
+  connection_failed: "bg-red-50 text-red-800 border border-red-200",
+  authentication_failed: "bg-red-50 text-red-800 border border-red-200",
+  credentials_missing: "bg-amber-50 text-amber-800 border border-amber-200",
+  timeout: "bg-amber-50 text-amber-800 border border-amber-200",
+  integration_not_configured: "bg-gray-50 text-gray-600 border border-gray-200",
+};
 
 const inputClass =
   "w-full rounded-lg border border-gray-300 px-4 py-3 " +
@@ -65,7 +82,12 @@ export default function TelecomOperatorPage() {
   const [revealedSecret, setRevealedSecret] = useState<{ label: string; value: string } | null>(null);
 
   const [testing, setTesting] = useState(false);
-  const [testResult, setTestResult] = useState<{ success: boolean; message: string } | null>(null);
+  const [testResult, setTestResult] = useState<{
+    success: boolean;
+    message: string;
+    state?: ConnectionTestState;
+    provider?: string;
+  } | null>(null);
 
   useEffect(() => {
     const load = async () => {
@@ -210,7 +232,12 @@ export default function TelecomOperatorPage() {
       const data = await response.json();
 
       if (!response.ok) {
-        setTestResult({ success: false, message: data.message || t.connectionTestFailed });
+        setTestResult({
+          success: false,
+          message: data.message || t.connectionTestFailed,
+          state: data.state,
+          provider: data.provider,
+        });
         return;
       }
 
@@ -393,11 +420,14 @@ export default function TelecomOperatorPage() {
                 <p className="mt-1 text-xs text-gray-500">
                   {t.connectionTestingBody}
                 </p>
+                {profile.operatorName.toLowerCase() === "vodacom" && (
+                  <p className="mt-1 text-xs text-gray-400">{t.vodacomTestHint}</p>
+                )}
 
                 <button
                   type="button"
                   onClick={testConnection}
-                  disabled={testing || !profile.apiEndpoint}
+                  disabled={testing}
                   className="mt-3 rounded-lg border border-gray-300 px-4 py-2 text-sm
                   font-semibold text-gray-700 transition hover:bg-gray-50
                   disabled:cursor-not-allowed disabled:opacity-50"
@@ -405,16 +435,20 @@ export default function TelecomOperatorPage() {
                   {testing ? t.testing : t.testConnection}
                 </button>
 
-                {!profile.apiEndpoint && (
-                  <p className="mt-2 text-xs text-gray-400">
-                    {t.noEndpointConfigured}
-                  </p>
-                )}
-
                 {testResult && (
-                  <p className={`mt-3 text-sm ${testResult.success ? "text-green-700" : "text-red-700"}`}>
-                    {testResult.success ? "✓" : "✗"} {testResult.message}
-                  </p>
+                  <div
+                    className={`mt-3 rounded-lg px-4 py-3 text-sm ${
+                      CONNECTION_TEST_STYLES[testResult.state ?? (testResult.success ? "connected" : "connection_failed")]
+                    }`}
+                  >
+                    <p className="font-semibold">
+                      {testResult.success ? "✓" : "✗"}{" "}
+                      {t.connectionTestStateLabels[
+                        testResult.state ?? (testResult.success ? "connected" : "connection_failed")
+                      ]}
+                    </p>
+                    <p className="mt-1 text-xs opacity-90">{testResult.message}</p>
+                  </div>
                 )}
               </div>
 

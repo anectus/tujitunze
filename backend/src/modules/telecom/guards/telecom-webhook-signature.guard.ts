@@ -52,10 +52,9 @@ export class TelecomWebhookSignatureGuard implements CanActivate {
 
     const [operator] = await this.dataSource.query<
       { webhook_secret: string | null }[]
-    >(
-      `SELECT webhook_secret FROM telecom_operators WHERE operator_id = $1`,
-      [operatorId],
-    );
+    >(`SELECT webhook_secret FROM telecom_operators WHERE operator_id = $1`, [
+      operatorId,
+    ]);
 
     if (!operator?.webhook_secret) {
       request.telecomWebhookSignatureVerified = false;

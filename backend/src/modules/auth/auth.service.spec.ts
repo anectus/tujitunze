@@ -6,6 +6,7 @@ import * as nodemailer from 'nodemailer';
 import { AuthService } from './auth.service';
 import { AuditLogsService } from '../audit-logs/audit-logs.service';
 import { SmsService } from './sms.service';
+import { EmailService } from '../email/email.service';
 
 jest.mock('nodemailer');
 
@@ -28,6 +29,7 @@ describe('AuthService', () => {
         { provide: ConfigService, useValue: {} },
         { provide: AuditLogsService, useValue: {} },
         { provide: SmsService, useValue: {} },
+        EmailService,
       ],
     }).compile();
 
@@ -94,6 +96,7 @@ describe('AuthService', () => {
             useValue: { record: jest.fn().mockResolvedValue(undefined) },
           },
           { provide: SmsService, useValue: {} },
+          EmailService,
         ],
       }).compile();
 

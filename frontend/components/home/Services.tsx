@@ -1,7 +1,6 @@
 "use client";
 
 import Image from "next/image";
-import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 
 import { servicesTranslations } from "@/constants/translations/home";
@@ -25,8 +24,6 @@ const serviceMeta = [
   },
 ] as const;
 
-const TELECOM_LINK = "/contributions";
-
 /*
  * IMPORTANT:
  * Replace this with the exact image you placed inside /public.
@@ -43,11 +40,9 @@ const TELECOM_IMAGE = "/health-wallet.jpg";
 function TelecomContributionsFeature({
   title,
   description,
-  cta,
 }: {
   title: string;
   description: string;
-  cta: string;
 }) {
   const sectionRef = useRef<HTMLElement | null>(null);
   const [visible, setVisible] = useState(false);
@@ -145,17 +140,6 @@ function TelecomContributionsFeature({
             </span>
           </div>
 
-          {/* CTA */}
-          <Link
-            href={TELECOM_LINK}
-            className="mt-6 inline-flex items-center gap-2 rounded-full bg-slate-950 px-5 py-2.5 text-sm font-bold text-white shadow-lg shadow-slate-900/10 transition-all duration-300 hover:-translate-y-0.5 hover:bg-blue-800 hover:shadow-xl active:translate-y-0"
-          >
-            {cta}
-
-            <span className="transition-transform duration-300 group-hover:translate-x-1">
-              →
-            </span>
-          </Link>
         </div>
 
         {/* =================================================
@@ -205,12 +189,10 @@ function ServiceCard({
   service,
   index,
   isVisible,
-  learnMore,
 }: {
   service: any;
   index: number;
   isVisible: boolean;
-  learnMore: string;
 }) {
   const accentStyles = {
     blue: {
@@ -269,14 +251,6 @@ function ServiceCard({
       <p className="mt-2 text-sm leading-5 text-slate-600">
         {service.description}
       </p>
-
-      <Link
-        href={service.link}
-        className="mt-4 inline-flex items-center gap-2 text-sm font-bold text-blue-700 transition-all duration-300 hover:gap-3"
-      >
-        {learnMore}
-        <span>→</span>
-      </Link>
     </div>
   );
 }
@@ -344,7 +318,6 @@ export default function Services() {
               service={services[0]}
               index={0}
               isVisible={pageVisible}
-              learnMore={t.learnMore}
             />
           )}
 
@@ -354,7 +327,6 @@ export default function Services() {
               service={services[2]}
               index={1}
               isVisible={pageVisible}
-              learnMore={t.learnMore}
             />
           )}
 
@@ -366,7 +338,6 @@ export default function Services() {
               <TelecomContributionsFeature
                 title={t.telecomTitle}
                 description={t.telecomDescription}
-                cta={t.learnMore}
               />
             </div>
           )}

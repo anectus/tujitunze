@@ -45,7 +45,7 @@ export const contactTranslations = {
   en: {
     heading: "Contact Tujitunze",
     intro:
-      "Whether you are a member seeking healthcare support, a hospital verifying patient eligibility, a telecom operator integrating contribution services, a financial institution, or a development partner, the Health Savings and Insurance Management System (Tujitunze) team is ready to assist you.",
+      "Whether you are a member seeking healthcare support, a telecom operator integrating contribution services, a financial institution, or a development partner, the Health Savings and Insurance Management System (Tujitunze) team is ready to assist you.",
     headquartersTitle: "Headquarters",
     headquartersBody: "Health Savings and Insurance Management System",
     city: "Dar es Salaam",
@@ -64,13 +64,11 @@ export const contactTranslations = {
     addressTitle: "Address",
     generalSupportTitle: "General Support",
     technicalSupportTitle: "Technical Support",
-    healthcareSupportTitle: "Healthcare Support",
     telephoneTitle: "Telephone",
     weSupportTitle: "We Support",
     supportList: [
       "Member Registration",
       "Health Wallet Assistance",
-      "Hospital Verification",
       "Telecom Integration",
       "Bank Integration",
       "System Administration",
@@ -99,7 +97,7 @@ export const contactTranslations = {
   sw: {
     heading: "Wasiliana na Tujitunze",
     intro:
-      "Iwe wewe ni mwanachama unayetafuta msaada wa afya, hospitali inayothibitisha ustahiki wa mgonjwa, mtoa huduma za mawasiliano anayeunganisha huduma za michango, taasisi ya fedha, au mshirika wa maendeleo, timu ya Mfumo wa Akiba ya Afya na Usimamizi wa Bima (Tujitunze) iko tayari kukusaidia.",
+      "Iwe wewe ni mwanachama unayetafuta msaada wa afya, mtoa huduma za mawasiliano anayeunganisha huduma za michango, taasisi ya fedha, au mshirika wa maendeleo, timu ya Mfumo wa Akiba ya Afya na Usimamizi wa Bima (Tujitunze) iko tayari kukusaidia.",
     headquartersTitle: "Makao Makuu",
     headquartersBody: "Mfumo wa Akiba ya Afya na Usimamizi wa Bima",
     city: "Dar es Salaam",
@@ -118,13 +116,11 @@ export const contactTranslations = {
     addressTitle: "Anwani",
     generalSupportTitle: "Msaada wa Jumla",
     technicalSupportTitle: "Msaada wa Kiufundi",
-    healthcareSupportTitle: "Msaada wa Huduma za Afya",
     telephoneTitle: "Simu",
     weSupportTitle: "Tunasaidia",
     supportList: [
       "Usajili wa Wanachama",
       "Msaada wa Mkoba wa Afya",
-      "Uthibitisho wa Hospitali",
       "Uunganisho wa Mawasiliano",
       "Uunganisho wa Benki",
       "Usimamizi wa Mfumo",

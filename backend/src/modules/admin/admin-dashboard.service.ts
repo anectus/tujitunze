@@ -356,17 +356,32 @@ export class AdminDashboardService {
     );
 
     return {
-      totalContributions: { count: row.total_count, amount: Number(row.total_amount) },
-      telecomContributions: { count: row.telecom_count, amount: Number(row.telecom_amount) },
-      bankContributions: { count: row.bank_count, amount: Number(row.bank_amount) },
+      totalContributions: {
+        count: row.total_count,
+        amount: Number(row.total_amount),
+      },
+      telecomContributions: {
+        count: row.telecom_count,
+        amount: Number(row.telecom_amount),
+      },
+      bankContributions: {
+        count: row.bank_count,
+        amount: Number(row.bank_amount),
+      },
       totalInsuranceAllocations: {
         count: row.allocation_count,
         amount: Number(row.allocation_amount),
       },
-      allocated: { count: row.allocated_count, amount: Number(row.allocated_amount) },
+      allocated: {
+        count: row.allocated_count,
+        amount: Number(row.allocated_amount),
+      },
       pending: { count: row.pending_count, amount: Number(row.pending_amount) },
       failed: { count: row.failed_count, amount: Number(row.failed_amount) },
-      reversed: { count: row.reversed_count, amount: Number(row.reversed_amount) },
+      reversed: {
+        count: row.reversed_count,
+        amount: Number(row.reversed_amount),
+      },
       unreconciled: {
         count: row.unreconciled_count,
         amount: Number(row.unreconciled_amount),
@@ -480,7 +495,10 @@ export class AdminDashboardService {
     ]);
 
     return {
-      operators: operators.map((o) => ({ id: o.operator_id, name: o.operator_name })),
+      operators: operators.map((o) => ({
+        id: o.operator_id,
+        name: o.operator_name,
+      })),
       banks: banks.map((b) => ({ id: b.bank_id, name: b.bank_name })),
       insuranceProviders: providers.map((p) => ({
         id: p.provider_id,

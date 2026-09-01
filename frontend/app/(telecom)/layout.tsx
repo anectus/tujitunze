@@ -6,6 +6,7 @@ const NAV_ITEMS = [
   { labelKey: "operatorProfile", href: "/telecom/operator" },
   { labelKey: "registeredMembers", href: "/telecom/members" },
   { labelKey: "contributionTransactions", href: "/telecom/contributions" },
+  { labelKey: "usageContributions", href: "/telecom/usage-contributions" },
   { labelKey: "contributionRules", href: "/telecom/contribution-rules" },
   { labelKey: "reconciliation", href: "/telecom/reconciliation" },
   { labelKey: "reports", href: "/telecom/reports" },
