@@ -7,23 +7,31 @@ import {
   ServiceUnavailableException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { DataSource } from 'typeorm';
+import { DataSource, EntityManager } from 'typeorm';
 import * as bcrypt from 'bcrypt';
 import * as crypto from 'crypto';
 
+import { encryptWebhookSecret } from '../../common/webhook-secret-crypto';
 import { UpdateOperatorContactDto } from './dto/update-operator-contact.dto';
 import { ConfigureWebhookDto } from './dto/configure-webhook.dto';
 import { UploadReconciliationDto } from './dto/upload-reconciliation.dto';
 import { RecordContributionDto } from './dto/record-contribution.dto';
 import { WebhookContributionDto } from './dto/webhook-contribution.dto';
-import { WebhookUsageEventDto } from './dto/webhook-usage-event.dto';
+import { WebhookResourceConversionDto } from './dto/webhook-resource-conversion.dto';
+import { WebhookOutgoingTransactionDto } from './dto/webhook-outgoing-transaction.dto';
 import {
-  buildUsageContributionReference,
-  calculateContributionQuantity,
-  mapTelecomUsageEventRow,
-  TelecomUsageEventRow,
-  UsageType,
-} from './telecom-usage-event.types';
+  buildResourceConversionReference,
+  calculateResourceConversion,
+  mapTelecomResourceConversionRow,
+  RESOURCE_TYPE_UNIT,
+  TelecomResourceConversionRow,
+} from './telecom-resource-conversion.types';
+import {
+  buildDiversionReference,
+  calculateDivertedAmount,
+  mapOutgoingTransactionDiversionRow,
+  OutgoingTransactionDiversionRow,
+} from './outgoing-transaction-diversion.types';
 import { AuditLogsService } from '../audit-logs/audit-logs.service';
 import { WalletsService } from '../wallets/wallets.service';
 import { VodacomC2BService } from './vodacom/vodacom-c2b.service';
@@ -329,7 +337,8 @@ export class TelecomService {
     ipAddress: string | null = null,
     signatureVerified: boolean = false,
   ) {
-    const isVodacom = await this.vodacomC2BService.isVodacomOperator(operatorId);
+    const isVodacom =
+      await this.vodacomC2BService.isVodacomOperator(operatorId);
 
     const [existing] = await this.dataSource.query<ContributionRow[]>(
       `SELECT contribution_id, member_id, reference_number, internal_reference, contribution_amount, contribution_source, processing_status, contribution_date
@@ -342,7 +351,11 @@ export class TelecomService {
       // Only a Vodacom contribution can still be sitting 'Pending' with
       // no payment_transactions row yet — the direct-credit path below
       // never leaves a contribution in that state.
-      if (isVodacom && existing.processing_status === 'Pending' && existing.member_id) {
+      if (
+        isVodacom &&
+        existing.processing_status === 'Pending' &&
+        existing.member_id
+      ) {
         const [payment] = await this.dataSource.query<
           { payment_transaction_id: number }[]
         >(
@@ -1133,12 +1146,13 @@ export class TelecomService {
     const operatorId = await this.getAssignedOperatorId(userId);
 
     const webhookSecret = crypto.randomBytes(24).toString('hex');
+    const encryptedSecret = encryptWebhookSecret(webhookSecret);
 
     await this.dataSource.query(
       `UPDATE telecom_operators
        SET webhook_url = $2, webhook_secret = $3, webhook_secret_generated_at = NOW(), updated_at = NOW()
        WHERE operator_id = $1`,
-      [operatorId, data.webhookUrl, webhookSecret],
+      [operatorId, data.webhookUrl, encryptedSecret],
     );
 
     await this.dataSource.transaction((manager) =>
@@ -1168,11 +1182,10 @@ export class TelecomService {
   async testConnection(userId: number) {
     const operatorId = await this.getAssignedOperatorId(userId);
 
-    const [operator] = await this.dataSource.query<
-      { operator_name: string }[]
-    >(`SELECT operator_name FROM telecom_operators WHERE operator_id = $1`, [
-      operatorId,
-    ]);
+    const [operator] = await this.dataSource.query<{ operator_name: string }[]>(
+      `SELECT operator_name FROM telecom_operators WHERE operator_id = $1`,
+      [operatorId],
+    );
 
     if (!operator) {
       throw new NotFoundException('Assigned telecom operator not found');
@@ -1462,137 +1475,335 @@ export class TelecomService {
   }
 
   // =====================================================
-  // Usage-Based Contributions — Model B (6% of qualifying VOICE/SMS/DATA
-  // usage, telecom_usage_events / migrations 0019-0020). See
-  // telecom-usage-event.types.ts for the full model writeup. Real
-  // inbound event boundary, same shape as handleContributionWebhook /
-  // BankService.handleTransactionWebhook: unlike the airtime flow (which
-  // hands off to VodacomC2BService for a separate M-Pesa collection),
-  // this is a direct-credit flow — the operator's own valuation IS the
-  // qualifying event, so the contribution, wallet credit, and insurance
-  // allocation all happen in the same transaction as the usage event
-  // itself, mirroring BankService.handleTransactionWebhook exactly.
+  // Principle 1 — Resource Conversion
+  // (telecom_resource_conversion_events + telecom_resource_usage_splits,
+  // split from one merged table by migration 0028 — see that file's
+  // header and CLAUDE.md for why)
   // =====================================================
+  // Synchronous inbound boundary: the operator must receive
+  // netUnitsToCustomer back before granting anything — that's what
+  // keeps the saving invisible to the member. Idempotency keyed on
+  // (telecom_operator_id, external_transaction_id, resource_type),
+  // the same shape as every other webhook handler in this file.
 
-  private assertUsageUnitMatchesType(
-    usageType: 'VOICE' | 'SMS' | 'DATA',
-    unit: 'MINUTES' | 'SMS' | 'MB',
-  ): void {
-    const expected: Record<typeof usageType, typeof unit> = {
-      VOICE: 'MINUTES',
-      SMS: 'SMS',
-      DATA: 'MB',
-    };
-    if (expected[usageType] !== unit) {
-      throw new BadRequestException(
-        `Usage type "${usageType}" must be reported in ${expected[usageType]}, not ${unit}.`,
-      );
-    }
+  // Reconstructs the flat TelecomResourceConversionRow shape (every
+  // existing consumer's expected shape) via a JOIN across the two
+  // physically separate tables — every read call site in this class
+  // goes through one of these two helpers instead of repeating the
+  // JOIN inline.
+  private async selectResourceConversionByEventId(
+    runner: DataSource | EntityManager,
+    eventId: number,
+  ): Promise<TelecomResourceConversionRow | undefined> {
+    const [row] = await runner.query<TelecomResourceConversionRow[]>(
+      `SELECT
+         e.event_id AS conversion_id, e.external_transaction_id, e.member_id,
+         e.phone_number, e.phone_id, e.telecom_operator_id, e.resource_type,
+         e.gross_units, e.unit, s.saving_rate, s.saved_units, s.net_units_to_customer,
+         s.provider_unit_value_tzs, s.saved_value_tzs, s.currency, s.status,
+         s.contribution_id, e.conversion_timestamp, e.created_at, s.updated_at
+       FROM telecom_resource_conversion_events e
+       JOIN telecom_resource_usage_splits s ON s.event_id = e.event_id
+       WHERE e.event_id = $1`,
+      [eventId],
+    );
+    return row;
   }
 
-  // Real inbound usage-event boundary. Reuses the SAME idempotency
-  // check + unique-violation race handling shape as
-  // handleContributionWebhook/BankService.handleTransactionWebhook, keyed
-  // on telecom_usage_events' own idempotency index
-  // (telecom_operator_id, external_transaction_id, usage_type) rather
-  // than telecom_contributions.reference_number, since a usage event can
-  // exist (PENDING_REVIEW, unmatched member) before any contribution row
-  // does.
-  async handleUsageEventWebhook(
+  private async selectResourceConversionByIdempotencyKey(
+    runner: DataSource | EntityManager,
     operatorId: number,
-    dto: WebhookUsageEventDto,
+    externalTransactionId: string,
+    resourceType: string,
+  ): Promise<TelecomResourceConversionRow | undefined> {
+    const [row] = await runner.query<TelecomResourceConversionRow[]>(
+      `SELECT
+         e.event_id AS conversion_id, e.external_transaction_id, e.member_id,
+         e.phone_number, e.phone_id, e.telecom_operator_id, e.resource_type,
+         e.gross_units, e.unit, s.saving_rate, s.saved_units, s.net_units_to_customer,
+         s.provider_unit_value_tzs, s.saved_value_tzs, s.currency, s.status,
+         s.contribution_id, e.conversion_timestamp, e.created_at, s.updated_at
+       FROM telecom_resource_conversion_events e
+       JOIN telecom_resource_usage_splits s ON s.event_id = e.event_id
+       WHERE e.telecom_operator_id = $1 AND e.external_transaction_id = $2 AND e.resource_type = $3`,
+      [operatorId, externalTransactionId, resourceType],
+    );
+    return row;
+  }
+
+  async handleResourceConversionWebhook(
+    operatorId: number,
+    dto: WebhookResourceConversionDto,
     ipAddress: string | null = null,
     signatureVerified: boolean = false,
   ) {
-    this.assertUsageUnitMatchesType(dto.usageType, dto.unit);
+    if (RESOURCE_TYPE_UNIT[dto.resourceType] !== dto.unit) {
+      throw new BadRequestException(
+        `Resource type "${dto.resourceType}" must be reported in ${RESOURCE_TYPE_UNIT[dto.resourceType]}, not ${dto.unit}.`,
+      );
+    }
 
-    const [existing] = await this.dataSource.query<TelecomUsageEventRow[]>(
-      `SELECT * FROM telecom_usage_events
-       WHERE telecom_operator_id = $1 AND external_transaction_id = $2 AND usage_type = $3`,
-      [operatorId, dto.externalTransactionId, dto.usageType],
+    const existing = await this.selectResourceConversionByIdempotencyKey(
+      this.dataSource,
+      operatorId,
+      dto.externalTransactionId,
+      dto.resourceType,
     );
 
     if (existing) {
       return {
         duplicate: true,
-        usageEvent: mapTelecomUsageEventRow(existing),
+        conversion: mapTelecomResourceConversionRow(existing),
+        netUnitsToCustomer: Number(existing.net_units_to_customer),
       };
     }
+
+    // Phone lookup happens once, up front, and is reused by every branch
+    // below (including the no-rule/opted-out ones) so each can persist
+    // an accurate member_id/phone_id — previously the no-rule branch
+    // never looked this up at all because it never persisted anything.
+    const [phone] = await this.dataSource.query<
+      { phone_id: number; user_id: number }[]
+    >(
+      `SELECT phone_id, user_id FROM phone_numbers
+       WHERE phone_number = $1 AND operator_id = $2 AND phone_status = 'Active'`,
+      [dto.phoneNumber, operatorId],
+    );
 
     const [rule] = await this.dataSource.query<
       { rule_id: number; rate: string }[]
     >(
       `SELECT rule_id, rate
        FROM contribution_rules
-       WHERE usage_type = $1 AND channel = 'TELECOM' AND is_active = true AND effective_date <= CURRENT_DATE
+       WHERE rule_type = $1 AND channel = 'TELECOM_RESOURCE' AND principle = 'RESOURCE_CONVERSION'
+         AND is_active = true AND effective_date <= CURRENT_DATE
        ORDER BY effective_date DESC
        LIMIT 1`,
-      [dto.usageType],
+      [dto.resourceType],
     );
 
+    // Previously: threw here with nothing persisted, so a misconfigured
+    // rule left no diagnostic trail. Now a row is always written first
+    // — full gross amount passed through, nothing withheld — and the
+    // operator still gets the same rejection so it never grants a
+    // saving that isn't backed by an active rule.
     if (!rule) {
+      try {
+        await this.dataSource.transaction(async (manager) => {
+          const [event] = await manager.query<{ event_id: number }[]>(
+            `INSERT INTO telecom_resource_conversion_events
+               (external_transaction_id, member_id, phone_number, phone_id, telecom_operator_id,
+                resource_type, gross_units, unit, conversion_timestamp)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+             RETURNING event_id`,
+            [
+              dto.externalTransactionId,
+              phone?.user_id ?? null,
+              dto.phoneNumber,
+              phone?.phone_id ?? null,
+              operatorId,
+              dto.resourceType,
+              dto.grossUnits,
+              dto.unit,
+              new Date(dto.conversionTimestamp),
+            ],
+          );
+
+          await manager.query(
+            `INSERT INTO telecom_resource_usage_splits
+               (event_id, saving_rate, saved_units, net_units_to_customer,
+                provider_unit_value_tzs, saved_value_tzs, currency, status)
+             VALUES ($1, 0, 0, $2, $3, 0, 'TZS', 'NO_ACTIVE_RULE')`,
+            [event.event_id, dto.grossUnits, dto.providerUnitValueTzs],
+          );
+
+          await this.auditLogsService.record(manager, {
+            memberId: phone?.user_id ?? null,
+            actionType: 'telecom.resource_conversion_no_active_rule',
+            affectedTable: 'telecom_resource_conversion_events',
+            affectedRecordId: event.event_id,
+            newValue: {
+              operatorId,
+              resourceType: dto.resourceType,
+              phoneNumber: dto.phoneNumber,
+              externalTransactionId: dto.externalTransactionId,
+              signatureVerified,
+            },
+            ipAddress,
+          });
+        });
+      } catch (error) {
+        if (!this.isUniqueViolation(error)) {
+          throw error;
+        }
+        // Raced with another call for the same idempotency key — fall
+        // through to the operator-facing rejection either way, nothing
+        // further to persist.
+      }
+
       throw new BadRequestException(
-        `No active contribution rule for usage type "${dto.usageType}"`,
+        `No active resource-conversion rule for "${dto.resourceType}"`,
       );
     }
 
-    const contributionRate = Number(rule.rate);
-    const contributionQuantity = calculateContributionQuantity(
-      dto.quantity,
-      contributionRate,
+    // A member who has opted out (member_saving_consents.consented =
+    // FALSE) keeps the full gross amount — no split, no wallet credit —
+    // but the event is still recorded so there's a trail distinct from
+    // a normal 0-saving case.
+    if (phone) {
+      const [consent] = await this.dataSource.query<{ consented: boolean }[]>(
+        `SELECT consented FROM member_saving_consents WHERE member_id = $1`,
+        [phone.user_id],
+      );
+
+      if (consent && consent.consented === false) {
+        try {
+          const conversion = await this.dataSource.transaction(
+            async (manager) => {
+              const [event] = await manager.query<{ event_id: number }[]>(
+                `INSERT INTO telecom_resource_conversion_events
+                   (external_transaction_id, member_id, phone_number, phone_id, telecom_operator_id,
+                    resource_type, gross_units, unit, conversion_timestamp)
+                 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+                 RETURNING event_id`,
+                [
+                  dto.externalTransactionId,
+                  phone.user_id,
+                  dto.phoneNumber,
+                  phone.phone_id,
+                  operatorId,
+                  dto.resourceType,
+                  dto.grossUnits,
+                  dto.unit,
+                  new Date(dto.conversionTimestamp),
+                ],
+              );
+
+              await manager.query(
+                `INSERT INTO telecom_resource_usage_splits
+                   (event_id, saving_rate, saved_units, net_units_to_customer,
+                    provider_unit_value_tzs, saved_value_tzs, currency, status)
+                 VALUES ($1, 0, 0, $2, $3, 0, 'TZS', 'OPTED_OUT')`,
+                [event.event_id, dto.grossUnits, dto.providerUnitValueTzs],
+              );
+
+              await this.auditLogsService.record(manager, {
+                memberId: phone.user_id,
+                actionType: 'telecom.resource_conversion_opted_out',
+                affectedTable: 'telecom_resource_conversion_events',
+                affectedRecordId: event.event_id,
+                newValue: {
+                  operatorId,
+                  resourceType: dto.resourceType,
+                  grossUnits: dto.grossUnits,
+                  externalTransactionId: dto.externalTransactionId,
+                  signatureVerified,
+                },
+                ipAddress,
+              });
+
+              return this.selectResourceConversionByEventId(
+                manager,
+                event.event_id,
+              );
+            },
+          );
+
+          return {
+            duplicate: false,
+            matched: true,
+            status: 'OPTED_OUT' as const,
+            conversion: conversion
+              ? mapTelecomResourceConversionRow(conversion)
+              : null,
+            netUnitsToCustomer: dto.grossUnits,
+          };
+        } catch (error) {
+          if (!this.isUniqueViolation(error)) {
+            throw error;
+          }
+          const raced = await this.selectResourceConversionByIdempotencyKey(
+            this.dataSource,
+            operatorId,
+            dto.externalTransactionId,
+            dto.resourceType,
+          );
+          return {
+            duplicate: true,
+            conversion: raced ? mapTelecomResourceConversionRow(raced) : null,
+            netUnitsToCustomer: raced
+              ? Number(raced.net_units_to_customer)
+              : dto.grossUnits,
+          };
+        }
+      }
+    }
+
+    const savingRate = Number(rule.rate);
+    const { savedUnits, netUnitsToCustomer } = calculateResourceConversion(
+      dto.grossUnits,
+      savingRate,
     );
+    const savedValueTzs =
+      Math.round(savedUnits * dto.providerUnitValueTzs * 100) / 100;
 
     try {
       return await this.dataSource.transaction(async (manager) => {
-        const [phone] = await manager.query<
-          { phone_id: number; user_id: number }[]
-        >(
-          `SELECT phone_id, user_id FROM phone_numbers
-           WHERE phone_number = $1 AND operator_id = $2 AND phone_status = 'Active'`,
-          [dto.phoneNumber, operatorId],
-        );
-
-        // No confident member match (unknown phone, or a phone that
-        // belongs to a different operator than the one authenticated for
-        // this call): recorded for reconciliation staff to resolve, but
-        // NEVER credited — the wallet must never be touched for a usage
-        // event that can't be attributed to a real member. Mirrors
-        // payment_transactions' identical PENDING_REVIEW precedent.
+        // Mirrors every other webhook handler's PENDING_REVIEW shape:
+        // the operator has already committed to this call, but the
+        // wallet must never be credited without a confident member
+        // match. netUnitsToCustomer is still returned so the operator
+        // has one consistent response contract to act on either way.
         if (!phone) {
-          const [usageEvent] = await manager.query<TelecomUsageEventRow[]>(
-            `INSERT INTO telecom_usage_events
+          const [event] = await manager.query<{ event_id: number }[]>(
+            `INSERT INTO telecom_resource_conversion_events
                (external_transaction_id, member_id, phone_number, phone_id, telecom_operator_id,
-                usage_type, quantity, unit, contribution_rate, contribution_quantity,
-                provider_valuation_tzs, currency, usage_timestamp, status, provider_reference, metadata)
-             VALUES ($1, NULL, $2, NULL, $3, $4, $5, $6, $7, $8, $9, 'TZS', $10, 'PENDING_REVIEW', $11, $12)
-             RETURNING *`,
+                resource_type, gross_units, unit, conversion_timestamp)
+             VALUES ($1, NULL, $2, NULL, $3, $4, $5, $6, $7)
+             RETURNING event_id`,
             [
               dto.externalTransactionId,
               dto.phoneNumber,
               operatorId,
-              dto.usageType,
-              dto.quantity,
+              dto.resourceType,
+              dto.grossUnits,
               dto.unit,
-              contributionRate,
-              contributionQuantity,
-              dto.providerValuationTzs,
-              new Date(dto.usageTimestamp),
-              dto.providerReference ?? null,
-              dto.metadata ?? null,
+              new Date(dto.conversionTimestamp),
             ],
+          );
+
+          await manager.query(
+            `INSERT INTO telecom_resource_usage_splits
+               (event_id, saving_rate, saved_units, net_units_to_customer,
+                provider_unit_value_tzs, saved_value_tzs, currency, status)
+             VALUES ($1, $2, $3, $4, $5, $6, 'TZS', 'PENDING_REVIEW')`,
+            [
+              event.event_id,
+              savingRate,
+              savedUnits,
+              netUnitsToCustomer,
+              dto.providerUnitValueTzs,
+              savedValueTzs,
+            ],
+          );
+
+          const conversion = await this.selectResourceConversionByEventId(
+            manager,
+            event.event_id,
           );
 
           await this.auditLogsService.record(manager, {
             memberId: null,
-            actionType: 'telecom.usage_event_pending_review',
-            affectedTable: 'telecom_usage_events',
-            affectedRecordId: usageEvent.usage_event_id,
+            actionType: 'telecom.resource_conversion_pending_review',
+            affectedTable: 'telecom_resource_conversion_events',
+            affectedRecordId: event.event_id,
             newValue: {
               operatorId,
-              usageType: dto.usageType,
+              resourceType: dto.resourceType,
               phoneNumber: dto.phoneNumber,
               externalTransactionId: dto.externalTransactionId,
-              reason: 'No active member found with that phone number for this operator',
+              reason:
+                'No active member found with that phone number for this operator',
               signatureVerified,
             },
             ipAddress,
@@ -1602,45 +1813,55 @@ export class TelecomService {
             duplicate: false,
             matched: false,
             status: 'PENDING_REVIEW' as const,
-            usageEvent: mapTelecomUsageEventRow(usageEvent),
+            conversion: conversion
+              ? mapTelecomResourceConversionRow(conversion)
+              : null,
+            netUnitsToCustomer,
           };
         }
 
-        const [usageEvent] = await manager.query<TelecomUsageEventRow[]>(
-          `INSERT INTO telecom_usage_events
+        const [event] = await manager.query<{ event_id: number }[]>(
+          `INSERT INTO telecom_resource_conversion_events
              (external_transaction_id, member_id, phone_number, phone_id, telecom_operator_id,
-              usage_type, quantity, unit, contribution_rate, contribution_quantity,
-              provider_valuation_tzs, currency, usage_timestamp, status, provider_reference, metadata)
-           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, 'TZS', $12, 'PENDING', $13, $14)
-           RETURNING *`,
+              resource_type, gross_units, unit, conversion_timestamp)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+           RETURNING event_id`,
           [
             dto.externalTransactionId,
             phone.user_id,
             dto.phoneNumber,
             phone.phone_id,
             operatorId,
-            dto.usageType,
-            dto.quantity,
+            dto.resourceType,
+            dto.grossUnits,
             dto.unit,
-            contributionRate,
-            contributionQuantity,
-            dto.providerValuationTzs,
-            new Date(dto.usageTimestamp),
-            dto.providerReference ?? null,
-            dto.metadata ?? null,
+            new Date(dto.conversionTimestamp),
           ],
         );
 
-        const internalReference = this.generateInternalReference('USG');
-        const referenceNumber = buildUsageContributionReference(
-          dto.usageType,
+        await manager.query(
+          `INSERT INTO telecom_resource_usage_splits
+             (event_id, saving_rate, saved_units, net_units_to_customer,
+              provider_unit_value_tzs, saved_value_tzs, currency, status)
+           VALUES ($1, $2, $3, $4, $5, $6, 'TZS', 'PENDING')`,
+          [
+            event.event_id,
+            savingRate,
+            savedUnits,
+            netUnitsToCustomer,
+            dto.providerUnitValueTzs,
+            savedValueTzs,
+          ],
+        );
+
+        const conversionId = event.event_id;
+
+        const internalReference = this.generateInternalReference('RSC');
+        const referenceNumber = buildResourceConversionReference(
+          dto.resourceType,
           dto.externalTransactionId,
         );
 
-        // Received -> Validated -> (Allocated | stays Validated), same
-        // progression as the airtime/bank webhook flows — this is a
-        // direct-credit event, not a two-step collection, so it starts
-        // further along than the airtime flow's 'Pending'.
         const [contribution] = await manager.query<ContributionRow[]>(
           `INSERT INTO telecom_contributions
              (member_id, phone_id, operator_id, contribution_amount, contribution_source,
@@ -1651,8 +1872,8 @@ export class TelecomService {
             phone.user_id,
             phone.phone_id,
             operatorId,
-            dto.providerValuationTzs,
-            dto.usageType,
+            savedValueTzs,
+            dto.resourceType,
             referenceNumber,
             internalReference,
           ],
@@ -1667,12 +1888,12 @@ export class TelecomService {
           await this.walletsService.creditContribution(
             manager,
             phone.user_id,
-            dto.providerValuationTzs,
+            savedValueTzs,
             {
               contributionId: contribution.contribution_id,
-              transactionType: `Contribution - ${dto.usageType} Usage`,
+              transactionType: `Saving - ${dto.resourceType} Resource Conversion`,
               transactionReference: referenceNumber,
-              remarks: `${dto.usageType} usage contribution — 6% of ${dto.quantity} ${dto.unit} via ${dto.phoneNumber} (webhook).`,
+              remarks: `${dto.resourceType} bundle conversion — ${savedUnits} of ${dto.grossUnits} ${dto.unit} saved via ${dto.phoneNumber} (webhook).`,
             },
           );
 
@@ -1685,34 +1906,47 @@ export class TelecomService {
           );
         }
 
-        // manager.query() on an UPDATE ... RETURNING (unlike a plain
-        // SELECT/INSERT ... RETURNING) resolves to [rows, affectedRowCount]
-        // under this TypeORM version — double-destructure to get the row
-        // itself, same convention already established in
-        // insurance.service.ts's claim-status UPDATE.
-        const [[finalUsageEvent]] = await manager.query<
-          [TelecomUsageEventRow[], number]
-        >(
-          `UPDATE telecom_usage_events
+        await manager.query(
+          `UPDATE telecom_resource_usage_splits
            SET status = 'SUCCESSFUL', contribution_id = $2, updated_at = NOW()
-           WHERE usage_event_id = $1
-           RETURNING *`,
-          [usageEvent.usage_event_id, contribution.contribution_id],
+           WHERE event_id = $1`,
+          [conversionId, contribution.contribution_id],
+        );
+
+        const finalConversion = await this.selectResourceConversionByEventId(
+          manager,
+          conversionId,
+        );
+
+        await manager.query(
+          `INSERT INTO saving_ledger
+             (member_id, principle, source_table, source_id, contribution_id, wallet_transaction_id, rule_id, saved_value_tzs)
+           VALUES ($1, 'RESOURCE_CONVERSION', 'telecom_resource_conversion_events', $2, $3, $4, $5, $6)`,
+          [
+            phone.user_id,
+            conversionId,
+            contribution.contribution_id,
+            walletTransaction.walletTransactionId,
+            rule.rule_id,
+            savedValueTzs,
+          ],
         );
 
         await this.auditLogsService.record(manager, {
           memberId: phone.user_id,
-          actionType: 'telecom.usage_event_process',
-          affectedTable: 'telecom_usage_events',
-          affectedRecordId: usageEvent.usage_event_id,
+          actionType: 'telecom.resource_conversion_process',
+          affectedTable: 'telecom_resource_conversion_events',
+          affectedRecordId: conversionId,
           newValue: {
             operatorId,
-            usageType: dto.usageType,
-            quantity: dto.quantity,
+            resourceType: dto.resourceType,
+            grossUnits: dto.grossUnits,
             unit: dto.unit,
-            contributionRate,
-            contributionQuantity,
-            providerValuationTzs: dto.providerValuationTzs,
+            savingRate,
+            savedUnits,
+            netUnitsToCustomer,
+            providerUnitValueTzs: dto.providerUnitValueTzs,
+            savedValueTzs,
             externalTransactionId: dto.externalTransactionId,
             internalReference,
             contributionId: contribution.contribution_id,
@@ -1728,12 +1962,15 @@ export class TelecomService {
           duplicate: false,
           matched: true,
           status: 'SUCCESSFUL' as const,
-          usageEvent: mapTelecomUsageEventRow(finalUsageEvent),
+          conversion: finalConversion
+            ? mapTelecomResourceConversionRow(finalConversion)
+            : null,
+          netUnitsToCustomer,
           contribution: {
             contributionId: contribution.contribution_id,
             referenceNumber: contribution.reference_number,
             internalReference,
-            amount: dto.providerValuationTzs,
+            amount: savedValueTzs,
             currency: 'TZS',
             processingStatus: finalContributionStatus,
           },
@@ -1744,23 +1981,27 @@ export class TelecomService {
       });
     } catch (error) {
       if (this.isUniqueViolation(error)) {
-        const [raced] = await this.dataSource.query<TelecomUsageEventRow[]>(
-          `SELECT * FROM telecom_usage_events
-           WHERE telecom_operator_id = $1 AND external_transaction_id = $2 AND usage_type = $3`,
-          [operatorId, dto.externalTransactionId, dto.usageType],
+        const raced = await this.selectResourceConversionByIdempotencyKey(
+          this.dataSource,
+          operatorId,
+          dto.externalTransactionId,
+          dto.resourceType,
         );
         return {
           duplicate: true,
-          usageEvent: raced ? mapTelecomUsageEventRow(raced) : null,
+          conversion: raced ? mapTelecomResourceConversionRow(raced) : null,
+          netUnitsToCustomer: raced
+            ? Number(raced.net_units_to_customer)
+            : netUnitsToCustomer,
         };
       }
       throw error;
     }
   }
 
-  async listUsageEvents(
+  async listResourceConversions(
     userId: number,
-    filters: { status?: string; usageType?: string },
+    filters: { status?: string; resourceType?: string },
     page: number,
     pageSize: number,
   ) {
@@ -1768,142 +2009,671 @@ export class TelecomService {
 
     const [{ count: total }] = await this.dataSource.query<{ count: number }[]>(
       `SELECT COUNT(*)::int AS count
-       FROM telecom_usage_events
-       WHERE telecom_operator_id = $1
-         AND ($2::text IS NULL OR status = $2)
-         AND ($3::text IS NULL OR usage_type = $3)`,
-      [operatorId, filters.status ?? null, filters.usageType ?? null],
+       FROM telecom_resource_conversion_events e
+       JOIN telecom_resource_usage_splits s ON s.event_id = e.event_id
+       WHERE e.telecom_operator_id = $1
+         AND ($2::text IS NULL OR s.status = $2)
+         AND ($3::text IS NULL OR e.resource_type = $3)`,
+      [operatorId, filters.status ?? null, filters.resourceType ?? null],
     );
 
-    const rows = await this.dataSource.query<
-      (TelecomUsageEventRow & { reconciliation_status: string | null })[]
-    >(
-      `SELECT ue.*,
-              (SELECT rr.match_status FROM telecom_reconciliation_records rr
-               WHERE rr.matched_contribution_id = ue.contribution_id
-               ORDER BY rr.record_id DESC LIMIT 1) AS reconciliation_status
-       FROM telecom_usage_events ue
-       WHERE ue.telecom_operator_id = $1
-         AND ($2::text IS NULL OR ue.status = $2)
-         AND ($3::text IS NULL OR ue.usage_type = $3)
-       ORDER BY ue.usage_timestamp DESC
+    const rows = await this.dataSource.query<TelecomResourceConversionRow[]>(
+      `SELECT
+         e.event_id AS conversion_id, e.external_transaction_id, e.member_id,
+         e.phone_number, e.phone_id, e.telecom_operator_id, e.resource_type,
+         e.gross_units, e.unit, s.saving_rate, s.saved_units, s.net_units_to_customer,
+         s.provider_unit_value_tzs, s.saved_value_tzs, s.currency, s.status,
+         s.contribution_id, e.conversion_timestamp, e.created_at, s.updated_at
+       FROM telecom_resource_conversion_events e
+       JOIN telecom_resource_usage_splits s ON s.event_id = e.event_id
+       WHERE e.telecom_operator_id = $1
+         AND ($2::text IS NULL OR s.status = $2)
+         AND ($3::text IS NULL OR e.resource_type = $3)
+       ORDER BY e.conversion_timestamp DESC
        LIMIT $4 OFFSET $5`,
       [
         operatorId,
         filters.status ?? null,
-        filters.usageType ?? null,
+        filters.resourceType ?? null,
         pageSize,
         (page - 1) * pageSize,
       ],
     );
 
     return {
-      items: rows.map((row) => ({
-        ...mapTelecomUsageEventRow(row),
-        reconciliationStatus: row.reconciliation_status,
-      })),
+      items: rows.map(mapTelecomResourceConversionRow),
       total,
       page,
       pageSize,
     };
   }
 
-  // Single-event detail with the full trace requested by the business
-  // requirement: usage event -> contribution -> wallet transaction ->
-  // insurance allocation.
-  async getUsageEvent(userId: number, usageEventId: number) {
+  async getResourceConversion(userId: number, conversionId: number) {
     const operatorId = await this.getAssignedOperatorId(userId);
 
-    const [usageEvent] = await this.dataSource.query<TelecomUsageEventRow[]>(
-      `SELECT * FROM telecom_usage_events
-       WHERE usage_event_id = $1 AND telecom_operator_id = $2`,
-      [usageEventId, operatorId],
+    const conversion = await this.selectResourceConversionByEventId(
+      this.dataSource,
+      conversionId,
     );
 
-    if (!usageEvent) {
-      throw new NotFoundException('Usage event not found');
+    if (!conversion || conversion.telecom_operator_id !== operatorId) {
+      throw new NotFoundException('Resource conversion not found');
     }
 
-    if (!usageEvent.contribution_id) {
-      return { usageEvent: mapTelecomUsageEventRow(usageEvent), trace: null };
-    }
-
-    const [trace] = await this.dataSource.query<
-      {
-        contribution_id: number;
-        reference_number: string | null;
-        contribution_amount: string;
-        processing_status: string;
-        wallet_transaction_id: number | null;
-        allocation_id: number | null;
-        allocation_status: string | null;
-        allocation_provider_id: number | null;
-        reconciliation_status: string | null;
-      }[]
-    >(
-      `SELECT tc.contribution_id, tc.reference_number, tc.contribution_amount, tc.processing_status,
-              wt.wallet_transaction_id,
-              ia.allocation_id, ia.allocation_status, ia.insurance_provider_id AS allocation_provider_id,
-              (SELECT rr.match_status FROM telecom_reconciliation_records rr
-               WHERE rr.matched_contribution_id = tc.contribution_id
-               ORDER BY rr.record_id DESC LIMIT 1) AS reconciliation_status
-       FROM telecom_contributions tc
-       LEFT JOIN wallet_transactions wt ON wt.contribution_id = tc.contribution_id
-       LEFT JOIN insurance_allocations ia ON ia.wallet_transaction_id = wt.wallet_transaction_id
-       WHERE tc.contribution_id = $1`,
-      [usageEvent.contribution_id],
-    );
-
-    return {
-      usageEvent: mapTelecomUsageEventRow(usageEvent),
-      trace: trace
-        ? {
-            contributionId: trace.contribution_id,
-            referenceNumber: trace.reference_number,
-            contributionAmount: trace.contribution_amount,
-            processingStatus: trace.processing_status,
-            walletTransactionId: trace.wallet_transaction_id,
-            allocationId: trace.allocation_id,
-            allocationStatus: trace.allocation_status,
-            allocationProviderId: trace.allocation_provider_id,
-            reconciliationStatus: trace.reconciliation_status,
-          }
-        : null,
-    };
+    return mapTelecomResourceConversionRow(conversion);
   }
 
-  // Voice/SMS/Data breakdown + status counts — feeds the Telecom
-  // dashboard's usage-contribution summary without the frontend having
-  // to aggregate raw rows itself.
-  async getUsageEventsSummary(userId: number) {
+  async getResourceConversionsSummary(userId: number) {
     const operatorId = await this.getAssignedOperatorId(userId);
 
     const byType = await this.dataSource.query<
-      { usage_type: UsageType; count: number; total_valuation: string }[]
+      { resource_type: string; count: number; total_saved_value: string }[]
     >(
-      `SELECT usage_type, COUNT(*)::int AS count,
-              COALESCE(SUM(provider_valuation_tzs) FILTER (WHERE status = 'SUCCESSFUL'), 0) AS total_valuation
-       FROM telecom_usage_events
-       WHERE telecom_operator_id = $1
-       GROUP BY usage_type`,
+      `SELECT e.resource_type, COUNT(*)::int AS count,
+              COALESCE(SUM(s.saved_value_tzs) FILTER (WHERE s.status = 'SUCCESSFUL'), 0) AS total_saved_value
+       FROM telecom_resource_conversion_events e
+       JOIN telecom_resource_usage_splits s ON s.event_id = e.event_id
+       WHERE e.telecom_operator_id = $1
+       GROUP BY e.resource_type`,
       [operatorId],
     );
 
     const byStatus = await this.dataSource.query<
       { status: string; count: number }[]
     >(
-      `SELECT status, COUNT(*)::int AS count
-       FROM telecom_usage_events
-       WHERE telecom_operator_id = $1
-       GROUP BY status`,
+      `SELECT s.status, COUNT(*)::int AS count
+       FROM telecom_resource_conversion_events e
+       JOIN telecom_resource_usage_splits s ON s.event_id = e.event_id
+       WHERE e.telecom_operator_id = $1
+       GROUP BY s.status`,
       [operatorId],
     );
 
     return {
-      byUsageType: Object.fromEntries(
+      byResourceType: Object.fromEntries(
         byType.map((row) => [
-          row.usage_type,
-          { count: row.count, totalValuationTzs: row.total_valuation },
+          row.resource_type,
+          { count: row.count, totalSavedValueTzs: row.total_saved_value },
+        ]),
+      ),
+      byStatus: Object.fromEntries(
+        byStatus.map((row) => [row.status, row.count]),
+      ),
+    };
+  }
+
+  // =====================================================
+  // Principle 2 — Outgoing Transaction Diversion
+  // (telecom_outgoing_transaction_events + outgoing_transaction_savings,
+  // split from one merged table by migration 0028 — same pattern as
+  // Principle 1 above)
+  // =====================================================
+  // Fire-and-forget: called strictly AFTER the underlying Tuma/Lipa
+  // Namba/Toa/Bill Payment has already settled — this must never be in
+  // a position to delay or risk a real payment. Telecom-authenticated
+  // intake only in this pass (provider_type = 'TELECOM') — see
+  // outgoing-transaction-diversion.types.ts.
+
+  private async selectOutgoingDiversionByEventId(
+    runner: DataSource | EntityManager,
+    eventId: number,
+  ): Promise<OutgoingTransactionDiversionRow | undefined> {
+    const [row] = await runner.query<OutgoingTransactionDiversionRow[]>(
+      `SELECT
+         e.event_id AS diversion_id, e.external_transaction_id, e.member_id,
+         e.phone_number, e.phone_id, e.provider_type, e.telecom_operator_id,
+         e.bank_id, e.switch_provider, e.transaction_type, e.gross_amount_tzs,
+         s.saving_rate, s.saved_amount_tzs, s.funding_source, s.status,
+         s.contribution_id, e.transaction_timestamp, e.created_at, s.updated_at
+       FROM telecom_outgoing_transaction_events e
+       JOIN outgoing_transaction_savings s ON s.event_id = e.event_id
+       WHERE e.event_id = $1`,
+      [eventId],
+    );
+    return row;
+  }
+
+  private async selectOutgoingDiversionByIdempotencyKey(
+    runner: DataSource | EntityManager,
+    operatorId: number,
+    externalTransactionId: string,
+    transactionType: string,
+  ): Promise<OutgoingTransactionDiversionRow | undefined> {
+    const [row] = await runner.query<OutgoingTransactionDiversionRow[]>(
+      `SELECT
+         e.event_id AS diversion_id, e.external_transaction_id, e.member_id,
+         e.phone_number, e.phone_id, e.provider_type, e.telecom_operator_id,
+         e.bank_id, e.switch_provider, e.transaction_type, e.gross_amount_tzs,
+         s.saving_rate, s.saved_amount_tzs, s.funding_source, s.status,
+         s.contribution_id, e.transaction_timestamp, e.created_at, s.updated_at
+       FROM telecom_outgoing_transaction_events e
+       JOIN outgoing_transaction_savings s ON s.event_id = e.event_id
+       WHERE e.provider_type = 'TELECOM' AND e.telecom_operator_id = $1
+         AND e.external_transaction_id = $2 AND e.transaction_type = $3`,
+      [operatorId, externalTransactionId, transactionType],
+    );
+    return row;
+  }
+
+  async handleOutgoingTransactionWebhook(
+    operatorId: number,
+    dto: WebhookOutgoingTransactionDto,
+    ipAddress: string | null = null,
+    signatureVerified: boolean = false,
+  ) {
+    const existing = await this.selectOutgoingDiversionByIdempotencyKey(
+      this.dataSource,
+      operatorId,
+      dto.externalTransactionId,
+      dto.transactionType,
+    );
+
+    if (existing) {
+      return {
+        duplicate: true,
+        diversion: mapOutgoingTransactionDiversionRow(existing),
+      };
+    }
+
+    const [rule] = await this.dataSource.query<
+      { rule_id: number; rate: string; is_active: boolean }[]
+    >(
+      `SELECT rule_id, rate, is_active
+       FROM contribution_rules
+       WHERE transaction_type = $1 AND channel = 'MOBILE_MONEY_OUT' AND principle = 'TRANSACTION_DIVERSION'
+         AND effective_date <= CURRENT_DATE
+       ORDER BY effective_date DESC
+       LIMIT 1`,
+      [dto.transactionType],
+    );
+
+    // Phone lookup happens once, up front, and is reused by every
+    // branch below (including SKIPPED/OPTED_OUT) so each can persist an
+    // accurate member_id/phone_id.
+    const [phone] = await this.dataSource.query<
+      { phone_id: number; user_id: number }[]
+    >(
+      `SELECT phone_id, user_id FROM phone_numbers
+       WHERE phone_number = $1 AND operator_id = $2 AND phone_status = 'Active'`,
+      [dto.phoneNumber, operatorId],
+    );
+
+    // An inactive (or missing) rule is not an error — it means this
+    // transaction type isn't commercially live yet (see design doc
+    // §09: funding_source assumes a revenue-share agreement that may
+    // not exist). The underlying transaction already settled either
+    // way; Tujitunze just acknowledges and credits nothing. Previously
+    // this returned without persisting anything — every real Tuma/Lipa/
+    // Toa/BillPayment call was silently dropped with zero audit trail
+    // (all 4 rules seed inactive). Now a SKIPPED row is always written.
+    if (!rule || !rule.is_active) {
+      const reason = rule
+        ? 'Diversion rule for this transaction type is not active yet'
+        : 'No diversion rule configured for this transaction type';
+
+      try {
+        const diversion = await this.dataSource.transaction(async (manager) => {
+          const [event] = await manager.query<{ event_id: number }[]>(
+            `INSERT INTO telecom_outgoing_transaction_events
+                 (external_transaction_id, member_id, phone_number, phone_id, provider_type,
+                  telecom_operator_id, transaction_type, gross_amount_tzs, transaction_timestamp)
+               VALUES ($1, $2, $3, $4, 'TELECOM', $5, $6, $7, $8)
+               RETURNING event_id`,
+            [
+              dto.externalTransactionId,
+              phone?.user_id ?? null,
+              dto.phoneNumber,
+              phone?.phone_id ?? null,
+              operatorId,
+              dto.transactionType,
+              dto.grossAmountTzs,
+              new Date(dto.transactionTimestamp),
+            ],
+          );
+
+          await manager.query(
+            `INSERT INTO outgoing_transaction_savings
+                 (event_id, saving_rate, saved_amount_tzs, status)
+               VALUES ($1, 0, 0, 'SKIPPED')`,
+            [event.event_id],
+          );
+
+          await this.auditLogsService.record(manager, {
+            memberId: phone?.user_id ?? null,
+            actionType: 'telecom.outgoing_diversion_skipped',
+            affectedTable: 'telecom_outgoing_transaction_events',
+            affectedRecordId: event.event_id,
+            newValue: {
+              operatorId,
+              transactionType: dto.transactionType,
+              phoneNumber: dto.phoneNumber,
+              externalTransactionId: dto.externalTransactionId,
+              reason,
+              signatureVerified,
+            },
+            ipAddress,
+          });
+
+          return this.selectOutgoingDiversionByEventId(manager, event.event_id);
+        });
+
+        return {
+          duplicate: false,
+          matched: null,
+          status: 'SKIPPED' as const,
+          diversion: diversion
+            ? mapOutgoingTransactionDiversionRow(diversion)
+            : null,
+          reason,
+        };
+      } catch (error) {
+        if (!this.isUniqueViolation(error)) {
+          throw error;
+        }
+        const raced = await this.selectOutgoingDiversionByIdempotencyKey(
+          this.dataSource,
+          operatorId,
+          dto.externalTransactionId,
+          dto.transactionType,
+        );
+        return {
+          duplicate: true,
+          diversion: raced ? mapOutgoingTransactionDiversionRow(raced) : null,
+        };
+      }
+    }
+
+    // A member who has opted out keeps the diversion rule from applying
+    // — the transaction already settled in full regardless, so this is
+    // purely "don't credit a saving", recorded distinctly from SKIPPED.
+    if (phone) {
+      const [consent] = await this.dataSource.query<{ consented: boolean }[]>(
+        `SELECT consented FROM member_saving_consents WHERE member_id = $1`,
+        [phone.user_id],
+      );
+
+      if (consent && consent.consented === false) {
+        try {
+          const diversion = await this.dataSource.transaction(
+            async (manager) => {
+              const [event] = await manager.query<{ event_id: number }[]>(
+                `INSERT INTO telecom_outgoing_transaction_events
+                   (external_transaction_id, member_id, phone_number, phone_id, provider_type,
+                    telecom_operator_id, transaction_type, gross_amount_tzs, transaction_timestamp)
+                 VALUES ($1, $2, $3, $4, 'TELECOM', $5, $6, $7, $8)
+                 RETURNING event_id`,
+                [
+                  dto.externalTransactionId,
+                  phone.user_id,
+                  dto.phoneNumber,
+                  phone.phone_id,
+                  operatorId,
+                  dto.transactionType,
+                  dto.grossAmountTzs,
+                  new Date(dto.transactionTimestamp),
+                ],
+              );
+
+              await manager.query(
+                `INSERT INTO outgoing_transaction_savings
+                   (event_id, saving_rate, saved_amount_tzs, status)
+                 VALUES ($1, 0, 0, 'OPTED_OUT')`,
+                [event.event_id],
+              );
+
+              await this.auditLogsService.record(manager, {
+                memberId: phone.user_id,
+                actionType: 'telecom.outgoing_diversion_opted_out',
+                affectedTable: 'telecom_outgoing_transaction_events',
+                affectedRecordId: event.event_id,
+                newValue: {
+                  operatorId,
+                  transactionType: dto.transactionType,
+                  externalTransactionId: dto.externalTransactionId,
+                  signatureVerified,
+                },
+                ipAddress,
+              });
+
+              return this.selectOutgoingDiversionByEventId(
+                manager,
+                event.event_id,
+              );
+            },
+          );
+
+          return {
+            duplicate: false,
+            matched: true,
+            status: 'OPTED_OUT' as const,
+            diversion: diversion
+              ? mapOutgoingTransactionDiversionRow(diversion)
+              : null,
+          };
+        } catch (error) {
+          if (!this.isUniqueViolation(error)) {
+            throw error;
+          }
+          const raced = await this.selectOutgoingDiversionByIdempotencyKey(
+            this.dataSource,
+            operatorId,
+            dto.externalTransactionId,
+            dto.transactionType,
+          );
+          return {
+            duplicate: true,
+            diversion: raced ? mapOutgoingTransactionDiversionRow(raced) : null,
+          };
+        }
+      }
+    }
+
+    const savingRate = Number(rule.rate);
+    const savedAmountTzs = calculateDivertedAmount(
+      dto.grossAmountTzs,
+      savingRate,
+    );
+
+    try {
+      return await this.dataSource.transaction(async (manager) => {
+        if (!phone) {
+          const [event] = await manager.query<{ event_id: number }[]>(
+            `INSERT INTO telecom_outgoing_transaction_events
+               (external_transaction_id, member_id, phone_number, phone_id, provider_type,
+                telecom_operator_id, transaction_type, gross_amount_tzs, transaction_timestamp)
+             VALUES ($1, NULL, $2, NULL, 'TELECOM', $3, $4, $5, $6)
+             RETURNING event_id`,
+            [
+              dto.externalTransactionId,
+              dto.phoneNumber,
+              operatorId,
+              dto.transactionType,
+              dto.grossAmountTzs,
+              new Date(dto.transactionTimestamp),
+            ],
+          );
+
+          await manager.query(
+            `INSERT INTO outgoing_transaction_savings
+               (event_id, saving_rate, saved_amount_tzs, status)
+             VALUES ($1, $2, $3, 'PENDING_REVIEW')`,
+            [event.event_id, savingRate, savedAmountTzs],
+          );
+
+          const diversion = await this.selectOutgoingDiversionByEventId(
+            manager,
+            event.event_id,
+          );
+
+          await this.auditLogsService.record(manager, {
+            memberId: null,
+            actionType: 'telecom.outgoing_diversion_pending_review',
+            affectedTable: 'telecom_outgoing_transaction_events',
+            affectedRecordId: event.event_id,
+            newValue: {
+              operatorId,
+              transactionType: dto.transactionType,
+              phoneNumber: dto.phoneNumber,
+              externalTransactionId: dto.externalTransactionId,
+              reason:
+                'No active member found with that phone number for this operator',
+              signatureVerified,
+            },
+            ipAddress,
+          });
+
+          return {
+            duplicate: false,
+            matched: false,
+            status: 'PENDING_REVIEW' as const,
+            diversion: diversion
+              ? mapOutgoingTransactionDiversionRow(diversion)
+              : null,
+          };
+        }
+
+        const [event] = await manager.query<{ event_id: number }[]>(
+          `INSERT INTO telecom_outgoing_transaction_events
+             (external_transaction_id, member_id, phone_number, phone_id, provider_type, telecom_operator_id,
+              transaction_type, gross_amount_tzs, transaction_timestamp)
+           VALUES ($1, $2, $3, $4, 'TELECOM', $5, $6, $7, $8)
+           RETURNING event_id`,
+          [
+            dto.externalTransactionId,
+            phone.user_id,
+            dto.phoneNumber,
+            phone.phone_id,
+            operatorId,
+            dto.transactionType,
+            dto.grossAmountTzs,
+            new Date(dto.transactionTimestamp),
+          ],
+        );
+
+        await manager.query(
+          `INSERT INTO outgoing_transaction_savings
+             (event_id, saving_rate, saved_amount_tzs, status)
+           VALUES ($1, $2, $3, 'PENDING')`,
+          [event.event_id, savingRate, savedAmountTzs],
+        );
+
+        const diversionId = event.event_id;
+
+        const internalReference = this.generateInternalReference('DIV');
+        const referenceNumber = buildDiversionReference(
+          dto.transactionType,
+          dto.externalTransactionId,
+        );
+
+        const [contribution] = await manager.query<ContributionRow[]>(
+          `INSERT INTO telecom_contributions
+             (member_id, phone_id, operator_id, contribution_amount, contribution_source,
+              reference_number, internal_reference, processing_status, currency)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, 'Received', 'TZS')
+           RETURNING contribution_id, reference_number, internal_reference, contribution_amount, contribution_source, processing_status, contribution_date`,
+          [
+            phone.user_id,
+            phone.phone_id,
+            operatorId,
+            savedAmountTzs,
+            dto.transactionType,
+            referenceNumber,
+            internalReference,
+          ],
+        );
+
+        await manager.query(
+          `UPDATE telecom_contributions SET processing_status = 'Validated' WHERE contribution_id = $1`,
+          [contribution.contribution_id],
+        );
+
+        const { walletTransaction, allocation } =
+          await this.walletsService.creditContribution(
+            manager,
+            phone.user_id,
+            savedAmountTzs,
+            {
+              contributionId: contribution.contribution_id,
+              transactionType: `Saving - ${dto.transactionType} Diversion`,
+              transactionReference: referenceNumber,
+              remarks: `${dto.transactionType} outgoing transaction — ${(savingRate * 100).toFixed(2)}% of ${dto.grossAmountTzs} TZS diverted via ${dto.phoneNumber} (webhook).`,
+            },
+          );
+
+        const finalContributionStatus =
+          allocation?.status === 'Allocated' ? 'Allocated' : 'Validated';
+        if (finalContributionStatus === 'Allocated') {
+          await manager.query(
+            `UPDATE telecom_contributions SET processing_status = 'Allocated' WHERE contribution_id = $1`,
+            [contribution.contribution_id],
+          );
+        }
+
+        await manager.query(
+          `UPDATE outgoing_transaction_savings
+           SET status = 'SUCCESSFUL', contribution_id = $2, updated_at = NOW()
+           WHERE event_id = $1`,
+          [diversionId, contribution.contribution_id],
+        );
+
+        const finalDiversion = await this.selectOutgoingDiversionByEventId(
+          manager,
+          diversionId,
+        );
+
+        await manager.query(
+          `INSERT INTO saving_ledger
+             (member_id, principle, source_table, source_id, contribution_id, wallet_transaction_id, rule_id, saved_value_tzs)
+           VALUES ($1, 'TRANSACTION_DIVERSION', 'telecom_outgoing_transaction_events', $2, $3, $4, $5, $6)`,
+          [
+            phone.user_id,
+            diversionId,
+            contribution.contribution_id,
+            walletTransaction.walletTransactionId,
+            rule.rule_id,
+            savedAmountTzs,
+          ],
+        );
+
+        await this.auditLogsService.record(manager, {
+          memberId: phone.user_id,
+          actionType: 'telecom.outgoing_diversion_process',
+          affectedTable: 'telecom_outgoing_transaction_events',
+          affectedRecordId: diversionId,
+          newValue: {
+            operatorId,
+            transactionType: dto.transactionType,
+            grossAmountTzs: dto.grossAmountTzs,
+            savingRate,
+            savedAmountTzs,
+            externalTransactionId: dto.externalTransactionId,
+            internalReference,
+            contributionId: contribution.contribution_id,
+            walletTransactionId: walletTransaction.walletTransactionId,
+            allocated: !!allocation,
+            processingStatus: finalContributionStatus,
+            signatureVerified,
+          },
+          ipAddress,
+        });
+
+        return {
+          duplicate: false,
+          matched: true,
+          status: 'SUCCESSFUL' as const,
+          diversion: finalDiversion
+            ? mapOutgoingTransactionDiversionRow(finalDiversion)
+            : null,
+          contribution: {
+            contributionId: contribution.contribution_id,
+            referenceNumber: contribution.reference_number,
+            internalReference,
+            amount: savedAmountTzs,
+            currency: 'TZS',
+            processingStatus: finalContributionStatus,
+          },
+          walletTransactionId: walletTransaction.walletTransactionId,
+          allocation,
+          signatureVerified,
+        };
+      });
+    } catch (error) {
+      if (this.isUniqueViolation(error)) {
+        const raced = await this.selectOutgoingDiversionByIdempotencyKey(
+          this.dataSource,
+          operatorId,
+          dto.externalTransactionId,
+          dto.transactionType,
+        );
+        return {
+          duplicate: true,
+          diversion: raced ? mapOutgoingTransactionDiversionRow(raced) : null,
+        };
+      }
+      throw error;
+    }
+  }
+
+  async listOutgoingDiversions(
+    userId: number,
+    filters: { status?: string; transactionType?: string },
+    page: number,
+    pageSize: number,
+  ) {
+    const operatorId = await this.getAssignedOperatorId(userId);
+
+    const [{ count: total }] = await this.dataSource.query<{ count: number }[]>(
+      `SELECT COUNT(*)::int AS count
+       FROM telecom_outgoing_transaction_events e
+       JOIN outgoing_transaction_savings s ON s.event_id = e.event_id
+       WHERE e.provider_type = 'TELECOM' AND e.telecom_operator_id = $1
+         AND ($2::text IS NULL OR s.status = $2)
+         AND ($3::text IS NULL OR e.transaction_type = $3)`,
+      [operatorId, filters.status ?? null, filters.transactionType ?? null],
+    );
+
+    const rows = await this.dataSource.query<OutgoingTransactionDiversionRow[]>(
+      `SELECT
+         e.event_id AS diversion_id, e.external_transaction_id, e.member_id,
+         e.phone_number, e.phone_id, e.provider_type, e.telecom_operator_id,
+         e.bank_id, e.switch_provider, e.transaction_type, e.gross_amount_tzs,
+         s.saving_rate, s.saved_amount_tzs, s.funding_source, s.status,
+         s.contribution_id, e.transaction_timestamp, e.created_at, s.updated_at
+       FROM telecom_outgoing_transaction_events e
+       JOIN outgoing_transaction_savings s ON s.event_id = e.event_id
+       WHERE e.provider_type = 'TELECOM' AND e.telecom_operator_id = $1
+         AND ($2::text IS NULL OR s.status = $2)
+         AND ($3::text IS NULL OR e.transaction_type = $3)
+       ORDER BY e.transaction_timestamp DESC
+       LIMIT $4 OFFSET $5`,
+      [
+        operatorId,
+        filters.status ?? null,
+        filters.transactionType ?? null,
+        pageSize,
+        (page - 1) * pageSize,
+      ],
+    );
+
+    return {
+      items: rows.map(mapOutgoingTransactionDiversionRow),
+      total,
+      page,
+      pageSize,
+    };
+  }
+
+  async getOutgoingDiversionsSummary(userId: number) {
+    const operatorId = await this.getAssignedOperatorId(userId);
+
+    const byType = await this.dataSource.query<
+      { transaction_type: string; count: number; total_saved_amount: string }[]
+    >(
+      `SELECT e.transaction_type, COUNT(*)::int AS count,
+              COALESCE(SUM(s.saved_amount_tzs) FILTER (WHERE s.status = 'SUCCESSFUL'), 0) AS total_saved_amount
+       FROM telecom_outgoing_transaction_events e
+       JOIN outgoing_transaction_savings s ON s.event_id = e.event_id
+       WHERE e.provider_type = 'TELECOM' AND e.telecom_operator_id = $1
+       GROUP BY e.transaction_type`,
+      [operatorId],
+    );
+
+    const byStatus = await this.dataSource.query<
+      { status: string; count: number }[]
+    >(
+      `SELECT s.status, COUNT(*)::int AS count
+       FROM telecom_outgoing_transaction_events e
+       JOIN outgoing_transaction_savings s ON s.event_id = e.event_id
+       WHERE e.provider_type = 'TELECOM' AND e.telecom_operator_id = $1
+       GROUP BY s.status`,
+      [operatorId],
+    );
+
+    return {
+      byTransactionType: Object.fromEntries(
+        byType.map((row) => [
+          row.transaction_type,
+          { count: row.count, totalSavedAmountTzs: row.total_saved_amount },
         ]),
       ),
       byStatus: Object.fromEntries(

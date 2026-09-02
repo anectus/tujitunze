@@ -30,7 +30,12 @@ async function bootstrap() {
       callback(allowed ? null : new Error('Not allowed by CORS'), allowed);
     },
   });
-  await app.listen(process.env.PORT ?? 3002);
+  // Explicit '0.0.0.0': accept connections on every interface, not just
+  // loopback, so a device other than this host can reach the API
+  // through the port Docker publishes (see docker-compose.yml). Node
+  // already defaults to this when no host is given, but it's made
+  // explicit rather than relied on implicitly.
+  await app.listen(process.env.PORT ?? 3002, '0.0.0.0');
 }
 bootstrap().catch((err) => {
   console.error(err);

@@ -8,6 +8,7 @@ import { getAccessToken } from "@/lib/utils/permissions";
 import { useLanguage } from "@/lib/context/LanguageContext";
 import { memberNotificationsTranslations } from "@/constants/translations/member-notifications";
 import { commonTranslations } from "@/constants/translations/common";
+import { API_URL } from "@/lib/utils/api";
 
 interface Notification {
   notificationId: number;
@@ -47,7 +48,7 @@ export default function NotificationsPage() {
       return;
     }
 
-    fetch("http://localhost:3002/members/notifications", {
+    fetch(`${API_URL}/members/notifications`, {
       headers: { Authorization: `Bearer ${token}` },
     })
       .then(async (response) => {
@@ -86,7 +87,7 @@ export default function NotificationsPage() {
       return;
     }
 
-    await fetch(`http://localhost:3002/members/notifications/${notificationId}/read`, {
+    await fetch(`${API_URL}/members/notifications/${notificationId}/read`, {
       method: "PATCH",
       headers: { Authorization: `Bearer ${token}` },
     });
@@ -106,7 +107,7 @@ export default function NotificationsPage() {
       return;
     }
 
-    await fetch("http://localhost:3002/members/notifications/read-all", {
+    await fetch(`${API_URL}/members/notifications/read-all`, {
       method: "PATCH",
       headers: { Authorization: `Bearer ${token}` },
     });

@@ -8,6 +8,7 @@ export const headerTranslations = {
     services: "Services",
     login: "Login",
     signUp: "Sign Up",
+    getStarted: "Get Started",
     completeMembership: "Complete Membership",
     profile: "Profile",
     settings: "Settings",
@@ -20,6 +21,7 @@ export const headerTranslations = {
     services: "Huduma",
     login: "Ingia",
     signUp: "Jisajili",
+    getStarted: "Anza Sasa",
     completeMembership: "Kamilisha Usajili",
     profile: "Wasifu",
     settings: "Mipangilio",
@@ -36,6 +38,7 @@ export const heroTranslations = {
       "Tujitunze is a digital healthcare financial platform that enables members to save healthcare funds, contribute through telecom networks, verify membership status, and access healthcare services securely.",
     signUp: "Sign Up",
     login: "Login",
+    getStarted: "Get Started with Tujitunze",
     whyChoose: "Why Choose Tujitunze?",
     feature1Title: "Health Wallet",
     feature1Description:
@@ -53,6 +56,7 @@ export const heroTranslations = {
       "Tujitunze ni jukwaa la kidijitali la fedha za afya linalowawezesha wanachama kuweka akiba ya matibabu, kuchangia kupitia mitandao ya simu, kuthibitisha uanachama, na kupata huduma za afya kwa usalama.",
     signUp: "Jisajili",
     login: "Ingia",
+    getStarted: "Anza na Tujitunze",
     whyChoose: "Kwa Nini Uchague Tujitunze?",
     feature1Title: "Mkoba wa Afya",
     feature1Description:

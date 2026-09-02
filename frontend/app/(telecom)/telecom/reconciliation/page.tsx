@@ -9,6 +9,7 @@ import DashboardHeader from "@/components/dashboard/DashboardHeader";
 import { useLanguage } from "@/lib/context/LanguageContext";
 import { commonTranslations } from "@/constants/translations/common";
 import { telecomReconciliationTranslations } from "@/constants/translations/telecom-reconciliation";
+import { API_URL } from "@/lib/utils/api";
 
 interface Run {
   run_id: number;
@@ -60,7 +61,7 @@ export default function ReconciliationPage() {
       return;
     }
 
-    fetch("http://localhost:3002/telecom/reconciliation/runs", {
+    fetch(`${API_URL}/telecom/reconciliation/runs`, {
       headers: { Authorization: `Bearer ${token}` },
     })
       .then(async (response) => {
@@ -117,7 +118,7 @@ export default function ReconciliationPage() {
     setUploading(true);
 
     try {
-      const response = await fetch("http://localhost:3002/telecom/reconciliation/runs", {
+      const response = await fetch(`${API_URL}/telecom/reconciliation/runs`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

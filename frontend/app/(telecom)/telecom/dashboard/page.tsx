@@ -10,6 +10,7 @@ import StatusBadge from "@/components/common/StatusBadge";
 import { useLanguage } from "@/lib/context/LanguageContext";
 import { commonTranslations } from "@/constants/translations/common";
 import { telecomDashboardTranslations } from "@/constants/translations/telecom-dashboard";
+import { API_URL } from "@/lib/utils/api";
 
 interface TelecomContribution {
   contributionId: number;
@@ -52,7 +53,7 @@ export default function TelecomDashboardPage() {
 
       try {
         const response = await fetch(
-          "http://localhost:3002/telecom/dashboard",
+          `${API_URL}/telecom/dashboard`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
 

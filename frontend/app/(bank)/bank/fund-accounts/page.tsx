@@ -7,6 +7,7 @@ import { getAccessToken } from "@/lib/utils/permissions";
 import DashboardHeader from "@/components/dashboard/DashboardHeader";
 import { useLanguage } from "@/lib/context/LanguageContext";
 import { bankFundAccountsTranslations } from "@/constants/translations/bank-fund-accounts";
+import { API_URL } from "@/lib/utils/api";
 
 interface FundAccount {
   fund_account_id: number;
@@ -85,7 +86,7 @@ export default function FundAccountsPage() {
       if (!headers) return;
 
       try {
-        const response = await fetch("http://localhost:3002/bank/fund-accounts", { headers });
+        const response = await fetch(`${API_URL}/bank/fund-accounts`, { headers });
         const data = await response.json();
 
         if (!response.ok) {
@@ -113,7 +114,7 @@ export default function FundAccountsPage() {
 
     try {
       const response = await fetch(
-        `http://localhost:3002/bank/fund-accounts/${encodeURIComponent(accountType)}/transfers`,
+        `${API_URL}/bank/fund-accounts/${encodeURIComponent(accountType)}/transfers`,
         { headers }
       );
       const data = await response.json();
@@ -150,7 +151,7 @@ export default function FundAccountsPage() {
 
     try {
       const response = await fetch(
-        `http://localhost:3002/bank/fund-accounts/${encodeURIComponent(selectedType)}/transfer`,
+        `${API_URL}/bank/fund-accounts/${encodeURIComponent(selectedType)}/transfer`,
         {
           method: "POST",
           headers,

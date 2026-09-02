@@ -7,6 +7,7 @@ import { getAccessToken } from "@/lib/utils/permissions";
 import DashboardHeader from "@/components/dashboard/DashboardHeader";
 import { useLanguage } from "@/lib/context/LanguageContext";
 import { bankTransactionsTranslations } from "@/constants/translations/bank-transactions";
+import { API_URL } from "@/lib/utils/api";
 
 interface Transaction {
   bank_transaction_id: number;
@@ -97,7 +98,7 @@ export default function BankTransactionsPage() {
       ...(status ? { status } : {}),
     });
 
-    fetch(`http://localhost:3002/bank/transactions?${query.toString()}`, {
+    fetch(`${API_URL}/bank/transactions?${query.toString()}`, {
       headers: { Authorization: `Bearer ${token}` },
     })
       .then(async (response) => {
@@ -129,7 +130,7 @@ export default function BankTransactionsPage() {
     setRecordSuccess("");
 
     try {
-      const response = await fetch("http://localhost:3002/bank/contributions", {
+      const response = await fetch(`${API_URL}/bank/contributions`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -168,7 +169,7 @@ export default function BankTransactionsPage() {
 
     try {
       const response = await fetch(
-        `http://localhost:3002/bank/transactions/${transactionId}/status`,
+        `${API_URL}/bank/transactions/${transactionId}/status`,
         {
           method: "PATCH",
           headers: {
@@ -202,7 +203,7 @@ export default function BankTransactionsPage() {
       ...(status ? { status } : {}),
     });
 
-    fetch(`http://localhost:3002/bank/transactions/export?${query.toString()}`, {
+    fetch(`${API_URL}/bank/transactions/export?${query.toString()}`, {
       headers: { Authorization: `Bearer ${token}` },
     })
       .then((response) => response.blob())

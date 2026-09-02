@@ -7,6 +7,7 @@ import {
 import { DataSource } from 'typeorm';
 import * as crypto from 'crypto';
 import type { Request } from 'express';
+import { decryptWebhookSecret } from '../../../common/webhook-secret-crypto';
 
 // Second boundary layer behind TelecomApiKeyGuard (class-level guards run
 // before method-level ones, so telecomOperatorId is already set on the
@@ -99,8 +100,10 @@ export class TelecomWebhookSignatureGuard implements CanActivate {
       ? request.rawBody.toString('utf8')
       : JSON.stringify(request.body ?? {});
 
+    const webhookSecret = decryptWebhookSecret(operator.webhook_secret);
+
     const expected = crypto
-      .createHmac('sha256', operator.webhook_secret)
+      .createHmac('sha256', webhookSecret)
       .update(`${timestampRaw}.${rawBody}`)
       .digest('hex');
 

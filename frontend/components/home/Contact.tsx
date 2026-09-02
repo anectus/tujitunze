@@ -11,6 +11,7 @@ import {
   contactCategoryLabelTranslations,
   contactTranslations,
 } from "@/constants/translations/public-contact";
+import { API_URL } from "@/lib/utils/api";
 
 const inputClass =
   "w-full border rounded-lg px-4 py-3 focus:ring-2 focus:ring-blue-600 outline-none";
@@ -82,7 +83,7 @@ export default function Contact() {
         headers.Authorization = `Bearer ${token}`;
       }
 
-      const response = await fetch("http://localhost:3002/contact", {
+      const response = await fetch(`${API_URL}/contact`, {
         method: "POST",
         headers,
         body: JSON.stringify({

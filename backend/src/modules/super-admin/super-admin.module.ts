@@ -4,11 +4,21 @@ import { SuperAdminController } from './super-admin.controller';
 import { SuperAdminService } from './super-admin.service';
 import { SuperAdminRolesController } from './super-admin-roles.controller';
 import { SuperAdminRolesService } from './super-admin-roles.service';
+import { SuperAdminSavingRulesController } from './super-admin-saving-rules.controller';
+import { SuperAdminSavingRulesService } from './super-admin-saving-rules.service';
 import { AuditLogsModule } from '../audit-logs/audit-logs.module';
 
 @Module({
   imports: [AuditLogsModule],
-  controllers: [SuperAdminController, SuperAdminRolesController],
-  providers: [SuperAdminService, SuperAdminRolesService],
+  controllers: [
+    SuperAdminController,
+    SuperAdminRolesController,
+    SuperAdminSavingRulesController,
+  ],
+  providers: [
+    SuperAdminService,
+    SuperAdminRolesService,
+    SuperAdminSavingRulesService,
+  ],
 })
 export class SuperAdminModule {}

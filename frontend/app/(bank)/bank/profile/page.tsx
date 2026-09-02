@@ -8,6 +8,7 @@ import DashboardHeader from "@/components/dashboard/DashboardHeader";
 import StatusBadge from "@/components/common/StatusBadge";
 import { useLanguage } from "@/lib/context/LanguageContext";
 import { bankProfileTranslations } from "@/constants/translations/bank-profile";
+import { API_URL } from "@/lib/utils/api";
 
 interface Branch {
   branch_id: number;
@@ -82,7 +83,7 @@ export default function BankProfilePage() {
       if (!headers) return;
 
       try {
-        const response = await fetch("http://localhost:3002/bank/profile", { headers });
+        const response = await fetch(`${API_URL}/bank/profile`, { headers });
         const data = await response.json();
 
         if (!response.ok) {
@@ -113,7 +114,7 @@ export default function BankProfilePage() {
     setError("");
 
     try {
-      const response = await fetch("http://localhost:3002/bank/profile/contact", {
+      const response = await fetch(`${API_URL}/bank/profile/contact`, {
         method: "PATCH",
         headers,
         body: JSON.stringify({ contactPhone, contactEmail }),
@@ -141,7 +142,7 @@ export default function BankProfilePage() {
     setRevealedSecret(null);
 
     try {
-      const response = await fetch("http://localhost:3002/bank/profile/api-key/regenerate", {
+      const response = await fetch(`${API_URL}/bank/profile/api-key/regenerate`, {
         method: "POST",
         headers,
       });
@@ -174,7 +175,7 @@ export default function BankProfilePage() {
     setRevealedSecret(null);
 
     try {
-      const response = await fetch("http://localhost:3002/bank/profile/webhook", {
+      const response = await fetch(`${API_URL}/bank/profile/webhook`, {
         method: "POST",
         headers,
         body: JSON.stringify({ webhookUrl }),
@@ -211,7 +212,7 @@ export default function BankProfilePage() {
     setTestResult(null);
 
     try {
-      const response = await fetch("http://localhost:3002/bank/profile/connection-test", {
+      const response = await fetch(`${API_URL}/bank/profile/connection-test`, {
         method: "POST",
         headers,
       });

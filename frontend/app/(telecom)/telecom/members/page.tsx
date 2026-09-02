@@ -9,6 +9,7 @@ import StatusBadge from "@/components/common/StatusBadge";
 import { useLanguage } from "@/lib/context/LanguageContext";
 import { commonTranslations } from "@/constants/translations/common";
 import { telecomMembersTranslations } from "@/constants/translations/telecom-members";
+import { API_URL } from "@/lib/utils/api";
 
 interface MemberPhone {
   phoneId: number;
@@ -48,7 +49,7 @@ export default function TelecomMembersPage() {
       return;
     }
 
-    fetch(`http://localhost:3002/telecom/members?page=${page}&pageSize=${PAGE_SIZE}`, {
+    fetch(`${API_URL}/telecom/members?page=${page}&pageSize=${PAGE_SIZE}`, {
       headers: { Authorization: `Bearer ${token}` },
     })
       .then(async (response) => {

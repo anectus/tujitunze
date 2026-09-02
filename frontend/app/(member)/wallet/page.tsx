@@ -9,6 +9,7 @@ import { getAccessToken } from "@/lib/utils/permissions";
 import { useLanguage } from "@/lib/context/LanguageContext";
 import { walletPageTranslations } from "@/constants/translations/member-wallet";
 import { commonTranslations } from "@/constants/translations/common";
+import { API_URL } from "@/lib/utils/api";
 
 interface PhoneNumber {
   phoneId: number;
@@ -56,10 +57,10 @@ export default function WalletPage() {
 
       try {
         const [walletResponse, profileResponse] = await Promise.all([
-          fetch("http://localhost:3002/members/wallet", {
+          fetch(`${API_URL}/members/wallet`, {
             headers: { Authorization: `Bearer ${token}` },
           }),
-          fetch("http://localhost:3002/members/me", {
+          fetch(`${API_URL}/members/me`, {
             headers: { Authorization: `Bearer ${token}` },
           }),
         ]);
@@ -124,7 +125,7 @@ export default function WalletPage() {
       setSubmitting(true);
 
       const response = await fetch(
-        "http://localhost:3002/members/wallet/topup",
+        `${API_URL}/members/wallet/topup`,
         {
           method: "POST",
           headers: {

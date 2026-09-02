@@ -8,6 +8,7 @@ import { getAccessToken } from "@/lib/utils/permissions";
 import { useLanguage } from "@/lib/context/LanguageContext";
 import { memberVerificationsTranslations } from "@/constants/translations/member-verifications";
 import { commonTranslations } from "@/constants/translations/common";
+import { API_URL } from "@/lib/utils/api";
 
 interface Verification {
   verification_id: number;
@@ -48,7 +49,7 @@ export default function VerificationsPage() {
       return;
     }
 
-    fetch("http://localhost:3002/members/verifications", {
+    fetch(`${API_URL}/members/verifications`, {
       headers: { Authorization: `Bearer ${token}` },
     })
       .then(async (response) => {

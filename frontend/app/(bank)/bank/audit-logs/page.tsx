@@ -7,6 +7,7 @@ import { getAccessToken } from "@/lib/utils/permissions";
 import DashboardHeader from "@/components/dashboard/DashboardHeader";
 import { useLanguage } from "@/lib/context/LanguageContext";
 import { bankAuditLogsTranslations } from "@/constants/translations/bank-audit-logs";
+import { API_URL } from "@/lib/utils/api";
 
 interface ActivityLog {
   audit_id: number;
@@ -45,10 +46,10 @@ export default function BankAuditLogsPage() {
     }
 
     Promise.all([
-      fetch("http://localhost:3002/bank/activity-logs", {
+      fetch(`${API_URL}/bank/activity-logs`, {
         headers: { Authorization: `Bearer ${token}` },
       }).then((r) => r.json()),
-      fetch("http://localhost:3002/bank/api-access-logs", {
+      fetch(`${API_URL}/bank/api-access-logs`, {
         headers: { Authorization: `Bearer ${token}` },
       }).then((r) => r.json()),
     ])

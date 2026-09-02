@@ -9,6 +9,7 @@ import StatusBadge from "@/components/common/StatusBadge";
 import { useLanguage } from "@/lib/context/LanguageContext";
 import { commonTranslations } from "@/constants/translations/common";
 import { telecomOperatorTranslations } from "@/constants/translations/telecom-operator";
+import { API_URL } from "@/lib/utils/api";
 
 type ConnectionTestState =
   | "connected"
@@ -95,7 +96,7 @@ export default function TelecomOperatorPage() {
       if (!headers) return;
 
       try {
-        const response = await fetch("http://localhost:3002/telecom/operator", { headers });
+        const response = await fetch(`${API_URL}/telecom/operator`, { headers });
         const data = await response.json();
 
         if (!response.ok) {
@@ -126,7 +127,7 @@ export default function TelecomOperatorPage() {
     setError("");
 
     try {
-      const response = await fetch("http://localhost:3002/telecom/operator/contact", {
+      const response = await fetch(`${API_URL}/telecom/operator/contact`, {
         method: "PATCH",
         headers,
         body: JSON.stringify({ contactPhone, contactEmail }),
@@ -155,7 +156,7 @@ export default function TelecomOperatorPage() {
 
     try {
       const response = await fetch(
-        "http://localhost:3002/telecom/operator/api-key/regenerate",
+        `${API_URL}/telecom/operator/api-key/regenerate`,
         { method: "POST", headers }
       );
 
@@ -187,7 +188,7 @@ export default function TelecomOperatorPage() {
     setRevealedSecret(null);
 
     try {
-      const response = await fetch("http://localhost:3002/telecom/operator/webhook", {
+      const response = await fetch(`${API_URL}/telecom/operator/webhook`, {
         method: "POST",
         headers,
         body: JSON.stringify({ webhookUrl }),
@@ -224,7 +225,7 @@ export default function TelecomOperatorPage() {
     setTestResult(null);
 
     try {
-      const response = await fetch("http://localhost:3002/telecom/operator/connection-test", {
+      const response = await fetch(`${API_URL}/telecom/operator/connection-test`, {
         method: "POST",
         headers,
       });

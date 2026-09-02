@@ -147,15 +147,240 @@ Frontend at `(telecom)/telecom/{operator,members,contributions,
 contribution-rules,reconciliation,reports,audit-logs}` — all
 `/telecom/...`-prefixed from the start, unlike the Member-dashboard pass
 which hit the bare-path collision live (see above); this one avoided it
+
+**Note:** the paragraph above predates work landed after 2026-08-17 —
+`POST /telecom/webhooks/contribution` (a real inbound webhook boundary,
+`TelecomWebhooksController`, separately guarded by `TelecomApiKeyGuard`
++ `TelecomWebhookSignatureGuard` rather than the staff `JwtAuthGuard`),
+`payment_transactions` (migration `0018`), and a Vodacom M-Pesa C2B
+collection rail (`backend/src/modules/telecom/vodacom/`, migrations
+`0021`-`0023`) all exist now but aren't described here yet. Treat this
+section as directional, not current — check the actual controllers/
+migrations before relying on it for anything security-relevant.
+
+As of 2026-09-02, a usage-quantity-based telecom contribution feature
+(migrations `0019`-`0020`, internally called "Model B": a % of
+*consumed* VOICE/SMS/DATA quantity, converted to TZS only via a
+provider-authorized valuation, then credited to the wallet) was built,
+then **removed** (migration `0024`,
+`database/migrations/0024_remove_telecom_usage_model_b.sql`) once a
+fuller product spec clarified that Principle 1 of the intended
+micro-saving system is a *bundle/resource-conversion* event (airtime
+converted into voice/data/SMS), not a usage-consumption event — a
+different trigger from what Model B implemented. Removed: the
+`telecom_usage_events` table and its 3 seeded `contribution_rules` rows
+(`VOICE`/`SMS`/`DATA`, `channel='TELECOM'`), `POST
+/telecom/webhooks/usage`, `TelecomService.handleUsageEventWebhook` /
+`listUsageEvents` / `getUsageEvent` / `getUsageEventsSummary`, `GET
+/telecom/usage-events*`, `telecom-usage-event.types.ts`,
+`webhook-usage-event.dto.ts`, and the `(telecom)/telecom/
+usage-contributions` frontend page. Migration `0024` is a forward
+(compensating) migration, not an edit to `0019`/`0020` — those already
+ran against this project's shared dev database (see
+`database/docker-initdb.sh`: migrations only replay against a *fresh*
+Postgres volume), so rewriting their history would silently diverge
+from what's actually running; `0024`'s `DROP TABLE`/`DELETE` was also
+applied directly to the live dev container. `contribution_rules`'
+generic columns from `0019` (`channel`, `usage_type`, `rate`,
+`currency`, `effective_to`) were deliberately kept — reusable
+infrastructure, not part of the mistake — for whatever rule shape the
+replacement design settles on. The Vodacom M-Pesa C2B rail (previous
+paragraph) is unrelated to this removal: it's a money-*in* wallet
+top-up/collection mechanism, not a bundle-conversion or
+outgoing-transaction-diversion one, and was left untouched.
+
+The replacement — the dual-mode micro-savings engine — landed the same
+day (migration `0025_dual_mode_micro_savings.sql`), backend-complete
+and unit-tested, frontend not yet started. **Principle 1 (resource
+conversion)**: `POST /telecom/webhooks/resource-conversion`
+(`TelecomWebhooksController`, same `TelecomApiKeyGuard` +
+`TelecomWebhookSignatureGuard` chain as `.../contribution`) is
+synchronous — the operator must receive `netUnitsToCustomer` back
+before granting anything, which is what keeps the saving invisible to
+the member (100 min requested, 10% rule → 90 min granted, 50 TZS to
+the wallet, computed in `TelecomService.handleResourceConversionWebhook`,
+`telecom-resource-conversion.types.ts`). Staff reads: `GET
+/telecom/resource-conversions[/:id]`, `GET
+/telecom/resource-conversions/summary`. **Principle 2 (transaction
+diversion)**: `POST /telecom/webhooks/outgoing-transaction` is
+fire-and-forget, called only *after* a Tuma/Lipa Namba/Toa/Bill
+Payment has already settled (`handleOutgoingTransactionWebhook`,
+`outgoing-transaction-diversion.types.ts`); THIS PASS ONLY WIRES
+TELECOM-OPERATOR-AUTHENTICATED INTAKE (`provider_type='TELECOM'`) —
+mobile money in Tanzania is telecom-operated, so this covers the
+dominant real case, but bank- and Selcom-switch-authenticated intake
+are deferred pending their own credential-issuance design (no
+`banks`-equivalent API-key guard was generalized here, and no
+Selcom credential/entity exists anywhere in this codebase). Its 4
+seeded rules (`TUMA` 1%, `LIPA_NAMBA` 1.5%, `TOA` 1%, `BILL_PAYMENT`
+2%) start `is_active = FALSE` **on purpose** — `funding_source =
+'INTERCHANGE_SHARE'` assumes a revenue-share agreement with the
+relevant switch/operator that does not exist yet; the webhook handles
+an inactive/missing rule by acknowledging and crediting nothing
+(`status: 'SKIPPED'`), never by erroring, since the underlying payment
+already settled either way. **Shared**: both principles write into
+the same `telecom_contributions` → `WalletsService.creditContribution`
+→ `wallet_transactions` chain every other contribution path already
+uses, plus a new `saving_ledger` table (one append-only row per saving
+event, whichever principle produced it — the single audit trail `GET
+/members/savings-summary` reads from). `contribution_rules` gained
+`principle`/`transaction_type` columns (same "extend, don't duplicate"
+precedent `0019` set); its previously-flagged read-only gap is now
+closed specifically for these rule families via `GET`/`POST`/`PATCH
+/super-admin/saving-rules` (`SuperAdminSavingRulesService` — the four
+pre-existing purchase-based rows are still out of scope/read-only).
+Not yet built: any frontend for resource-conversions/outgoing-
+diversions/saving-rules/savings-summary, bank/switch intake for
+Principle 2, and the commercial interchange-share agreement itself
+(a business dependency, not an engineering one).
 by not reusing the old bare `customers`/`transactions`/`payments`/
 `reconciliation`/`reports`/`settings` stub folders.
+
+**Update, same day (2026-09-02):** a code-verified audit of the
+dual-mode engine against the intended design flagged several gaps,
+all now closed by migrations `0026`/`0027` plus the corresponding
+service/frontend changes — the "frontend not yet started" line above
+is now stale: `(member)/savings`, `(super-admin)/super-admin/
+saving-rules`, `(telecom)/telecom/resource-conversions`, and
+`(telecom)/telecom/outgoing-diversions` all exist and are wired to
+real endpoints (the Member dashboard's "Micro-Savings" tile already
+linked to `/savings` — the audit's claim that this page was an
+orphan was itself wrong). What actually changed:
+
+- **Silent data loss, fixed.** Both webhook handlers used to respond
+  to the operator without persisting anything whenever there was
+  nothing to save (`handleOutgoingTransactionWebhook` on an
+  inactive/missing rule, `handleResourceConversionWebhook` on no
+  matching rule) — meaning every real Tuma/Lipa/Toa/BillPayment call
+  was silently dropped with zero audit trail, since all 4 Principle 2
+  rules seed inactive. Migration `0026` widens both tables' `status`
+  CHECK constraints (`telecom_resource_conversions` gains
+  `NO_ACTIVE_RULE`/`OPTED_OUT`; `outgoing_transaction_diversions`
+  gains `SKIPPED`/`OPTED_OUT` — both tables were later split by
+  migration `0028`, see below; the constraints carried over to their
+  respective new usage/savings tables unchanged), and both handlers
+  now always write a
+  row — full gross amount passed through, nothing withheld — before
+  returning. The operator-facing contract is unchanged (still a `400`
+  when no rule matches, still an acknowledging `200` when a rule is
+  simply inactive); only persistence was added.
+- **Consent, added.** `member_saving_consents` (migration `0026`,
+  one row per member; absence of a row means consented — every
+  existing and new member starts opted in, so this is additive, not a
+  behavior change on day one) backs `GET`/`PATCH
+  /members/saving-consent` (`MembersService.getSavingConsent` /
+  `updateSavingConsent`, audit-logged as `member.saving_consent_update`)
+  and a toggle on `(member)/settings`. Both webhook handlers check it
+  after matching a phone to a member and, if opted out, persist a row
+  with `status = 'OPTED_OUT'` and pass the full gross amount/units
+  through uncredited, rather than silently applying the rule.
+- **Webhook secrets, encrypted at rest.** `telecom_operators.
+  webhook_secret` / `banks.webhook_secret` (previously the plaintext
+  gap Known Security Gap #12 described) are now AES-256-GCM encrypted
+  by `backend/src/common/webhook-secret-crypto.ts`, keyed by a new
+  required env var `WEBHOOK_SECRET_ENCRYPTION_KEY` (64-hex-char/32-byte,
+  fails closed if unset — no insecure fallback, same rule
+  `DB_PASSWORD` already sets). `TelecomService.configureWebhook` /
+  `BankService.configureWebhook` encrypt on write; the still-plaintext
+  value is returned to staff once, same as before. `TelecomWebhook
+  SignatureGuard` / `BankWebhookSignatureGuard` — which read this
+  column on every inbound webhook call to verify the HMAC signature —
+  now decrypt it first. See Known Security Gaps below: #12 is now
+  resolved.
+- **Seeded rates corrected** (migration `0027`, data-only — these
+  rows were already runtime-editable via `/super-admin/saving-rules`,
+  so this just fixes the defaults a fresh environment seeds): `DATA`
+  10% (was 8%), `LIPA_NAMBA` 1% (was 1.5%), `BILL_PAYMENT` 1% (was
+  2%). `VOICE`/`SMS`/`TUMA`/`TOA` were already correct.
+- **Normalization layer, added.** `BaseWebhookEventDto`
+  (`backend/src/modules/telecom/dto/base-webhook-event.dto.ts`) factors
+  out the fields all three webhook DTOs shared with subtly different
+  validators (`operatorId`, `phoneNumber`, `externalTransactionId`);
+  `WebhookContributionDto`/`WebhookResourceConversionDto`/
+  `WebhookOutgoingTransactionDto` now extend it. Pure refactor, no
+  wire-format change.
+- **`INCOMING` transaction type — schema-only placeholder.**
+  `telecom_outgoing_transaction_events.transaction_type` (see the
+  ledger-split entry immediately below) and `contribution_rules` both
+  accept `'INCOMING'` (migration `0027`, one seeded rule at 0%,
+  `is_active = FALSE`), matching the design's "incoming transactions:
+  0%" line. Deliberately incomplete: there is no webhook route,
+  controller handler, or DTO for actually receiving an
+  incoming-transaction event, because no operator specification for
+  what that event looks like exists — this is a labeled empty slot,
+  not a working feature.
+- **Update, 2026-09-02 (later same day): the literal three-ledger
+  split, done.** The paragraph that used to be here explained why a
+  physical split was skipped as unnecessary schema churn; the user
+  asked for the literal split anyway, so migration `0028_split_
+  savings_transaction_usage_ledgers.sql` did it. `telecom_
+  resource_conversions` → `telecom_resource_conversion_events`
+  (Transaction Ledger: the raw inbound event only — operator, phone,
+  resource type, gross units, timestamp) + `telecom_resource_usage_
+  splits` (Usage Ledger: saving_rate/saved_units/net_units_to_customer/
+  provider_unit_value_tzs/saved_value_tzs/status/contribution_id, one
+  row per event via a `UNIQUE` `event_id` FK with `ON DELETE CASCADE`).
+  `outgoing_transaction_diversions` → `telecom_outgoing_transaction_
+  events` (Transaction Ledger) + `outgoing_transaction_savings` (Usage
+  Ledger: saving_rate/saved_amount_tzs/funding_source/status/
+  contribution_id), same 1:1 shape, for symmetry with Principle 1 —
+  there's no bundle being split on the Principle 2 side, only a
+  transaction amount being assessed against a rule, but keeping the
+  same two-table shape means both principles model the same three
+  ledger concerns identically rather than one being an exception.
+  `saving_ledger` (the cross-cutting Saving Ledger) is unchanged;
+  only its `source_table` values were repointed at the new event
+  tables (`source_id` values were unaffected — the migration inserts
+  each new event row with the *same* id the old merged row had, so
+  nothing needed remapping). `TelecomService` now reads both tables
+  via two small JOIN-based helpers per principle (`selectResource
+  ConversionByEventId`/`ByIdempotencyKey`,
+  `selectOutgoingDiversionByEventId`/`ByIdempotencyKey`) that
+  reconstruct the exact same flat row shape the pre-split code
+  returned — every consumer (`TelecomResourceConversionRow`/
+  `OutgoingTransactionDiversionRow`, their mappers, both frontend pages
+  at `/telecom/resource-conversions` and `/telecom/outgoing-diversions`,
+  `GET /members/savings-summary`) needed zero changes as a result. Both
+  webhook handlers now write the event row and its split/savings row
+  inside the same DB transaction they already used (the no-rule/
+  opted-out/skipped branches, previously plain un-transacted inserts,
+  are now transacted too, since two inserts must commit atomically —
+  see the updated unit specs, which now assert `dataSource.transaction`
+  **was** called for those branches, the opposite of what they asserted
+  before this split).
+- **Still not built, unchanged from before:** Selcom/bank-authenticated
+  intake for Principle 2 (no real API docs or credentials exist for
+  this anywhere — building it would be guesswork, not integration),
+  and the commercial interchange-share agreement that would flip
+  Principle 2's 4 rules active (a business dependency, not an
+  engineering one).
+- **New e2e coverage:** `backend/test/telecom-dual-mode-savings.
+  e2e-spec.ts` proves the full webhook → wallet → `saving_ledger` chain
+  for both principles' happy paths plus the `OPTED_OUT`/`SKIPPED`
+  persistence fixes, against a real running app (the existing unit
+  specs `telecom-resource-conversion.spec.ts` / `outgoing-transaction-
+  diversion.spec.ts` were updated for the new call order — phone
+  lookup moved out of the transaction block so the no-rule/opted-out
+  branches can use it too — and cover the same branches at the mock
+  level). Writing this test surfaced a pre-existing gap, noted below
+  as Known Security Gap #13: several `backend/test/*.e2e-spec.ts`
+  files pick "the first non-Vodacom telecom operator" / "the first
+  bank" as a shared fixture and mutate its `api_key_hash`/
+  `webhook_secret` — under Jest's default parallel-worker execution,
+  two spec files claiming the same row race and can 401 each other
+  intermittently. Confirmed pre-existing (reproduces with the new spec
+  file entirely absent) and confirmed not a real application bug
+  (`--runInBand` passes every time); the new spec avoids contributing
+  to it by claiming the *last* non-Vodacom operator instead of the
+  first, but the underlying fixture-sharing pattern across the older
+  spec files was not otherwise touched.
 
 As of 2026-08-17, the Bank staff dashboard grew the same way, via
 `backend/src/modules/bank/` and migration `database/migrations/
 0006_bank_dashboard.sql`. It mirrors Telecom's shared pieces exactly
-(contact info, API/webhook credentials with the same plaintext-secret
-caveat, connection testing, reconciliation, reports, audit logs — see
-Known Security Gap #12, which now covers both) but also introduces
+(contact info, API/webhook credentials — both encrypted at rest since
+2026-09-02, see the resolved Known Security Gap #12 — connection
+testing, reconciliation, reports, audit logs) but also introduces
 genuinely new territory the Telecom pass didn't need: HSIMS's own
 operational accounts at the bank. `bank_fund_accounts` holds one ledger
 row per (bank, account type) — Settlement / Health Fund / Reserve,
@@ -441,14 +666,32 @@ Still open, flagged so they aren't silently reintroduced or forgotten:
     while still being broken in production. Worth fixing once, in a
     shared test bootstrap helper, rather than copy-pasting the pipe setup
     into every spec file as it's noticed.
-12. `telecom_operators.webhook_secret` (added 2026-08-17, migration 0005)
-    and `banks.webhook_secret` (added 2026-08-17, migration 0006) are
-    stored retrievable — not bcrypt-hashed like `api_key_hash` or
-    passwords — because HSIMS is meant to be the one signing outgoing
-    webhook deliveries with it, which needs the raw value on read, not
-    just the ability to verify it. That's a real plaintext-at-rest gap;
-    move it to an encrypted/secrets-manager design before any non-local
-    deployment, same caveat as `DB_PASSWORD`'s insecure fallback (#3).
-    No endpoint reads or uses either secret to sign anything yet —
-    nothing dispatches outgoing webhooks — so the immediate exposure is
-    low, but the storage design should be fixed before that changes.
+12. **RESOLVED 2026-09-02.** `telecom_operators.webhook_secret` (added
+    2026-08-17, migration 0005) and `banks.webhook_secret` (added
+    2026-08-17, migration 0006) were stored retrievable-plaintext.
+    Now AES-256-GCM encrypted at rest via `backend/src/common/
+    webhook-secret-crypto.ts`, keyed by `WEBHOOK_SECRET_ENCRYPTION_KEY`
+    (fails closed if unset, no insecure fallback). `configureWebhook`
+    on both `TelecomService`/`BankService` encrypts on write;
+    `TelecomWebhookSignatureGuard`/`BankWebhookSignatureGuard` decrypt
+    on the read path that verifies inbound HMAC signatures (this is
+    the actual current use of the secret — it was never "sign outgoing
+    deliveries with," see the dual-mode-savings 2026-09-02 update
+    above for the corrected picture). No backfill migration was needed
+    — both tables had zero rows with a secret set at the time of this
+    fix.
+13. Several `backend/test/*.e2e-spec.ts` files (`contribution-channels`,
+    `telecom-webhook-security`, `bank-webhook-security`) each pick "the
+    first non-Vodacom telecom operator" or "the first bank" as a shared
+    fixture and mutate its `api_key_hash`/`webhook_secret` in
+    `beforeAll`/`afterAll`. Jest runs spec files in parallel workers by
+    default, so two files claiming the same row race and can produce
+    intermittent `401`s unrelated to any real bug — confirmed via
+    `--runInBand` (passes every time) vs. default parallel execution
+    (fails intermittently, reproduces with or without any newer spec
+    file in the run). `telecom-dual-mode-savings.e2e-spec.ts` (added
+    2026-09-02) avoids contributing to this by claiming the *last*
+    non-Vodacom operator instead of the first, but the underlying
+    shared-fixture pattern in the three older files wasn't otherwise
+    touched — worth a shared per-suite fixture (or `--runInBand` in CI)
+    before trusting this suite's parallel-run signal.

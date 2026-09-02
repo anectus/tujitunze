@@ -11,6 +11,7 @@ import { useLanguage } from "@/lib/context/LanguageContext";
 import { adminMembersTranslations } from "@/constants/translations/admin-members";
 import { commonTranslations } from "@/constants/translations/common";
 import { getStatusLabel } from "@/constants/translations/statuses";
+import { API_URL } from "@/lib/utils/api";
 
 interface AdminMember {
   userId: number;
@@ -46,7 +47,7 @@ export default function AdminMembersPage() {
       }
 
       try {
-        const response = await fetch("http://localhost:3002/admin/members", {
+        const response = await fetch(`${API_URL}/admin/members`, {
           headers: { Authorization: `Bearer ${token}` },
         });
 
@@ -81,7 +82,7 @@ export default function AdminMembersPage() {
 
     try {
       const response = await fetch(
-        `http://localhost:3002/admin/members/${userId}/status`,
+        `${API_URL}/admin/members/${userId}/status`,
         {
           method: "PATCH",
           headers: {

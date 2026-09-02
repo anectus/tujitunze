@@ -20,6 +20,21 @@ export function normalizeTanzanianPhonePrefix(raw: string): string | null {
   return phoneNumber.slice(0, 3);
 }
 
+// Full local-format validity check (10 digits, 0-prefixed) — stricter
+// than normalizeTanzanianPhonePrefix, which only needs enough digits to
+// resolve an operator prefix as the member is still typing.
+export function isValidTanzanianPhoneNumber(raw: string): boolean {
+  let phoneNumber = raw.trim().replace(/\s+/g, "");
+
+  if (phoneNumber.startsWith("+255")) {
+    phoneNumber = "0" + phoneNumber.slice(4);
+  } else if (phoneNumber.startsWith("255")) {
+    phoneNumber = "0" + phoneNumber.slice(3);
+  }
+
+  return /^0\d{9}$/.test(phoneNumber);
+}
+
 export interface TelecomOperatorLookup {
   operator_id: number;
   operator_name: string;

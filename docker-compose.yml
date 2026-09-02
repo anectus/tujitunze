@@ -1,0 +1,68 @@
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${DB_USERNAME:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
+      POSTGRES_DB: ${DB_NAME:-tujitunze}
+    ports:
+      # Bound to loopback only: the backend never reaches Postgres
+      # through this host-published port (it uses db:5432 on the
+      # internal compose network — see backend.environment below),
+      # this is solely for a developer's own psql/GUI client on THIS
+      # machine. Without an explicit bind address Docker publishes on
+      # every host interface by default, which would otherwise expose
+      # Postgres directly to the public IP alongside the frontend/backend.
+      - "127.0.0.1:5434:5432"
+    volumes:
+      - db_data:/var/lib/postgresql/data
+      - ./database:/docker-entrypoint-initdb.d/database:ro
+      - ./database/docker-initdb.sh:/docker-entrypoint-initdb.d/00-init.sh:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME:-postgres} -d ${DB_NAME:-tujitunze}"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  backend:
+    build: ./backend
+    restart: unless-stopped
+    env_file:
+      - ./backend/.env
+    environment:
+      # Overrides backend/.env so the backend reaches Postgres by its
+      # service name inside the compose network, regardless of what
+      # host that file has configured for running the backend bare-metal.
+      DB_HOST: db
+      DB_PORT: 5432
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      # 3002 is taken by the tujitunze-core project's backend on this
+      # machine — moved to 3012 (host and container both, see PORT in
+      # backend/.env) so the two projects never collide.
+      - "3012:3012"
+    volumes:
+      - ./backend:/app
+      - backend_node_modules:/app/node_modules
+
+  frontend:
+    build: ./frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      # Host 3000 is already taken by this machine's gitea container —
+      # published on 3001 instead. The container itself still listens
+      # on 3000 internally; only the host-side mapping changes.
+      - "3001:3000"
+    volumes:
+      - ./frontend:/app
+      - frontend_node_modules:/app/node_modules
+
+volumes:
+  db_data:
+  backend_node_modules:
+  frontend_node_modules:

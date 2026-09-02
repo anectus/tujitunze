@@ -33,6 +33,7 @@ export const statusLabelTranslations = {
       reversed: "Reversed",
       successful: "Successful",
       pending_review: "Pending Review",
+      skipped: "Skipped",
     },
     member: {
       pending: "Pending Verification",
@@ -74,6 +75,7 @@ export const statusLabelTranslations = {
       reversed: "Imerejeshwa",
       successful: "Imefanikiwa",
       pending_review: "Inasubiri Ukaguzi",
+      skipped: "Imerukwa",
     },
     member: {
       pending: "Inasubiri Uthibitisho",

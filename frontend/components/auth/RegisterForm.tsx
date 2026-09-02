@@ -6,15 +6,35 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 import { formatNidaNumber, NIDA_FORMATTED_LENGTH } from "@/lib/utils/nida";
+import { isValidTanzanianPhoneNumber } from "@/lib/utils/formatPhone";
 import { useLanguage } from "@/lib/context/LanguageContext";
 import { registerFormTranslations } from "@/constants/translations/auth";
 import { commonTranslations } from "@/constants/translations/common";
-import LanguageSwitcher from "@/components/common/LanguageSwitcher";
+import { API_URL } from "@/lib/utils/api";
+import FormField from "@/components/auth/FormField";
+import Spinner from "@/components/auth/Spinner";
 
-const inputClass =
-  "w-full rounded-lg border border-gray-300 px-4 py-3 " +
-  "text-gray-900 outline-none transition " +
-  "focus:border-blue-700 focus:ring-2 focus:ring-blue-200";
+type RequiredField =
+  | "firstName"
+  | "surname"
+  | "phoneNumber"
+  | "nidaNumber"
+  | "email"
+  | "password"
+  | "confirmPassword";
+
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+function SectionHeading({ index, title }: { index: number; title: string }) {
+  return (
+    <div className="flex items-center gap-3">
+      <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#064E3B] text-xs font-bold text-white">
+        {index}
+      </span>
+      <h2 className="text-lg font-semibold text-[#064E3B]">{title}</h2>
+    </div>
+  );
+}
 
 export default function RegisterForm() {
   const router = useRouter();
@@ -33,19 +53,78 @@ export default function RegisterForm() {
     confirmPassword: "",
   });
 
+  const [fieldErrors, setFieldErrors] = useState<Partial<Record<RequiredField, string>>>({});
+  const [touched, setTouched] = useState<Partial<Record<RequiredField, boolean>>>({});
+  const [showMoreDetails, setShowMoreDetails] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [loading, setLoading] = useState(false);
+
+  const validateField = (
+    field: RequiredField,
+    value: string,
+    passwordValue: string
+  ): string | undefined => {
+    switch (field) {
+      case "firstName":
+        return value.trim() ? undefined : t.firstNameRequired;
+
+      case "surname":
+        return value.trim() ? undefined : t.surnameRequired;
+
+      case "phoneNumber":
+        if (!value.trim()) return t.phoneNumberRequired;
+        return isValidTanzanianPhoneNumber(value) ? undefined : t.phoneNumberInvalid;
+
+      case "nidaNumber":
+        if (!value.trim()) return t.nidaNumberRequired;
+        return value.length === NIDA_FORMATTED_LENGTH ? undefined : t.nidaNumberIncomplete;
+
+      case "email":
+        if (!value.trim()) return undefined; // optional field
+        return EMAIL_PATTERN.test(value) ? undefined : t.emailInvalid;
+
+      case "password":
+        if (!value) return t.passwordRequired;
+        return value.length >= 8 ? undefined : t.passwordTooShort;
+
+      case "confirmPassword":
+        if (!value) return t.confirmPasswordRequired;
+        return value === passwordValue ? undefined : common.passwordsDontMatch;
+
+      default:
+        return undefined;
+    }
+  };
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement>
   ) => {
     const { name, value } = e.target;
+    const field = name as RequiredField;
 
-    setFormData((previousData) => ({
-      ...previousData,
-      [name]: value,
-    }));
+    const nextFormData = { ...formData, [name]: value };
+    setFormData(nextFormData);
+
+    setFieldErrors((previous) => {
+      const next = { ...previous };
+
+      if (touched[field]) {
+        next[field] = validateField(field, value, nextFormData.password);
+      }
+
+      // Re-check confirmPassword live whenever password changes, since
+      // its validity depends on the other field's value.
+      if (field === "password" && touched.confirmPassword) {
+        next.confirmPassword = validateField(
+          "confirmPassword",
+          nextFormData.confirmPassword,
+          value
+        );
+      }
+
+      return next;
+    });
 
     setError("");
     setSuccess("");
@@ -56,13 +135,34 @@ export default function RegisterForm() {
   const handleNidaChange = (
     e: React.ChangeEvent<HTMLInputElement>
   ) => {
+    const formatted = formatNidaNumber(e.target.value);
+
     setFormData((previousData) => ({
       ...previousData,
-      nidaNumber: formatNidaNumber(e.target.value),
+      nidaNumber: formatted,
     }));
+
+    if (touched.nidaNumber) {
+      setFieldErrors((previous) => ({
+        ...previous,
+        nidaNumber: validateField("nidaNumber", formatted, formData.password),
+      }));
+    }
 
     setError("");
     setSuccess("");
+  };
+
+  const handleBlur = (e: React.FocusEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    const field = name as RequiredField;
+
+    setTouched((previous) => ({ ...previous, [field]: true }));
+
+    setFieldErrors((previous) => ({
+      ...previous,
+      [field]: validateField(field, value, formData.password),
+    }));
   };
 
   const handleSubmit = async (
@@ -70,24 +170,50 @@ export default function RegisterForm() {
   ) => {
     e.preventDefault();
 
+    const fieldsToValidate: RequiredField[] = [
+      "firstName",
+      "surname",
+      "phoneNumber",
+      "nidaNumber",
+      "email",
+      "password",
+      "confirmPassword",
+    ];
+
+    const nextErrors: Partial<Record<RequiredField, string>> = {};
+    fieldsToValidate.forEach((field) => {
+      nextErrors[field] = validateField(field, formData[field], formData.password);
+    });
+
+    setFieldErrors(nextErrors);
+    setTouched({
+      firstName: true,
+      surname: true,
+      phoneNumber: true,
+      nidaNumber: true,
+      email: true,
+      password: true,
+      confirmPassword: true,
+    });
+
+    // Email only lives behind "Add more details" — if it's invalid, the
+    // member needs to see the section that contains it.
+    if (nextErrors.email && !showMoreDetails) {
+      setShowMoreDetails(true);
+    }
+
+    if (Object.values(nextErrors).some(Boolean)) {
+      return;
+    }
+
     setError("");
     setSuccess("");
-
-    if (formData.password !== formData.confirmPassword) {
-      setError(common.passwordsDontMatch);
-      return;
-    }
-
-    if (formData.password.length < 8) {
-      setError(t.passwordTooShort);
-      return;
-    }
 
     try {
       setLoading(true);
 
       const response = await fetch(
-        "http://localhost:3002/members/register",
+        `${API_URL}/members/register`,
         {
           method: "POST",
           headers: {
@@ -123,6 +249,8 @@ export default function RegisterForm() {
         password: "",
         confirmPassword: "",
       });
+      setFieldErrors({});
+      setTouched({});
 
       setTimeout(() => {
         router.push("/login");
@@ -143,16 +271,12 @@ export default function RegisterForm() {
 
       <div className="max-w-2xl mx-auto">
 
-        <div className="flex justify-end mb-4">
-          <LanguageSwitcher />
-        </div>
-
         {/* Minimal logo + title (no marketing navbar on the auth page) */}
         <div className="text-center mb-8">
 
           <Link
             href="/"
-            className="text-2xl font-bold text-blue-700 tracking-tight"
+            className="text-2xl font-bold text-[#064E3B] tracking-tight"
           >
             Tujitunze
           </Link>
@@ -179,7 +303,7 @@ export default function RegisterForm() {
 
           {/* Success */}
           {success && (
-            <div className="mb-6 rounded-lg bg-blue-100 px-4 py-3 text-sm text-blue-700">
+            <div className="mb-6 rounded-lg bg-green-50 px-4 py-3 text-sm text-[#064E3B]">
               {success}
             </div>
           )}
@@ -187,236 +311,179 @@ export default function RegisterForm() {
           {/* Form */}
           <form
             onSubmit={handleSubmit}
-            className="space-y-6"
+            className="space-y-8"
+            noValidate
           >
 
-            {/* First Name */}
-            <div>
-              <label
-                htmlFor="firstName"
-                className="mb-2 block text-sm font-semibold text-gray-700"
-              >
-                {t.firstName}
-              </label>
+            {/* Section 1 — Personal Info */}
+            <div className="space-y-5">
+              <SectionHeading index={1} title={t.sectionPersonalInfo} />
 
-              <input
-                id="firstName"
-                name="firstName"
-                type="text"
-                value={formData.firstName}
-                onChange={handleChange}
-                placeholder={t.firstNamePlaceholder}
-                required
-                autoComplete="given-name"
-                className={inputClass}
-              />
-            </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                <FormField
+                  id="firstName"
+                  name="firstName"
+                  label={t.firstName}
+                  value={formData.firstName}
+                  onChange={handleChange}
+                  onBlur={handleBlur}
+                  placeholder={t.firstNamePlaceholder}
+                  autoComplete="given-name"
+                  error={fieldErrors.firstName}
+                  valid={touched.firstName && !!formData.firstName.trim()}
+                />
 
-            {/* Second Name */}
-            <div>
-              <label
-                htmlFor="secondName"
-                className="mb-2 block text-sm font-semibold text-gray-700"
-              >
-                {t.secondName}
-                <span className="ml-2 text-xs font-normal text-gray-500">
-                  {t.optional}
-                </span>
-              </label>
+                <FormField
+                  id="surname"
+                  name="surname"
+                  label={t.surname}
+                  value={formData.surname}
+                  onChange={handleChange}
+                  onBlur={handleBlur}
+                  placeholder={t.surnamePlaceholder}
+                  autoComplete="family-name"
+                  error={fieldErrors.surname}
+                  valid={touched.surname && !!formData.surname.trim()}
+                />
+              </div>
 
-              <input
-                id="secondName"
-                name="secondName"
-                type="text"
-                value={formData.secondName}
-                onChange={handleChange}
-                placeholder={t.secondNamePlaceholder}
-                autoComplete="additional-name"
-                className={inputClass}
-              />
-            </div>
-
-            {/* Surname */}
-            <div>
-              <label
-                htmlFor="surname"
-                className="mb-2 block text-sm font-semibold text-gray-700"
-              >
-                {t.surname}
-              </label>
-
-              <input
-                id="surname"
-                name="surname"
-                type="text"
-                value={formData.surname}
-                onChange={handleChange}
-                placeholder={t.surnamePlaceholder}
-                required
-                autoComplete="family-name"
-                className={inputClass}
-              />
-            </div>
-
-            {/* Phone Number — registration collects exactly one. Add more
-                from your profile after signing up. */}
-            <div>
-              <label
-                htmlFor="phoneNumber"
-                className="mb-2 block text-sm font-semibold text-gray-700"
-              >
-                {t.phoneNumber}
-              </label>
-
-              <input
+              <FormField
                 id="phoneNumber"
                 name="phoneNumber"
+                label={t.phoneNumber}
                 type="tel"
                 value={formData.phoneNumber}
                 onChange={handleChange}
+                onBlur={handleBlur}
                 placeholder={t.phoneNumberPlaceholder}
-                required
                 autoComplete="tel"
-                className={inputClass}
+                error={fieldErrors.phoneNumber}
+                valid={touched.phoneNumber && isValidTanzanianPhoneNumber(formData.phoneNumber)}
+                helpText={t.phoneNumberHelp}
               />
 
-              <p className="mt-1 text-xs text-gray-500">
-                {t.phoneNumberHelp}
-              </p>
-            </div>
-
-            {/* NIDA */}
-            <div>
-              <label
-                htmlFor="nidaNumber"
-                className="mb-2 block text-sm font-semibold text-gray-700"
-              >
-                {t.nidaNumber}
-              </label>
-
-              <input
+              <FormField
                 id="nidaNumber"
                 name="nidaNumber"
-                type="text"
+                label={t.nidaNumber}
                 inputMode="numeric"
                 value={formData.nidaNumber}
                 onChange={handleNidaChange}
+                onBlur={handleBlur}
                 placeholder={t.nidaNumberPlaceholder}
                 maxLength={NIDA_FORMATTED_LENGTH}
-                required
-                className={inputClass}
+                error={fieldErrors.nidaNumber}
+                valid={touched.nidaNumber && formData.nidaNumber.length === NIDA_FORMATTED_LENGTH}
+                helpText={t.nidaNumberHelp}
               />
 
-              <p className="mt-1 text-xs text-gray-500">
-                {t.nidaNumberHelp}
-              </p>
+              <button
+                type="button"
+                onClick={() => setShowMoreDetails((visible) => !visible)}
+                className="text-sm font-semibold text-[#064E3B] hover:text-[#065F46] transition-colors duration-300 ease-in-out"
+              >
+                {showMoreDetails ? t.showLessDetails : t.addMoreDetails}
+              </button>
+
+              {showMoreDetails && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                  <FormField
+                    id="secondName"
+                    name="secondName"
+                    label={t.secondName}
+                    optionalLabel={t.optional}
+                    value={formData.secondName}
+                    onChange={handleChange}
+                    placeholder={t.secondNamePlaceholder}
+                    autoComplete="additional-name"
+                  />
+
+                  <FormField
+                    id="email"
+                    name="email"
+                    label={t.email}
+                    type="email"
+                    optionalLabel={t.optional}
+                    value={formData.email}
+                    onChange={handleChange}
+                    onBlur={handleBlur}
+                    placeholder={t.emailPlaceholder}
+                    autoComplete="email"
+                    error={fieldErrors.email}
+                    valid={touched.email && !!formData.email.trim() && EMAIL_PATTERN.test(formData.email)}
+                  />
+                </div>
+              )}
             </div>
 
-            {/* Email - Optional */}
-            <div>
-              <label
-                htmlFor="email"
-                className="mb-2 block text-sm font-semibold text-gray-700"
-              >
-                {t.email}
-                <span className="ml-2 text-xs font-normal text-gray-500">
-                  {t.optional}
-                </span>
-              </label>
+            {/* Section 2 — Account Setup */}
+            <div className="space-y-5 border-t border-gray-200 pt-6">
+              <SectionHeading index={2} title={t.sectionAccountSetup} />
 
-              <input
-                id="email"
-                name="email"
-                type="email"
-                value={formData.email}
-                onChange={handleChange}
-                placeholder={t.emailPlaceholder}
-                autoComplete="email"
-                className={inputClass}
-              />
-            </div>
-
-            {/* Password */}
-            <div>
-              <label
-                htmlFor="password"
-                className="mb-2 block text-sm font-semibold text-gray-700"
-              >
-                {t.password}
-              </label>
-
-              <input
+              <FormField
                 id="password"
                 name="password"
+                label={t.password}
                 type="password"
                 value={formData.password}
                 onChange={handleChange}
+                onBlur={handleBlur}
                 placeholder={t.passwordPlaceholder}
-                required
-                minLength={8}
                 autoComplete="new-password"
-                className={inputClass}
+                error={fieldErrors.password}
+                helpText={t.passwordHelp}
               />
 
-              <p className="mt-1 text-xs text-gray-500">
-                {t.passwordHelp}
-              </p>
-            </div>
-
-            {/* Confirm Password */}
-            <div>
-              <label
-                htmlFor="confirmPassword"
-                className="mb-2 block text-sm font-semibold text-gray-700"
-              >
-                {t.confirmPassword}
-              </label>
-
-              <input
+              <FormField
                 id="confirmPassword"
                 name="confirmPassword"
+                label={t.confirmPassword}
                 type="password"
                 value={formData.confirmPassword}
                 onChange={handleChange}
+                onBlur={handleBlur}
                 placeholder={t.confirmPasswordPlaceholder}
-                required
-                minLength={8}
                 autoComplete="new-password"
-                className={inputClass}
+                error={fieldErrors.confirmPassword}
               />
             </div>
 
-            {/* Terms */}
-            <div className="flex items-start gap-3">
+            {/* Section 3 — Agreement */}
+            <div className="space-y-5 border-t border-gray-200 pt-6">
+              <SectionHeading index={3} title={t.sectionAgreement} />
 
-              <input
-                id="terms"
-                type="checkbox"
-                required
-                className="mt-1 h-4 w-4 rounded border-gray-300
-                text-blue-700 focus:ring-blue-600"
-              />
+              <div className="flex items-start gap-3">
 
-              <label
-                htmlFor="terms"
-                className="text-sm leading-5 text-gray-600"
+                <input
+                  id="terms"
+                  type="checkbox"
+                  required
+                  className="mt-1 h-4 w-4 rounded border-gray-300
+                  text-[#064E3B] focus:ring-[#064E3B]"
+                />
+
+                <label
+                  htmlFor="terms"
+                  className="text-sm leading-5 text-gray-600"
+                >
+                  {t.termsLabel}
+                </label>
+
+              </div>
+
+              {/* Submit */}
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full flex items-center justify-center gap-2 rounded-lg bg-[#064E3B] px-6 py-3.5
+                text-lg font-semibold text-white transition-colors duration-300 ease-in-out
+                hover:bg-[#065F46] disabled:cursor-not-allowed
+                disabled:opacity-60"
               >
-                {t.termsLabel}
-              </label>
-
+                {loading && <Spinner />}
+                {loading ? t.submitting : t.submit}
+              </button>
             </div>
-
-            {/* Submit */}
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full rounded-lg bg-blue-700 px-6 py-3.5
-              text-lg font-semibold text-white transition
-              hover:bg-blue-800 disabled:cursor-not-allowed
-              disabled:opacity-60"
-            >
-              {loading ? t.submitting : t.submit}
-            </button>
 
           </form>
 
@@ -428,8 +495,8 @@ export default function RegisterForm() {
 
               <Link
                 href="/login"
-                className="font-semibold text-blue-700
-                hover:text-blue-800 hover:underline"
+                className="font-semibold text-[#064E3B]
+                hover:text-[#065F46] hover:underline"
               >
                 {t.login}
               </Link>

@@ -8,6 +8,7 @@ import { getAccessToken } from "@/lib/utils/permissions";
 import DashboardHeader from "@/components/dashboard/DashboardHeader";
 import { useLanguage } from "@/lib/context/LanguageContext";
 import { bankReconciliationDetailTranslations } from "@/constants/translations/bank-reconciliation-detail";
+import { API_URL } from "@/lib/utils/api";
 
 interface RecordRow {
   record_id: number;
@@ -52,7 +53,7 @@ export default function BankReconciliationRunDetailPage() {
       return;
     }
 
-    fetch(`http://localhost:3002/bank/reconciliation/runs/${params.id}`, {
+    fetch(`${API_URL}/bank/reconciliation/runs/${params.id}`, {
       headers: { Authorization: `Bearer ${token}` },
     })
       .then(async (response) => {

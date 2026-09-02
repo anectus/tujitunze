@@ -9,6 +9,7 @@ import StatusBadge from "@/components/common/StatusBadge";
 import { useLanguage } from "@/lib/context/LanguageContext";
 import { commonTranslations } from "@/constants/translations/common";
 import { adminFinancialReportsTranslations } from "@/constants/translations/admin-financial-reports";
+import { API_URL } from "@/lib/utils/api";
 
 interface BucketStat {
   count: number;
@@ -92,7 +93,7 @@ const STATUS_OPTIONS = [
 ];
 
 const PAGE_SIZE = 20;
-const API_BASE = "http://localhost:3002";
+const API_BASE = `${API_URL}`;
 
 function formatTsh(amount: number) {
   return `TSh ${amount.toLocaleString("en-TZ")}`;

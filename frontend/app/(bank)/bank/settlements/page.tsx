@@ -7,6 +7,7 @@ import { getAccessToken } from "@/lib/utils/permissions";
 import DashboardHeader from "@/components/dashboard/DashboardHeader";
 import { useLanguage } from "@/lib/context/LanguageContext";
 import { bankSettlementsTranslations } from "@/constants/translations/bank-settlements";
+import { API_URL } from "@/lib/utils/api";
 
 interface Settlement {
   settlement_id: number;
@@ -66,7 +67,7 @@ export default function SettlementsPage() {
       if (!headers) return;
 
       try {
-        const response = await fetch("http://localhost:3002/bank/settlements", { headers });
+        const response = await fetch(`${API_URL}/bank/settlements`, { headers });
         const data = await response.json();
 
         if (!response.ok) {
@@ -106,7 +107,7 @@ export default function SettlementsPage() {
     setFormError("");
 
     try {
-      const response = await fetch("http://localhost:3002/bank/settlements", {
+      const response = await fetch(`${API_URL}/bank/settlements`, {
         method: "POST",
         headers,
         body: JSON.stringify({
@@ -140,7 +141,7 @@ export default function SettlementsPage() {
 
     try {
       const response = await fetch(
-        `http://localhost:3002/bank/settlements/${settlementId}/complete`,
+        `${API_URL}/bank/settlements/${settlementId}/complete`,
         { method: "PATCH", headers }
       );
 

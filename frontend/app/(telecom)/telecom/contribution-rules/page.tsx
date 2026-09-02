@@ -8,6 +8,7 @@ import DashboardHeader from "@/components/dashboard/DashboardHeader";
 import { useLanguage } from "@/lib/context/LanguageContext";
 import { commonTranslations } from "@/constants/translations/common";
 import { telecomContributionRulesTranslations } from "@/constants/translations/telecom-contribution-rules";
+import { API_URL } from "@/lib/utils/api";
 
 interface Rule {
   rule_id: number;
@@ -36,7 +37,7 @@ export default function ContributionRulesPage() {
       return;
     }
 
-    fetch("http://localhost:3002/telecom/contribution-rules", {
+    fetch(`${API_URL}/telecom/contribution-rules`, {
       headers: { Authorization: `Bearer ${token}` },
     })
       .then(async (response) => {

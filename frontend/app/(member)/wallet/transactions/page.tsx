@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { getAccessToken } from "@/lib/utils/permissions";
 import { useLanguage } from "@/lib/context/LanguageContext";
 import { walletTransactionsTranslations } from "@/constants/translations/member-wallet";
+import { API_URL } from "@/lib/utils/api";
 
 interface Transaction {
   walletTransactionId: number;
@@ -54,7 +55,7 @@ export default function WalletTransactionsPage() {
     }
 
     fetch(
-      `http://localhost:3002/members/wallet/transactions?page=${page}&pageSize=${PAGE_SIZE}`,
+      `${API_URL}/members/wallet/transactions?page=${page}&pageSize=${PAGE_SIZE}`,
       { headers: { Authorization: `Bearer ${token}` } }
     )
       .then(async (response) => {

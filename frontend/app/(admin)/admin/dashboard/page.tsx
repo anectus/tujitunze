@@ -8,6 +8,7 @@ import DashboardHeader from "@/components/dashboard/DashboardHeader";
 import StatisticCard from "@/components/cards/StatisticCard";
 import { useLanguage } from "@/lib/context/LanguageContext";
 import { adminDashboardTranslations } from "@/constants/translations/admin-dashboard";
+import { API_URL } from "@/lib/utils/api";
 
 interface AdminDashboardData {
   membersByStatus: Record<string, number>;
@@ -37,7 +38,7 @@ export default function AdminDashboardPage() {
       }
 
       try {
-        const response = await fetch("http://localhost:3002/admin/dashboard", {
+        const response = await fetch(`${API_URL}/admin/dashboard`, {
           headers: { Authorization: `Bearer ${token}` },
         });
 

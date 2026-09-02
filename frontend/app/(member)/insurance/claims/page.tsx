@@ -10,6 +10,7 @@ import { getAccessToken } from "@/lib/utils/permissions";
 import { useLanguage } from "@/lib/context/LanguageContext";
 import { memberInsuranceClaimsTranslations } from "@/constants/translations/member-insurance-claims";
 import { commonTranslations } from "@/constants/translations/common";
+import { API_URL } from "@/lib/utils/api";
 
 type ClaimStatusKey = keyof typeof CLAIM_STATUS;
 
@@ -56,7 +57,7 @@ export default function InsuranceClaimsPage() {
       return;
     }
 
-    fetch("http://localhost:3002/members/claims", {
+    fetch(`${API_URL}/members/claims`, {
       headers: { Authorization: `Bearer ${token}` },
     })
       .then(async (response) => {

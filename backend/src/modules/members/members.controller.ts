@@ -19,6 +19,7 @@ import { AddPhoneNumberDto } from './dto/add-phone-number.dto';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 import { AddBankAccountDto } from './dto/add-bank-account.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
+import { UpdateSavingConsentDto } from './dto/update-saving-consent.dto';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -115,6 +116,35 @@ export class MembersController {
   @Get('membership')
   async membership(@CurrentUser() user: AuthenticatedUser) {
     return this.membersService.getMembership(user.userId);
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('Member')
+  @Get('savings-summary')
+  async savingsSummary(@CurrentUser() user: AuthenticatedUser) {
+    return this.membersService.getSavingsSummary(user.userId);
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('Member')
+  @Get('saving-consent')
+  async savingConsent(@CurrentUser() user: AuthenticatedUser) {
+    return this.membersService.getSavingConsent(user.userId);
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('Member')
+  @Patch('saving-consent')
+  async updateSavingConsent(
+    @CurrentUser() user: AuthenticatedUser,
+    @Body() body: UpdateSavingConsentDto,
+    @Req() request: Request,
+  ) {
+    return this.membersService.updateSavingConsent(
+      user.userId,
+      body,
+      request.ip,
+    );
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)

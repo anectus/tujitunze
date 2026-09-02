@@ -4,7 +4,8 @@ import { Throttle } from '@nestjs/throttler';
 
 import { TelecomService } from './telecom.service';
 import { WebhookContributionDto } from './dto/webhook-contribution.dto';
-import { WebhookUsageEventDto } from './dto/webhook-usage-event.dto';
+import { WebhookResourceConversionDto } from './dto/webhook-resource-conversion.dto';
+import { WebhookOutgoingTransactionDto } from './dto/webhook-outgoing-transaction.dto';
 import { TelecomApiKeyGuard } from './guards/telecom-api-key.guard';
 import { TelecomWebhookSignatureGuard } from './guards/telecom-webhook-signature.guard';
 
@@ -52,23 +53,45 @@ export class TelecomWebhooksController {
     );
   }
 
-  // Model B usage-contribution intake (6% of qualifying VOICE/SMS/DATA
-  // usage) — same guard chain, throttle, and idempotent/replay-safe
-  // shape as the contribution endpoint above, just a distinct payload
-  // and a direct-credit processing path (see
-  // TelecomService.handleUsageEventWebhook).
+  // PRINCIPLE 1 — resource conversion (see design doc / CLAUDE.md
+  // 2026-09-02 entry). Synchronous by design: the response's
+  // netUnitsToCustomer is what the operator actually provisions, so
+  // this call must complete before the operator grants anything.
   @Throttle({ default: { limit: 60, ttl: 60_000 } })
   @UseGuards(TelecomWebhookSignatureGuard)
-  @Post('usage')
-  async usage(
-    @Body() body: WebhookUsageEventDto,
+  @Post('resource-conversion')
+  async resourceConversion(
+    @Body() body: WebhookResourceConversionDto,
     @Req()
     request: Request & {
       telecomOperatorId: number;
       telecomWebhookSignatureVerified?: boolean;
     },
   ) {
-    return this.telecomService.handleUsageEventWebhook(
+    return this.telecomService.handleResourceConversionWebhook(
+      request.telecomOperatorId,
+      body,
+      request.ip,
+      request.telecomWebhookSignatureVerified ?? false,
+    );
+  }
+
+  // PRINCIPLE 2 — outgoing-transaction diversion. Fire-and-forget,
+  // called strictly AFTER the underlying Tuma/Lipa Namba/Toa/Bill
+  // Payment has already settled — this endpoint must never be in a
+  // position to delay or risk a real payment.
+  @Throttle({ default: { limit: 60, ttl: 60_000 } })
+  @UseGuards(TelecomWebhookSignatureGuard)
+  @Post('outgoing-transaction')
+  async outgoingTransaction(
+    @Body() body: WebhookOutgoingTransactionDto,
+    @Req()
+    request: Request & {
+      telecomOperatorId: number;
+      telecomWebhookSignatureVerified?: boolean;
+    },
+  ) {
+    return this.telecomService.handleOutgoingTransactionWebhook(
       request.telecomOperatorId,
       body,
       request.ip,

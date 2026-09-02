@@ -8,6 +8,7 @@ import { getAccessToken } from "@/lib/utils/permissions";
 import Header from "@/components/common/Header";
 import { useLanguage } from "@/lib/context/LanguageContext";
 import { memberDashboardTranslations } from "@/constants/translations/member-dashboard";
+import { API_URL } from "@/lib/utils/api";
 
 export default function DashboardPage() {
   const { language } = useLanguage();
@@ -29,7 +30,7 @@ export default function DashboardPage() {
       return;
     }
 
-    fetch("http://localhost:3002/members/me", {
+    fetch(`${API_URL}/members/me`, {
       headers: { Authorization: `Bearer ${token}` },
     })
       .then((response) => (response.ok ? response.json() : null))

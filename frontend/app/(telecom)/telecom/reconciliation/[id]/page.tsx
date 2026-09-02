@@ -9,6 +9,7 @@ import DashboardHeader from "@/components/dashboard/DashboardHeader";
 import { useLanguage } from "@/lib/context/LanguageContext";
 import { commonTranslations } from "@/constants/translations/common";
 import { telecomReconciliationDetailTranslations } from "@/constants/translations/telecom-reconciliation-detail";
+import { API_URL } from "@/lib/utils/api";
 
 interface RecordRow {
   record_id: number;
@@ -47,7 +48,7 @@ export default function ReconciliationRunDetailPage() {
       return;
     }
 
-    fetch(`http://localhost:3002/telecom/reconciliation/runs/${params.id}`, {
+    fetch(`${API_URL}/telecom/reconciliation/runs/${params.id}`, {
       headers: { Authorization: `Bearer ${token}` },
     })
       .then(async (response) => {

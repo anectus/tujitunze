@@ -8,6 +8,7 @@ import DashboardHeader from "@/components/dashboard/DashboardHeader";
 import { useLanguage } from "@/lib/context/LanguageContext";
 import { commonTranslations } from "@/constants/translations/common";
 import { telecomAuditLogsTranslations } from "@/constants/translations/telecom-audit-logs";
+import { API_URL } from "@/lib/utils/api";
 
 interface ActivityLog {
   audit_id: number;
@@ -47,10 +48,10 @@ export default function TelecomAuditLogsPage() {
     }
 
     Promise.all([
-      fetch("http://localhost:3002/telecom/activity-logs", {
+      fetch(`${API_URL}/telecom/activity-logs`, {
         headers: { Authorization: `Bearer ${token}` },
       }).then((r) => r.json()),
-      fetch("http://localhost:3002/telecom/api-access-logs", {
+      fetch(`${API_URL}/telecom/api-access-logs`, {
         headers: { Authorization: `Bearer ${token}` },
       }).then((r) => r.json()),
     ])

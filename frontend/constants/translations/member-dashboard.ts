@@ -25,6 +25,11 @@ export const memberDashboardTranslations = {
         title: "Transaction History",
         description: "Every contribution and wallet transaction, filterable.",
       },
+      {
+        href: "/savings",
+        title: "Micro-Savings",
+        description: "Automatic savings from bundle purchases and outgoing transactions.",
+      },
     ],
   },
   sw: {
@@ -50,6 +55,11 @@ export const memberDashboardTranslations = {
         href: "/wallet/transactions",
         title: "Historia ya Miamala",
         description: "Kila mchango na muamala wa mkoba, unaoweza kuchujwa.",
+      },
+      {
+        href: "/savings",
+        title: "Akiba Ndogo",
+        description: "Akiba ya moja kwa moja kutoka ununuzi wa bando na miamala ya kutoka.",
       },
     ],
   },

@@ -8,6 +8,7 @@ import { useRouter } from "next/navigation";
 import { getAccessToken } from "@/lib/utils/permissions";
 import { useLanguage } from "@/lib/context/LanguageContext";
 import { memberSettingsTranslations } from "@/constants/translations/member-settings";
+import { API_URL } from "@/lib/utils/api";
 
 interface TelecomOperator {
   operator_id: number;
@@ -90,7 +91,7 @@ function ChangePasswordSection() {
       setLoading(true);
 
       const response = await fetch(
-        "http://localhost:3002/members/me/password",
+        `${API_URL}/members/me/password`,
         {
           method: "PATCH",
           headers,
@@ -239,7 +240,7 @@ function AddPhoneNumberSection() {
     const loadOperators = async () => {
       try {
         const response = await fetch(
-          "http://localhost:3002/members/telecom-operators"
+          `${API_URL}/members/telecom-operators`
         );
         if (response.ok) setOperators(await response.json());
       } catch {
@@ -270,7 +271,7 @@ function AddPhoneNumberSection() {
       setLoading(true);
 
       const response = await fetch(
-        "http://localhost:3002/members/phone-numbers",
+        `${API_URL}/members/phone-numbers`,
         {
           method: "POST",
           headers,
@@ -405,7 +406,7 @@ function AddBankAccountSection() {
   useEffect(() => {
     const loadBanks = async () => {
       try {
-        const response = await fetch("http://localhost:3002/members/banks");
+        const response = await fetch(`${API_URL}/members/banks`);
         if (response.ok) setBanks(await response.json());
       } catch {
         // Options list is a nice-to-have here; the form still submits.
@@ -435,7 +436,7 @@ function AddBankAccountSection() {
       setLoading(true);
 
       const response = await fetch(
-        "http://localhost:3002/members/bank-accounts",
+        `${API_URL}/members/bank-accounts`,
         {
           method: "POST",
           headers,
@@ -571,6 +572,110 @@ function AddBankAccountSection() {
   );
 }
 
+// =====================================================
+// Automatic Micro-Savings consent — off by request only; every member
+// starts opted in, matching the backend default (absence of a
+// member_saving_consents row means consented).
+// =====================================================
+
+function SavingConsentSection() {
+  const getAuthHeaders = useAuthHeaders();
+  const { language } = useLanguage();
+  const t = memberSettingsTranslations[language];
+
+  const [consented, setConsented] = useState(true);
+  const [loaded, setLoaded] = useState(false);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    const headers = getAuthHeaders();
+    if (!headers) return;
+
+    fetch(`${API_URL}/members/saving-consent`, { headers })
+      .then((response) => (response.ok ? response.json() : null))
+      .then((data) => {
+        if (data) setConsented(data.consented);
+      })
+      .finally(() => setLoaded(true));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const handleToggle = async () => {
+    const headers = getAuthHeaders();
+    if (!headers) return;
+
+    const nextValue = !consented;
+    setError("");
+    setSuccess("");
+    setSaving(true);
+
+    try {
+      const response = await fetch(`${API_URL}/members/saving-consent`, {
+        method: "PATCH",
+        headers,
+        body: JSON.stringify({ consented: nextValue }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || t.savingConsentUpdateErrorFallback);
+      }
+
+      setConsented(nextValue);
+      setSuccess(t.savingConsentUpdateSuccess);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t.genericErrorFallback);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-md">
+      <p className="text-lg font-bold text-gray-900">{t.savingConsentTitle}</p>
+      <p className="mt-2 text-sm text-gray-600">{t.savingConsentDescription}</p>
+
+      {error && (
+        <div className="mt-4 rounded-lg bg-red-100 px-4 py-3 text-sm text-red-700">
+          {error}
+        </div>
+      )}
+
+      {success && (
+        <div className="mt-4 rounded-lg bg-blue-100 px-4 py-3 text-sm text-blue-700">
+          {success}
+        </div>
+      )}
+
+      <div className="mt-4 flex items-center justify-between gap-4">
+        <span className="text-sm font-medium text-gray-700">
+          {consented ? t.savingConsentOn : t.savingConsentOff}
+        </span>
+
+        <button
+          type="button"
+          role="switch"
+          aria-checked={consented}
+          disabled={!loaded || saving}
+          onClick={handleToggle}
+          className={`relative h-7 w-12 shrink-0 rounded-full transition-colors duration-300 ease-in-out disabled:opacity-60 ${
+            consented ? "bg-[#064E3B]" : "bg-gray-300"
+          }`}
+        >
+          <span
+            className={`absolute top-0.5 h-6 w-6 rounded-full bg-white shadow transition-transform duration-300 ease-in-out ${
+              consented ? "translate-x-5" : "translate-x-0.5"
+            }`}
+          />
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export default function SettingsPage() {
   const { language } = useLanguage();
   const t = memberSettingsTranslations[language];
@@ -596,6 +701,7 @@ export default function SettingsPage() {
         </p>
 
         <div className="mt-8 space-y-6">
+          <SavingConsentSection />
           <ChangePasswordSection />
           <AddPhoneNumberSection />
           <AddBankAccountSection />

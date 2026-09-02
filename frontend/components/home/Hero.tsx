@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useLanguage } from "@/lib/context/LanguageContext";
 import { heroTranslations } from "@/constants/translations/home";
 import { useAuth } from "@/lib/hooks/useAuth";
+import HeroIllustration from "@/components/home/HeroIllustration";
 
 export default function Hero() {
   const { language } = useLanguage();
@@ -12,193 +13,76 @@ export default function Hero() {
   const { isAuthenticated } = useAuth();
 
   return (
-    <section className="pt-32 pb-20 bg-gradient-to-br from-blue-50 via-white to-blue-100 px-12">
+    <section className="pt-32 pb-20 bg-gradient-to-br from-teal-50 via-white to-emerald-50 px-12 max-md:px-4">
 
-      <div className="max-w-7xl mx-auto px-6">
+      <div className="max-w-7xl mx-auto px-6 max-md:px-4">
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-12 max-md:gap-8 items-center">
 
 
           {/* Left Side - Main Content */}
-          <div>
+          <div className="max-md:text-center">
 
-            <span className="inline-block bg-blue-100 text-blue-700 px-4 py-2 rounded-full text-sm font-semibold mb-5">
+            <span className="inline-block bg-green-100 text-green-700 px-4 py-2 rounded-full text-sm font-semibold mb-5">
               {t.badge}
             </span>
 
 
-            <h1 className="text-5xl md:text-6xl font-bold text-gray-900 leading-tight">
+            <h1 className="text-5xl md:text-6xl max-md:text-4xl font-bold text-gray-900 leading-tight">
 
               {t.titleLine1}
-              <span className="text-blue-700">
+              <span className="text-green-600">
                 {t.titleHighlight}
               </span>
 
             </h1>
 
 
-            <p className="mt-6 text-lg text-gray-600 leading-relaxed">
+            <p className="mt-6 text-lg text-gray-600 leading-relaxed max-md:max-w-md max-md:mx-auto">
 
               {t.description}
 
             </p>
 
 
-            {/* Buttons */}
-            <div className="mt-8 flex flex-wrap gap-4">
-
-
-              {!isAuthenticated && (
+            {/* CTA — a single, bold "Get Started" button rather than a
+                Sign Up / Login pair, so the hero has one clear focal
+                action; Login stays reachable from the header. */}
+            {!isAuthenticated && (
+              <div className="mt-8 flex justify-center">
                 <Link
                   href="/register"
                   className="
-                  bg-blue-700
+                  bg-black
                   text-white
-                  px-8
-                  py-3
-                  rounded-lg
                   font-semibold
-                  hover:bg-blue-800
-                  transition"
-                >
-                  {t.signUp}
-                </Link>
-              )}
-
-
-              {!isAuthenticated && (
-                <Link
-                  href="/login"
-                  className="
-                  border-2
-                  border-blue-700
-                  text-blue-700
-                  px-8
+                  inline-flex
+                  items-center
+                  gap-2
+                  px-5
                   py-3
-                  rounded-lg
-                  font-semibold
-                  hover:bg-blue-700
-                  hover:text-white
-                  transition"
+                  rounded-md
+                  shadow-sm
+                  hover:bg-gray-900
+                  transition-colors
+                  duration-300
+                  ease-in-out
+                  max-md:w-full max-md:justify-center"
                 >
-                  {t.login}
+                  {t.getStarted}
+                  <span className="text-green-500">→</span>
                 </Link>
-              )}
-
-
-            </div>
+              </div>
+            )}
 
 
           </div>
 
 
 
-          {/* Right Side - System Features Card */}
-          <div className="relative">
-
-
-            <div className="
-              bg-white
-              shadow-xl
-              rounded-2xl
-              p-8
-              border
-              border-gray-100
-            ">
-
-
-              <h2 className="text-2xl font-bold text-gray-900 mb-6">
-                {t.whyChoose}
-              </h2>
-
-
-              <div className="space-y-5">
-
-
-                {/* Feature 1 */}
-                <div className="flex items-start gap-4">
-
-                  <div className="
-                    bg-blue-100
-                    text-blue-700
-                    rounded-full
-                    p-3
-                  ">
-                    💳
-                  </div>
-
-                  <div>
-                    <h3 className="font-semibold text-gray-900">
-                      {t.feature1Title}
-                    </h3>
-
-                    <p className="text-gray-600 text-sm">
-                      {t.feature1Description}
-                    </p>
-                  </div>
-
-                </div>
-
-
-
-                {/* Feature 2 */}
-                <div className="flex items-start gap-4">
-
-                  <div className="
-                    bg-blue-100
-                    text-blue-700
-                    rounded-full
-                    p-3
-                  ">
-                    📱
-                  </div>
-
-                  <div>
-                    <h3 className="font-semibold text-gray-900">
-                      {t.feature2Title}
-                    </h3>
-
-                    <p className="text-gray-600 text-sm">
-                      {t.feature2Description}
-                    </p>
-                  </div>
-
-                </div>
-
-                {/* Feature 4 */}
-                <div className="flex items-start gap-4">
-
-                  <div className="
-                    bg-blue-100
-                    text-blue-700
-                    rounded-full
-                    p-3
-                  ">
-                    🏦
-                  </div>
-
-                  <div>
-
-                    <h3 className="font-semibold text-gray-900">
-                      {t.feature3Title}
-                    </h3>
-
-                    <p className="text-gray-600 text-sm">
-                      {t.feature3Description}
-                    </p>
-
-                  </div>
-
-                </div>
-
-
-
-              </div>
-
-
-            </div>
-
-
+          {/* Right Side - Illustration */}
+          <div className="relative max-md:order-first">
+            <HeroIllustration />
           </div>
 
 

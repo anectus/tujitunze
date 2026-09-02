@@ -10,6 +10,7 @@ import StatusBadge from "@/components/common/StatusBadge";
 import { useLanguage } from "@/lib/context/LanguageContext";
 import { memberProfileTranslations } from "@/constants/translations/member-profile";
 import { commonTranslations } from "@/constants/translations/common";
+import { API_URL } from "@/lib/utils/api";
 
 interface TelecomOperator {
   operator_id: number;
@@ -79,11 +80,11 @@ export default function ProfilePage() {
 
       try {
         const [profileResponse, operatorsResponse, banksResponse] = await Promise.all([
-          fetch("http://localhost:3002/members/me", {
+          fetch(`${API_URL}/members/me`, {
             headers: { Authorization: `Bearer ${token}` },
           }),
-          fetch("http://localhost:3002/members/telecom-operators"),
-          fetch("http://localhost:3002/members/banks"),
+          fetch(`${API_URL}/members/telecom-operators`),
+          fetch(`${API_URL}/members/banks`),
         ]);
 
         if (profileResponse.status === 401) {
@@ -135,7 +136,7 @@ export default function ProfilePage() {
     setSettingPrimaryId(phoneId);
 
     try {
-      await fetch(`http://localhost:3002/members/phone-numbers/${phoneId}/primary`, {
+      await fetch(`${API_URL}/members/phone-numbers/${phoneId}/primary`, {
         method: "PATCH",
         headers: { Authorization: `Bearer ${token}` },
       });

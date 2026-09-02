@@ -7,6 +7,7 @@ import { getAccessToken } from "@/lib/utils/permissions";
 import DashboardHeader from "@/components/dashboard/DashboardHeader";
 import { useLanguage } from "@/lib/context/LanguageContext";
 import { superAdminRolesTranslations } from "@/constants/translations/super-admin-roles";
+import { API_URL } from "@/lib/utils/api";
 
 interface Permission {
   id: number;
@@ -84,10 +85,10 @@ export default function SuperAdminRolesPage() {
 
       try {
         const [rolesRes, permissionsRes] = await Promise.all([
-          fetch("http://localhost:3002/super-admin/roles", {
+          fetch(`${API_URL}/super-admin/roles`, {
             headers: { Authorization: `Bearer ${token}` },
           }),
-          fetch("http://localhost:3002/super-admin/permissions", {
+          fetch(`${API_URL}/super-admin/permissions`, {
             headers: { Authorization: `Bearer ${token}` },
           }),
         ]);
@@ -135,7 +136,7 @@ export default function SuperAdminRolesPage() {
     setCreating(true);
 
     try {
-      const response = await fetch("http://localhost:3002/super-admin/roles", {
+      const response = await fetch(`${API_URL}/super-admin/roles`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -194,7 +195,7 @@ export default function SuperAdminRolesPage() {
 
     try {
       const response = await fetch(
-        `http://localhost:3002/super-admin/roles/${role.roleId}/permissions`,
+        `${API_URL}/super-admin/roles/${role.roleId}/permissions`,
         {
           method: "PUT",
           headers: {
@@ -245,7 +246,7 @@ export default function SuperAdminRolesPage() {
 
     try {
       const response = await fetch(
-        `http://localhost:3002/super-admin/roles/${role.roleId}`,
+        `${API_URL}/super-admin/roles/${role.roleId}`,
         {
           method: "PATCH",
           headers: {
@@ -296,7 +297,7 @@ export default function SuperAdminRolesPage() {
 
     try {
       const response = await fetch(
-        `http://localhost:3002/super-admin/roles/${role.roleId}`,
+        `${API_URL}/super-admin/roles/${role.roleId}`,
         {
           method: "DELETE",
           headers: { Authorization: `Bearer ${token}` },

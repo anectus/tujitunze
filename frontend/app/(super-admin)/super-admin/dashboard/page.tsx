@@ -8,6 +8,7 @@ import DashboardHeader from "@/components/dashboard/DashboardHeader";
 import StatisticCard from "@/components/cards/StatisticCard";
 import { useLanguage } from "@/lib/context/LanguageContext";
 import { superAdminDashboardTranslations } from "@/constants/translations/super-admin-dashboard";
+import { API_URL } from "@/lib/utils/api";
 
 interface SuperAdminDashboardData {
   usersByRole: Record<string, number>;
@@ -43,7 +44,7 @@ export default function SuperAdminDashboardPage() {
 
       try {
         const response = await fetch(
-          "http://localhost:3002/super-admin/dashboard",
+          `${API_URL}/super-admin/dashboard`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
 

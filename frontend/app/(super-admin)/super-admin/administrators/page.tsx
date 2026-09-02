@@ -10,6 +10,7 @@ import StatusBadge from "@/components/common/StatusBadge";
 import { useLanguage } from "@/lib/context/LanguageContext";
 import { superAdminAdministratorsTranslations } from "@/constants/translations/super-admin-administrators";
 import { roleLabelTranslations } from "@/constants/translations/common";
+import { API_URL } from "@/lib/utils/api";
 
 const STAFF_ROLES = [
   "Admin",
@@ -102,10 +103,10 @@ export default function SuperAdminAdministratorsPage() {
 
       try {
         const [administratorsRes, tenantsRes] = await Promise.all([
-          fetch("http://localhost:3002/super-admin/administrators", {
+          fetch(`${API_URL}/super-admin/administrators`, {
             headers: { Authorization: `Bearer ${token}` },
           }),
-          fetch("http://localhost:3002/super-admin/tenants", {
+          fetch(`${API_URL}/super-admin/tenants`, {
             headers: { Authorization: `Bearer ${token}` },
           }),
         ]);
@@ -168,7 +169,7 @@ export default function SuperAdminAdministratorsPage() {
 
     try {
       const response = await fetch(
-        "http://localhost:3002/super-admin/administrators",
+        `${API_URL}/super-admin/administrators`,
         {
           method: "POST",
           headers: {

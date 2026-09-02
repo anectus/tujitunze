@@ -9,6 +9,7 @@ import DashboardHeader from "@/components/dashboard/DashboardHeader";
 import StatisticCard from "@/components/cards/StatisticCard";
 import { useLanguage } from "@/lib/context/LanguageContext";
 import { bankDashboardTranslations } from "@/constants/translations/bank-dashboard";
+import { API_URL } from "@/lib/utils/api";
 
 interface BankDashboardData {
   bank: { name: string | null; status: string | null };
@@ -49,7 +50,7 @@ export default function BankDashboardPage() {
       }
 
       try {
-        const response = await fetch("http://localhost:3002/bank/dashboard", {
+        const response = await fetch(`${API_URL}/bank/dashboard`, {
           headers: { Authorization: `Bearer ${token}` },
         });
 

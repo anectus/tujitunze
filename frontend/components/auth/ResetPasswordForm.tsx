@@ -6,8 +6,7 @@ import { useSearchParams } from "next/navigation";
 import { useLanguage } from "@/lib/context/LanguageContext";
 import { resetPasswordTranslations } from "@/constants/translations/auth";
 import LanguageSwitcher from "@/components/common/LanguageSwitcher";
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3002";
+import { API_URL } from "@/lib/utils/api";
 
 function EyeIcon({ off }: { off: boolean }) {
   return off ? (

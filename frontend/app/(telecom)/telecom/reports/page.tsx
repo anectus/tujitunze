@@ -9,6 +9,7 @@ import DashboardHeader from "@/components/dashboard/DashboardHeader";
 import { useLanguage } from "@/lib/context/LanguageContext";
 import { commonTranslations } from "@/constants/translations/common";
 import { telecomReportsTranslations } from "@/constants/translations/telecom-reports";
+import { API_URL } from "@/lib/utils/api";
 
 type Period = "daily" | "weekly" | "monthly";
 
@@ -54,7 +55,7 @@ export default function TelecomReportsPage() {
       return;
     }
 
-    fetch(`http://localhost:3002/telecom/reports?period=${period}`, {
+    fetch(`${API_URL}/telecom/reports?period=${period}`, {
       headers: { Authorization: `Bearer ${token}` },
     })
       .then(async (response) => {

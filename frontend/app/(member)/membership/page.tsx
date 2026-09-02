@@ -9,6 +9,7 @@ import StatusBadge from "@/components/common/StatusBadge";
 import { useLanguage } from "@/lib/context/LanguageContext";
 import { memberMembershipTranslations } from "@/constants/translations/member-membership";
 import { commonTranslations } from "@/constants/translations/common";
+import { API_URL } from "@/lib/utils/api";
 
 interface Coverage {
   policyNumber: string;
@@ -70,7 +71,7 @@ export default function MembershipPage() {
       return;
     }
 
-    fetch("http://localhost:3002/members/membership", {
+    fetch(`${API_URL}/members/membership`, {
       headers: { Authorization: `Bearer ${token}` },
     })
       .then(async (response) => {

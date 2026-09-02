@@ -17,6 +17,7 @@ import { CreateSettlementDto } from './dto/create-settlement.dto';
 import { UpdateTransactionStatusDto } from './dto/update-transaction-status.dto';
 import { RecordContributionDto } from './dto/record-contribution.dto';
 import { WebhookTransactionDto } from './dto/webhook-transaction.dto';
+import { encryptWebhookSecret } from '../../common/webhook-secret-crypto';
 import { AuditLogsService } from '../audit-logs/audit-logs.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { WalletsService } from '../wallets/wallets.service';
@@ -873,12 +874,13 @@ export class BankService {
     const bankId = await this.getAssignedBankId(userId);
 
     const webhookSecret = crypto.randomBytes(24).toString('hex');
+    const encryptedSecret = encryptWebhookSecret(webhookSecret);
 
     await this.dataSource.query(
       `UPDATE banks
        SET webhook_url = $2, webhook_secret = $3, webhook_secret_generated_at = NOW(), updated_at = NOW()
        WHERE bank_id = $1`,
-      [bankId, data.webhookUrl, webhookSecret],
+      [bankId, data.webhookUrl, encryptedSecret],
     );
 
     await this.dataSource.transaction((manager) =>

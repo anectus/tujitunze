@@ -11,6 +11,7 @@ import {
 } from "@/lib/utils/formatPhone";
 import { useLanguage } from "@/lib/context/LanguageContext";
 import { mobileMoneyFormTranslations } from "@/constants/translations/member-onboarding";
+import { API_URL } from "@/lib/utils/api";
 
 interface Bank {
   bank_id: number;
@@ -98,9 +99,9 @@ export default function MobileMoneyAccountForm() {
       try {
         const [banksResponse, regionsResponse, operatorsResponse] =
           await Promise.all([
-            fetch("http://localhost:3002/members/banks"),
-            fetch("http://localhost:3002/members/regions"),
-            fetch("http://localhost:3002/members/telecom-operators"),
+            fetch(`${API_URL}/members/banks`),
+            fetch(`${API_URL}/members/regions`),
+            fetch(`${API_URL}/members/telecom-operators`),
           ]);
 
         if (banksResponse.ok) {
@@ -135,7 +136,7 @@ export default function MobileMoneyAccountForm() {
     }
 
     fetch(
-      `http://localhost:3002/members/districts?regionId=${selectedRegion.region_id}`
+      `${API_URL}/members/districts?regionId=${selectedRegion.region_id}`
     )
       .then((response) => (response.ok ? response.json() : []))
       .then((data: District[]) => setDistricts(data))
@@ -254,7 +255,7 @@ export default function MobileMoneyAccountForm() {
 
       // 1. Profile details
       const profileResponse = await fetch(
-        "http://localhost:3002/members/me",
+        `${API_URL}/members/me`,
         {
           method: "PATCH",
           headers: authHeaders,
@@ -281,7 +282,7 @@ export default function MobileMoneyAccountForm() {
         const entry = accounts[index];
 
         const response = await fetch(
-          "http://localhost:3002/members/phone-numbers",
+          `${API_URL}/members/phone-numbers`,
           {
             method: "POST",
             headers: authHeaders,
@@ -310,7 +311,7 @@ export default function MobileMoneyAccountForm() {
         const entry = bankAccounts[index];
 
         const response = await fetch(
-          "http://localhost:3002/members/bank-accounts",
+          `${API_URL}/members/bank-accounts`,
           {
             method: "POST",
             headers: authHeaders,
@@ -465,7 +466,6 @@ export default function MobileMoneyAccountForm() {
               </select>
             </div>
 
-
              {/* District - Optional */}
             <div>
               <label
@@ -502,9 +502,6 @@ export default function MobileMoneyAccountForm() {
                 ))}
               </select>
             </div>
-            
-            
-            
             
             {/* Mobile Money Accounts */}
             {accounts.map((entry, index) => (
@@ -641,9 +638,6 @@ export default function MobileMoneyAccountForm() {
                 {t.addAnotherMobileMoneyAccount}
               </button>
             )}
-
-           
-           
 
             {/* Bank Accounts - Optional */}
             <div className="space-y-4">

@@ -8,6 +8,7 @@ import { getAccessToken } from "@/lib/utils/permissions";
 import DashboardHeader from "@/components/dashboard/DashboardHeader";
 import { useLanguage } from "@/lib/context/LanguageContext";
 import { bankReportsTranslations } from "@/constants/translations/bank-reports";
+import { API_URL } from "@/lib/utils/api";
 
 type Period = "daily" | "weekly" | "monthly";
 
@@ -54,7 +55,7 @@ export default function BankReportsPage() {
       return;
     }
 
-    fetch(`http://localhost:3002/bank/reports?period=${period}`, {
+    fetch(`${API_URL}/bank/reports?period=${period}`, {
       headers: { Authorization: `Bearer ${token}` },
     })
       .then(async (response) => {

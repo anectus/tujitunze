@@ -166,39 +166,60 @@ export class TelecomController {
     return this.telecomService.listContributionRules();
   }
 
-  // Staff-facing read side of the Model B usage-contribution flow — the
-  // ingestion endpoint itself (POST /telecom/webhooks/usage) is operator-
-  // authenticated (TelecomApiKeyGuard), not staff-authenticated, and
-  // lives on TelecomWebhooksController; these stay under this
-  // controller's class-level JwtAuthGuard/RolesGuard('Telecom') like
-  // every other staff view.
-  @Get('usage-events/summary')
-  async getUsageEventsSummary(@CurrentUser() user: AuthenticatedUser) {
-    return this.telecomService.getUsageEventsSummary(user.userId);
+  // Principle 1 — staff-facing read side. The webhook itself
+  // (POST /telecom/webhooks/resource-conversion) is operator-
+  // authenticated (TelecomApiKeyGuard) and lives on
+  // TelecomWebhooksController, same split as the contribution webhook.
+  @Get('resource-conversions/summary')
+  async getResourceConversionsSummary(@CurrentUser() user: AuthenticatedUser) {
+    return this.telecomService.getResourceConversionsSummary(user.userId);
   }
 
-  @Get('usage-events')
-  async listUsageEvents(
+  @Get('resource-conversions')
+  async listResourceConversions(
     @CurrentUser() user: AuthenticatedUser,
     @Query('status') status: string | undefined,
-    @Query('usageType') usageType: string | undefined,
+    @Query('resourceType') resourceType: string | undefined,
     @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
     @Query('pageSize', new DefaultValuePipe(20), ParseIntPipe) pageSize: number,
   ) {
-    return this.telecomService.listUsageEvents(
+    return this.telecomService.listResourceConversions(
       user.userId,
-      { status, usageType },
+      { status, resourceType },
       page,
       pageSize,
     );
   }
 
-  @Get('usage-events/:id')
-  async getUsageEvent(
+  @Get('resource-conversions/:id')
+  async getResourceConversion(
     @CurrentUser() user: AuthenticatedUser,
     @Param('id', ParseIntPipe) id: number,
   ) {
-    return this.telecomService.getUsageEvent(user.userId, id);
+    return this.telecomService.getResourceConversion(user.userId, id);
+  }
+
+  // Principle 2 — staff-facing read side, telecom-authenticated intake
+  // only (see outgoing-transaction-diversion.types.ts).
+  @Get('outgoing-diversions/summary')
+  async getOutgoingDiversionsSummary(@CurrentUser() user: AuthenticatedUser) {
+    return this.telecomService.getOutgoingDiversionsSummary(user.userId);
+  }
+
+  @Get('outgoing-diversions')
+  async listOutgoingDiversions(
+    @CurrentUser() user: AuthenticatedUser,
+    @Query('status') status: string | undefined,
+    @Query('transactionType') transactionType: string | undefined,
+    @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
+    @Query('pageSize', new DefaultValuePipe(20), ParseIntPipe) pageSize: number,
+  ) {
+    return this.telecomService.listOutgoingDiversions(
+      user.userId,
+      { status, transactionType },
+      page,
+      pageSize,
+    );
   }
 
   @Post('reconciliation/runs')

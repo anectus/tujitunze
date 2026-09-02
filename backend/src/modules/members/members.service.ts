@@ -20,6 +20,7 @@ import { AddPhoneNumberDto } from './dto/add-phone-number.dto';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 import { AddBankAccountDto } from './dto/add-bank-account.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
+import { UpdateSavingConsentDto } from './dto/update-saving-consent.dto';
 import { AuditLogsService } from '../audit-logs/audit-logs.service';
 import { NotificationsService } from '../notifications/notifications.service';
 
@@ -892,6 +893,121 @@ export class MembersService {
           }
         : null,
     };
+  }
+
+  // =====================================================
+  // Micro-savings summary — the member-facing view of both principles
+  // of the dual-mode savings engine (see CLAUDE.md 2026-09-02 entry /
+  // design doc). Reads saving_ledger, the single cross-principle audit
+  // trail both `TelecomService.handleResourceConversionWebhook` and
+  // `handleOutgoingTransactionWebhook` append to in the same
+  // transaction as the wallet credit, so this never has to reconcile
+  // two separate source tables itself.
+  // =====================================================
+
+  async getSavingsSummary(userId: number) {
+    const byPrinciple = await this.dataSource.query<
+      { principle: string; count: number; total: string }[]
+    >(
+      `SELECT principle, COUNT(*)::int AS count, COALESCE(SUM(saved_value_tzs), 0) AS total
+       FROM saving_ledger
+       WHERE member_id = $1
+       GROUP BY principle`,
+      [userId],
+    );
+
+    const recent = await this.dataSource.query<
+      {
+        ledger_id: number;
+        principle: string;
+        source_table: string;
+        saved_value_tzs: string;
+        created_at: Date;
+      }[]
+    >(
+      `SELECT ledger_id, principle, source_table, saved_value_tzs, created_at
+       FROM saving_ledger
+       WHERE member_id = $1
+       ORDER BY created_at DESC
+       LIMIT 20`,
+      [userId],
+    );
+
+    const resourceConversion = byPrinciple.find(
+      (row) => row.principle === 'RESOURCE_CONVERSION',
+    );
+    const transactionDiversion = byPrinciple.find(
+      (row) => row.principle === 'TRANSACTION_DIVERSION',
+    );
+
+    return {
+      totalSavedTzs: byPrinciple.reduce(
+        (sum, row) => sum + Number(row.total),
+        0,
+      ),
+      resourceConversion: {
+        count: resourceConversion?.count ?? 0,
+        totalSavedTzs: resourceConversion
+          ? Number(resourceConversion.total)
+          : 0,
+      },
+      transactionDiversion: {
+        count: transactionDiversion?.count ?? 0,
+        totalSavedTzs: transactionDiversion
+          ? Number(transactionDiversion.total)
+          : 0,
+      },
+      recent: recent.map((row) => ({
+        ledgerId: row.ledger_id,
+        principle: row.principle,
+        source: row.source_table,
+        savedValueTzs: Number(row.saved_value_tzs),
+        createdAt: row.created_at,
+      })),
+    };
+  }
+
+  // Absence of a member_saving_consents row means "consented" (the
+  // 2026-09-02 product decision: every existing and new member starts
+  // opted in, so this only ever needs to represent an explicit opt-out).
+  async getSavingConsent(userId: number) {
+    const [row] = await this.dataSource.query<
+      { consented: boolean; updated_at: Date }[]
+    >(
+      `SELECT consented, updated_at FROM member_saving_consents WHERE member_id = $1`,
+      [userId],
+    );
+
+    return {
+      consented: row ? row.consented : true,
+      updatedAt: row?.updated_at ?? null,
+    };
+  }
+
+  async updateSavingConsent(
+    userId: number,
+    data: UpdateSavingConsentDto,
+    ipAddress: string | null = null,
+  ) {
+    return this.dataSource.transaction(async (manager) => {
+      await manager.query(
+        `INSERT INTO member_saving_consents (member_id, consented, updated_at)
+         VALUES ($1, $2, NOW())
+         ON CONFLICT (member_id) DO UPDATE SET consented = $2, updated_at = NOW()`,
+        [userId, data.consented],
+      );
+
+      await this.auditLogsService.record(manager, {
+        memberId: userId,
+        actionType: 'member.saving_consent_update',
+        affectedTable: 'member_saving_consents',
+        affectedRecordId: userId,
+        newValue: { consented: data.consented },
+        ipAddress,
+      });
+
+      return { consented: data.consented };
+    });
   }
 
   // =====================================================

@@ -7,6 +7,7 @@ import {
 import { DataSource } from 'typeorm';
 import * as crypto from 'crypto';
 import type { Request } from 'express';
+import { decryptWebhookSecret } from '../../../common/webhook-secret-crypto';
 
 // Bank's mirror of TelecomWebhookSignatureGuard — second boundary layer
 // behind BankApiKeyGuard (class-level guards run before method-level
@@ -91,8 +92,10 @@ export class BankWebhookSignatureGuard implements CanActivate {
       ? request.rawBody.toString('utf8')
       : JSON.stringify(request.body ?? {});
 
+    const webhookSecret = decryptWebhookSecret(bank.webhook_secret);
+
     const expected = crypto
-      .createHmac('sha256', bank.webhook_secret)
+      .createHmac('sha256', webhookSecret)
       .update(`${timestampRaw}.${rawBody}`)
       .digest('hex');
 

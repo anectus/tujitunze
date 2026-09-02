@@ -10,6 +10,7 @@ import { getAccessToken } from "@/lib/utils/permissions";
 import { useLanguage } from "@/lib/context/LanguageContext";
 import { memberInsurancePlansTranslations } from "@/constants/translations/member-insurance-plans";
 import { commonTranslations } from "@/constants/translations/common";
+import { API_URL } from "@/lib/utils/api";
 
 type CoverageStatusKey = keyof typeof COVERAGE_STATUS;
 
@@ -47,7 +48,7 @@ export default function MyInsurancePage() {
       return;
     }
 
-    fetch("http://localhost:3002/members/insurance", {
+    fetch(`${API_URL}/members/insurance`, {
       headers: { Authorization: `Bearer ${token}` },
     })
       .then(async (response) => {

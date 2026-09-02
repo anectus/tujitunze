@@ -83,12 +83,17 @@ export const TRANSACTION_STATUS: Record<string, StatusStyle> = {
   allocated: statusStyle("Allocated", "success"),
   failed: statusStyle("Failed", "danger"),
   reversed: statusStyle("Reversed", "neutral"),
-  // telecom_usage_events' own status vocabulary (Model B usage
-  // contributions) — added rather than reusing "completed"/"allocated"
-  // since a usage event's terminal success state is a distinct value
+  // payment_transactions' own status vocabulary (e.g. Vodacom M-Pesa
+  // collection) — added rather than reusing "completed"/"allocated"
+  // since a payment's terminal success state is a distinct value
   // ("SUCCESSFUL") from the contribution ledger it produces.
   successful: statusStyle("Successful", "success"),
   pending_review: statusStyle("Pending Review", "warning"),
+  // outgoing_transaction_savings' own terminal state when a rule
+  // isn't active yet (see CLAUDE.md 2026-09-02 dual-mode savings
+  // entry) — the underlying payment still settled, Tujitunze just
+  // credited nothing, so this is deliberately neutral, not a failure.
+  skipped: statusStyle("Skipped", "neutral"),
 };
 
 // Member account status — new registrations start "Pending" until

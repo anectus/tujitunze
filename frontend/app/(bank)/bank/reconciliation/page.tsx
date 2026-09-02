@@ -8,6 +8,7 @@ import { getAccessToken } from "@/lib/utils/permissions";
 import DashboardHeader from "@/components/dashboard/DashboardHeader";
 import { useLanguage } from "@/lib/context/LanguageContext";
 import { bankReconciliationTranslations } from "@/constants/translations/bank-reconciliation";
+import { API_URL } from "@/lib/utils/api";
 
 interface Run {
   run_id: number;
@@ -54,7 +55,7 @@ export default function BankReconciliationPage() {
       return;
     }
 
-    fetch("http://localhost:3002/bank/reconciliation/runs", {
+    fetch(`${API_URL}/bank/reconciliation/runs`, {
       headers: { Authorization: `Bearer ${token}` },
     })
       .then(async (response) => {
@@ -111,7 +112,7 @@ export default function BankReconciliationPage() {
     setUploading(true);
 
     try {
-      const response = await fetch("http://localhost:3002/bank/reconciliation/runs", {
+      const response = await fetch(`${API_URL}/bank/reconciliation/runs`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

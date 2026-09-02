@@ -8,6 +8,7 @@ import { getAccessToken } from "@/lib/utils/permissions";
 import { useLanguage } from "@/lib/context/LanguageContext";
 import { adminAuditLogsTranslations } from "@/constants/translations/admin-audit-logs";
 import { commonTranslations } from "@/constants/translations/common";
+import { API_URL } from "@/lib/utils/api";
 
 interface AuditLogEntry {
   auditId: number;
@@ -42,7 +43,7 @@ export default function AdminAuditLogsPage() {
 
       try {
         const response = await fetch(
-          "http://localhost:3002/admin/audit-logs",
+          `${API_URL}/admin/audit-logs`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
 

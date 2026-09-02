@@ -9,6 +9,7 @@ import StatusBadge from "@/components/common/StatusBadge";
 import { useLanguage } from "@/lib/context/LanguageContext";
 import { commonTranslations } from "@/constants/translations/common";
 import { telecomContributionsTranslations } from "@/constants/translations/telecom-contributions";
+import { API_URL } from "@/lib/utils/api";
 
 interface Contribution {
   contribution_id: number;
@@ -67,7 +68,7 @@ export default function TelecomContributionsPage() {
       ...(status ? { status } : {}),
     });
 
-    fetch(`http://localhost:3002/telecom/contributions?${query.toString()}`, {
+    fetch(`${API_URL}/telecom/contributions?${query.toString()}`, {
       headers: { Authorization: `Bearer ${token}` },
     })
       .then(async (response) => {
@@ -99,7 +100,7 @@ export default function TelecomContributionsPage() {
     setRecordSuccess("");
 
     try {
-      const response = await fetch("http://localhost:3002/telecom/contributions", {
+      const response = await fetch(`${API_URL}/telecom/contributions`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -136,7 +137,7 @@ export default function TelecomContributionsPage() {
 
     const query = status ? `?status=${status}` : "";
 
-    fetch(`http://localhost:3002/telecom/contributions/export${query}`, {
+    fetch(`${API_URL}/telecom/contributions/export${query}`, {
       headers: { Authorization: `Bearer ${token}` },
     })
       .then((response) => response.blob())

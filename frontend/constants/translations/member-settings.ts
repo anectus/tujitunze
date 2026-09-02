@@ -42,6 +42,14 @@ export const memberSettingsTranslations = {
     addBankErrorFallback: "Unable to add this bank account.",
     addBankSuccessTemplate: "Account {accountNumber} was added to your account.",
 
+    savingConsentTitle: "Automatic Micro-Savings",
+    savingConsentDescription:
+      "When this is on, a small share of eligible telecom bundle purchases and mobile-money transactions is automatically saved into your Health Wallet. Turning it off stops new savings — it does not affect money already saved.",
+    savingConsentOn: "On — savings are active",
+    savingConsentOff: "Off — no new savings will be applied",
+    savingConsentUpdateErrorFallback: "Unable to update this setting.",
+    savingConsentUpdateSuccess: "Your savings preference was updated.",
+
     genericErrorFallback: "Something went wrong. Please try again.",
   },
   sw: {
@@ -84,6 +92,14 @@ export const memberSettingsTranslations = {
     addBankButton: "Ongeza Akaunti ya Benki",
     addBankErrorFallback: "Imeshindwa kuongeza akaunti hii ya benki.",
     addBankSuccessTemplate: "Akaunti {accountNumber} imeongezwa kwenye akaunti yako.",
+
+    savingConsentTitle: "Akiba Ndogo Ndogo Kiotomatiki",
+    savingConsentDescription:
+      "Ukiwasha hii, sehemu ndogo ya manunuzi ya vifurushi vya simu na miamala ya pesa za simu inayostahili itahifadhiwa kiotomatiki kwenye Mkoba wako wa Afya. Kuzima hakuathiri fedha ambazo tayari zimehifadhiwa — kunazuia tu akiba mpya.",
+    savingConsentOn: "Imewashwa — akiba inaendelea",
+    savingConsentOff: "Imezimwa — hakuna akiba mpya itakayowekwa",
+    savingConsentUpdateErrorFallback: "Imeshindwa kubadilisha mpangilio huu.",
+    savingConsentUpdateSuccess: "Mpangilio wako wa akiba umesasishwa.",
 
     genericErrorFallback: "Hitilafu imetokea. Tafadhali jaribu tena.",
   },

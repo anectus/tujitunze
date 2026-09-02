@@ -9,8 +9,9 @@ import StatisticCard from "@/components/cards/StatisticCard";
 import StatusBadge from "@/components/common/StatusBadge";
 import { useLanguage } from "@/lib/context/LanguageContext";
 import { insuranceDashboardTranslations } from "@/constants/translations/insurance-dashboard";
+import { API_URL } from "@/lib/utils/api";
 
-const API_BASE = "http://localhost:3002";
+const API_BASE = `${API_URL}`;
 const PAGE_SIZE = 20;
 
 interface BreakdownRow {

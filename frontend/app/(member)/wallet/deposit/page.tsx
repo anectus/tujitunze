@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { getAccessToken } from "@/lib/utils/permissions";
 import { useLanguage } from "@/lib/context/LanguageContext";
 import { walletDepositTranslations } from "@/constants/translations/member-wallet";
+import { API_URL } from "@/lib/utils/api";
 
 interface PhoneNumber {
   phoneId: number;
@@ -43,7 +44,7 @@ export default function WalletDepositPage() {
       }
 
       try {
-        const response = await fetch("http://localhost:3002/members/me", {
+        const response = await fetch(`${API_URL}/members/me`, {
           headers: { Authorization: `Bearer ${token}` },
         });
 
@@ -105,7 +106,7 @@ export default function WalletDepositPage() {
       setSubmitting(true);
 
       const response = await fetch(
-        "http://localhost:3002/members/wallet/topup",
+        `${API_URL}/members/wallet/topup`,
         {
           method: "POST",
           headers: {

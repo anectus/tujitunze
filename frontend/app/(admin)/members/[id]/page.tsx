@@ -11,6 +11,7 @@ import { useLanguage } from "@/lib/context/LanguageContext";
 import { adminMemberDetailTranslations } from "@/constants/translations/admin-member-detail";
 import { commonTranslations } from "@/constants/translations/common";
 import { getStatusLabel } from "@/constants/translations/statuses";
+import { API_URL } from "@/lib/utils/api";
 
 interface TelecomOperator {
   operator_id: number;
@@ -71,10 +72,10 @@ export default function AdminMemberDetailPage() {
 
       try {
         const [memberResponse, operatorsResponse] = await Promise.all([
-          fetch(`http://localhost:3002/admin/members/${params.id}`, {
+          fetch(`${API_URL}/admin/members/${params.id}`, {
             headers: { Authorization: `Bearer ${token}` },
           }),
-          fetch("http://localhost:3002/members/telecom-operators"),
+          fetch(`${API_URL}/members/telecom-operators`),
         ]);
 
         if (memberResponse.status === 401 || memberResponse.status === 403) {
@@ -112,7 +113,7 @@ export default function AdminMemberDetailPage() {
 
     try {
       const response = await fetch(
-        `http://localhost:3002/admin/members/${member.userId}/status`,
+        `${API_URL}/admin/members/${member.userId}/status`,
         {
           method: "PATCH",
           headers: {

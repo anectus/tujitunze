@@ -13,9 +13,9 @@ interface LanguageSwitcherProps {
 // they stay the same regardless of which language the rest of the UI is
 // currently showing — this list is intentionally not run through the
 // translation tables.
-const LANGUAGE_OPTIONS: { code: Language; label: string }[] = [
-  { code: "sw", label: "Swahili" },
-  { code: "en", label: "English" },
+const LANGUAGE_OPTIONS: { code: Language; label: string; shortLabel: string }[] = [
+  { code: "sw", label: "Swahili", shortLabel: "SW" },
+  { code: "en", label: "English", shortLabel: "EN" },
 ];
 
 // Single canonical language selector — mounted in Header (public pages),
@@ -78,6 +78,7 @@ export default function LanguageSwitcher({ className = "" }: LanguageSwitcherPro
         gap-2
         border
         border-gray-200
+        bg-white
         text-gray-700
         px-3 py-2
         rounded-lg
@@ -87,7 +88,8 @@ export default function LanguageSwitcher({ className = "" }: LanguageSwitcherPro
         hover:text-blue-700
         transition"
       >
-        <span>{current.label}</span>
+        <span className="hidden md:inline">{current.label}</span>
+        <span className="md:hidden">{current.shortLabel}</span>
 
         <svg
           xmlns="http://www.w3.org/2000/svg"
