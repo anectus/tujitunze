@@ -140,12 +140,13 @@ export default function LoginForm() {
 
       const staffDashboardPath = getStaffDashboardPath(payload?.roles ?? []);
 
-      // A Member lands on the home page after login, whether or not
-      // onboarding (the mobile-money form) is complete — the account menu
-      // (top right, via the header) carries the "Complete Membership"
-      // action, rather than forcing a redirect straight into that form.
-      // Staff roles still go straight to their own tenant dashboard.
-      router.push(staffDashboardPath ?? "/");
+      // Every role lands on its own dashboard right after login: staff
+      // roles via getStaffDashboardPath (their tenant-scoped
+      // /<role>/dashboard), Members on the bare /dashboard they own per
+      // the route-group table in CLAUDE.md. All paths here are relative —
+      // never a hardcoded origin — so this redirect works unchanged across
+      // dev, staging, and production.
+      router.push(staffDashboardPath ?? "/dashboard");
 
     } catch (error) {
       if (error instanceof Error) {

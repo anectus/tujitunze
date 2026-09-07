@@ -38,9 +38,12 @@ const LINK_CLASS =
 
 const HEADING_CLASS = "text-sm font-semibold text-white mb-4";
 
-// Global footer — mounted on every public page (via the marketing
-// Header's pages) and, via DashboardLayout, at the bottom of every
-// Member/staff route group too. Editing this affects the whole site.
+// Public marketing footer — mounted on every logged-out page (home,
+// about, services, contact, help, privacy-policy, terms, access-denied).
+// Authenticated route groups use DashboardFooter instead (mounted via
+// DashboardLayout), which shares this footer's regulatory/data-protection
+// line but drops the nav links, social icons, and dark marketing chrome
+// that don't belong inside a logged-in dashboard shell.
 export default function Footer() {
   const { language } = useLanguage();
   const t = footerTranslations[language];

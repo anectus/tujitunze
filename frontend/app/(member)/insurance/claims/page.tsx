@@ -11,6 +11,7 @@ import { useLanguage } from "@/lib/context/LanguageContext";
 import { memberInsuranceClaimsTranslations } from "@/constants/translations/member-insurance-claims";
 import { commonTranslations } from "@/constants/translations/common";
 import { API_URL } from "@/lib/utils/api";
+import PageContainer from "@/components/dashboard/PageContainer";
 
 type ClaimStatusKey = keyof typeof CLAIM_STATUS;
 
@@ -82,16 +83,7 @@ export default function InsuranceClaimsPage() {
   }, [router, t.errorFallback]);
 
   return (
-    <div className="min-h-screen bg-white py-12 px-4">
-
-      <div className="max-w-4xl mx-auto">
-
-        <Link
-          href="/dashboard"
-          className="text-sm font-medium text-blue-700 hover:text-blue-800"
-        >
-          ← {common.backToDashboard}
-        </Link>
+    <PageContainer backHref="/dashboard" backLabel={common.backToDashboard}>
 
         <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
 
@@ -101,7 +93,7 @@ export default function InsuranceClaimsPage() {
 
           <Link
             href="/insurance/plans"
-            className="text-sm font-medium text-blue-700 hover:text-blue-800"
+            className="text-sm font-medium text-emerald-700 hover:text-emerald-800"
           >
             {t.viewInsurance}
           </Link>
@@ -186,8 +178,6 @@ export default function InsuranceClaimsPage() {
 
         )}
 
-      </div>
-
-    </div>
+    </PageContainer>
   );
 }

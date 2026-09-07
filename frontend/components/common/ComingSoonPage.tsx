@@ -1,9 +1,8 @@
 "use client";
 
-import Link from "next/link";
-
 import { useLanguage } from "@/lib/context/LanguageContext";
 import { commonTranslations } from "@/constants/translations/common";
+import PageContainer from "@/components/dashboard/PageContainer";
 
 interface ComingSoonPageProps {
   title: string;
@@ -27,35 +26,24 @@ export default function ComingSoonPage({
   const t = commonTranslations[language];
 
   return (
-    <div className="min-h-screen bg-white py-12 px-4">
+    <PageContainer backHref={backHref} backLabel={backLabel}>
 
-      <div className="max-w-2xl mx-auto">
+      <h1 className="mt-4 text-3xl font-bold text-gray-900">
+        {title}
+      </h1>
 
-        <Link
-          href={backHref}
-          className="text-sm font-medium text-blue-700 hover:text-blue-800"
-        >
-          ← {backLabel ?? t.backToDashboard}
-        </Link>
+      <div className="mt-8 rounded-2xl border border-dashed border-gray-200 bg-gray-50 p-6 md:p-10 text-center">
 
-        <h1 className="mt-4 text-3xl font-bold text-gray-900">
-          {title}
-        </h1>
+        <p className="text-gray-600">
+          {description}
+        </p>
 
-        <div className="mt-8 rounded-2xl border border-dashed border-gray-200 bg-gray-50 p-6 md:p-10 text-center">
-
-          <p className="text-gray-600">
-            {description}
-          </p>
-
-          <p className="mt-3 text-sm font-semibold text-gray-400">
-            {t.comingSoon}
-          </p>
-
-        </div>
+        <p className="mt-3 text-sm font-semibold text-gray-400">
+          {t.comingSoon}
+        </p>
 
       </div>
 
-    </div>
+    </PageContainer>
   );
 }

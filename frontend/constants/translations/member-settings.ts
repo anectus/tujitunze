@@ -7,6 +7,19 @@ export const memberSettingsTranslations = {
     description:
       "Change your password, or add more phone numbers and bank accounts as income sources for your wallet. Your name, NIDA number, and email can't be changed here.",
 
+    userSettingsTab: "User Settings",
+    securitySettingsTab: "Security Settings",
+
+    accountSecurityGroupTitle: "Account Security",
+    accountSecurityGroupDescription:
+      "Manage your password and keep your account protected.",
+    walletSourcesGroupTitle: "Wallet Sources",
+    walletSourcesGroupDescription:
+      "Link the phone numbers and bank accounts your Health Wallet can draw contributions from.",
+    microSavingsGroupTitle: "Micro-Savings Preferences",
+    microSavingsGroupDescription:
+      "Control whether small amounts are automatically saved from your everyday transactions.",
+
     changePasswordTitle: "Change Password",
     currentPassword: "Current Password",
     newPassword: "New Password",
@@ -17,6 +30,10 @@ export const memberSettingsTranslations = {
     newPasswordTooShort: "New password must be at least 8 characters.",
     changePasswordErrorFallback: "Unable to change your password.",
     changePasswordSuccess: "Password changed successfully.",
+    showPassword: "Show password",
+    hidePassword: "Hide password",
+    passwordMinLengthHint: "Must be at least 8 characters",
+    passwordsMatchHint: "Passwords match",
 
     addPhoneTitle: "Add Phone Number",
     addPhoneDescription: "Link another mobile money number as a source for your wallet.",
@@ -58,6 +75,19 @@ export const memberSettingsTranslations = {
     description:
       "Badilisha nywila yako, au ongeza namba za simu na akaunti za benki kama vyanzo vya mapato kwa mkoba wako. Jina lako, namba ya NIDA, na barua pepe haviwezi kubadilishwa hapa.",
 
+    userSettingsTab: "Mipangilio ya Mtumiaji",
+    securitySettingsTab: "Mipangilio ya Usalama",
+
+    accountSecurityGroupTitle: "Usalama wa Akaunti",
+    accountSecurityGroupDescription:
+      "Simamia nywila yako na uweke akaunti yako salama.",
+    walletSourcesGroupTitle: "Vyanzo vya Mkoba",
+    walletSourcesGroupDescription:
+      "Unganisha namba za simu na akaunti za benki ambazo Mkoba wako wa Afya unaweza kupokea michango kutoka kwake.",
+    microSavingsGroupTitle: "Mapendeleo ya Akiba Ndogo Ndogo",
+    microSavingsGroupDescription:
+      "Dhibiti kama kiasi kidogo kinahifadhiwa kiotomatiki kutoka kwenye miamala yako ya kila siku.",
+
     changePasswordTitle: "Badilisha Nywila",
     currentPassword: "Nywila ya Sasa",
     newPassword: "Nywila Mpya",
@@ -68,6 +98,10 @@ export const memberSettingsTranslations = {
     newPasswordTooShort: "Nywila mpya lazima iwe na angalau herufi 8.",
     changePasswordErrorFallback: "Imeshindwa kubadilisha nywila yako.",
     changePasswordSuccess: "Nywila imebadilishwa kikamilifu.",
+    showPassword: "Onyesha nywila",
+    hidePassword: "Ficha nywila",
+    passwordMinLengthHint: "Lazima iwe na angalau herufi 8",
+    passwordsMatchHint: "Nywila zinafanana",
 
     addPhoneTitle: "Ongeza Namba ya Simu",
     addPhoneDescription: "Unganisha namba nyingine ya pesa za simu kama chanzo cha mkoba wako.",

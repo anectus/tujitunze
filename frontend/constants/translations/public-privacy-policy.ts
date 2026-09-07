@@ -19,7 +19,7 @@ export const privacyPolicyTranslations = {
       },
       {
         title: "How We Use Your Information",
-        body: "Your data is used to verify your identity and membership, operate your health wallet and insurance coverage, process contributions through telecom and bank partners, allow partner hospitals to confirm your membership at the point of care, and maintain audit logs for selected write operations (such as contributions and role changes).",
+        body: "Your data is used to verify your identity and membership, operate your health wallet and insurance coverage, process contributions through telecom and bank partners, allow your insurance provider to review claims against your coverage, and maintain audit logs for selected write operations (such as contributions and role changes).",
       },
       {
         title: "Security Measures",
@@ -56,7 +56,7 @@ export const privacyPolicyTranslations = {
       },
       {
         title: "Jinsi Tunavyotumia Taarifa Zako",
-        body: "Taarifa zako hutumika kuthibitisha utambulisho na uanachama wako, kuendesha mkoba wako wa afya na huduma za bima, kuchakata michango kupitia washirika wa simu na benki, kuruhusu hospitali washirika kuthibitisha uanachama wako wakati wa huduma, na kudumisha kumbukumbu za ukaguzi kwa baadhi ya matendo (kama vile michango na mabadiliko ya majukumu).",
+        body: "Taarifa zako hutumika kuthibitisha utambulisho na uanachama wako, kuendesha mkoba wako wa afya na huduma za bima, kuchakata michango kupitia washirika wa simu na benki, kuruhusu mtoa huduma wako wa bima kukagua madai dhidi ya bima yako, na kudumisha kumbukumbu za ukaguzi kwa baadhi ya matendo (kama vile michango na mabadiliko ya majukumu).",
       },
       {
         title: "Hatua za Usalama",

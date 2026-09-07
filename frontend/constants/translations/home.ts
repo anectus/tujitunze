@@ -171,12 +171,12 @@ export const homeFaqsTranslations = {
     {
       question: "What is Tujitunze?",
       answer:
-        "Tujitunze is a health savings and insurance management platform for Tanzania. It lets you save toward healthcare costs, contribute through your telecom or bank account, and access verified partner hospitals — all from one account.",
+        "Tujitunze is a health savings and insurance management platform for Tanzania. It lets you save toward healthcare costs, contribute through your telecom or bank account, and access insurance coverage for care — all from one account.",
     },
     {
       question: "Is Tujitunze free to use?",
       answer:
-        "Creating an account and using the wallet, telecom contributions, and hospital verification features is free. Any transaction or contribution fees are shown clearly before you confirm, so there are never hidden charges.",
+        "Creating an account and using the wallet, telecom contributions, and insurance coverage features is free. Any transaction or contribution fees are shown clearly before you confirm, so there are never hidden charges.",
     },
     {
       question: "How do I add money to my wallet?",
@@ -189,9 +189,9 @@ export const homeFaqsTranslations = {
         "No. The wallet is built for the mtu wa kawaida — the ordinary person. Mobile money is enough to save small amounts daily; a bank account is only an extra option for members who prefer one.",
     },
     {
-      question: "Can hospitals verify my membership?",
+      question: "How does my insurance coverage work?",
       answer:
-        "Yes. Partner hospitals can verify your active membership at the point of care, so you don't need to carry paperwork — your account status is checked instantly.",
+        "Your contributions build up in your Health Wallet and are allocated to the insurance plan you're enrolled with. Claims are reviewed by your insurance provider according to your plan's terms, and you can track their status from your dashboard at any time.",
     },
     {
       question: "Is my personal information secure?",
@@ -203,12 +203,12 @@ export const homeFaqsTranslations = {
     {
       question: "Tujitunze ni nini?",
       answer:
-        "Tujitunze ni jukwaa la akiba ya afya na usimamizi wa bima kwa Tanzania. Linakuwezesha kuweka akiba kwa ajili ya gharama za matibabu, kuchangia kupitia simu au akaunti ya benki, na kupata hospitali washirika zilizothibitishwa — yote kutoka akaunti moja.",
+        "Tujitunze ni jukwaa la akiba ya afya na usimamizi wa bima kwa Tanzania. Linakuwezesha kuweka akiba kwa ajili ya gharama za matibabu, kuchangia kupitia simu au akaunti ya benki, na kupata bima ya matibabu — yote kutoka akaunti moja.",
     },
     {
       question: "Je, Tujitunze ni bure kutumia?",
       answer:
-        "Kufungua akaunti na kutumia mkoba, michango ya simu, na uthibitisho wa hospitali ni bure. Ada zozote za miamala au michango zinaonyeshwa wazi kabla ya kuthibitisha, hivyo hakuna gharama za siri.",
+        "Kufungua akaunti na kutumia mkoba, michango ya simu, na huduma za bima ni bure. Ada zozote za miamala au michango zinaonyeshwa wazi kabla ya kuthibitisha, hivyo hakuna gharama za siri.",
     },
     {
       question: "Ninawezaje kuweka fedha kwenye mkoba wangu?",
@@ -221,9 +221,9 @@ export const homeFaqsTranslations = {
         "Hapana. Mkoba umeundwa kwa ajili ya mtu wa kawaida. Pesa za simu zinatosha kuweka akiba kidogo kila siku; akaunti ya benki ni chaguo la ziada tu kwa wanachama wanaopendelea.",
     },
     {
-      question: "Je, hospitali zinaweza kuthibitisha uanachama wangu?",
+      question: "Bima yangu inafanyaje kazi?",
       answer:
-        "Ndiyo. Hospitali washirika zinaweza kuthibitisha uanachama wako ulio hai wakati wa huduma, hivyo hauhitaji kubeba nyaraka — hali ya akaunti yako inakaguliwa papo hapo.",
+        "Michango yako inajilimbikiza kwenye Mkoba wako wa Afya na kugawiwa kwa mpango wa bima ulioujiunga nao. Madai hukaguliwa na mtoa huduma wako wa bima kulingana na vigezo vya mpango wako, na unaweza kufuatilia hali yake wakati wowote kutoka dashibodi yako.",
     },
     {
       question: "Je, taarifa zangu binafsi ziko salama?",

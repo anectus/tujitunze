@@ -16,7 +16,7 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Tujitunze — Health Savings & Insurance Management System",
   description:
-    "Tujitunze is a health savings and insurance management platform for Tanzania — save toward healthcare costs, contribute through telecom or bank, and access verified partner hospitals.",
+    "Tujitunze is a health savings and insurance management platform for Tanzania — save toward healthcare costs, contribute through telecom or bank, and access insurance coverage for care.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

@@ -28,9 +28,9 @@ export const servicesFaqsTranslations = {
         "Tujitunze integrates with partner banks to let you link an account and move funds securely. Supported banks are shown when you add a bank account from your profile.",
     },
     {
-      question: "How does hospital verification work?",
+      question: "How does insurance allocation work?",
       answer:
-        "When you visit a partner hospital, staff can look up your membership status through Tujitunze before providing services, confirming your coverage without extra paperwork.",
+        "A share of your Health Wallet savings is allocated to the insurance plan you're enrolled with. Claims against that plan are reviewed by your insurance provider according to its terms, and you can track their status from your dashboard.",
     },
     {
       question: "What is member management used for?",
@@ -50,9 +50,9 @@ export const servicesFaqsTranslations = {
         "Tujitunze inaunganika na benki washirika ili kukuwezesha kuunganisha akaunti na kuhamisha fedha kwa usalama. Benki zinazotumika huonyeshwa unapoongeza akaunti ya benki kutoka kwenye wasifu wako.",
     },
     {
-      question: "Uthibitisho wa hospitali unafanya kazije?",
+      question: "Ugawaji wa bima unafanya kazije?",
       answer:
-        "Unapotembelea hospitali mshirika, wafanyakazi wanaweza kuangalia hali ya uanachama wako kupitia Tujitunze kabla ya kutoa huduma, wakithibitisha bima yako bila nyaraka za ziada.",
+        "Sehemu ya akiba yako ya Mkoba wa Afya hugawiwa kwa mpango wa bima ulioujiunga nao. Madai dhidi ya mpango huo hukaguliwa na mtoa huduma wako wa bima kulingana na vigezo vyake, na unaweza kufuatilia hali yake kutoka dashibodi yako.",
     },
     {
       question: "Usimamizi wa wanachama unatumika kwa ajili ya nini?",

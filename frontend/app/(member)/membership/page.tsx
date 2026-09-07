@@ -1,15 +1,16 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 import { getAccessToken } from "@/lib/utils/permissions";
 import StatusBadge from "@/components/common/StatusBadge";
+import Button from "@/components/common/Button";
 import { useLanguage } from "@/lib/context/LanguageContext";
 import { memberMembershipTranslations } from "@/constants/translations/member-membership";
 import { commonTranslations } from "@/constants/translations/common";
 import { API_URL } from "@/lib/utils/api";
+import PageContainer from "@/components/dashboard/PageContainer";
 
 interface Coverage {
   policyNumber: string;
@@ -96,16 +97,7 @@ export default function MembershipPage() {
   }, [router, t.errorFallback]);
 
   return (
-    <div className="min-h-screen bg-white py-12 px-4">
-
-      <div className="max-w-3xl mx-auto">
-
-        <Link
-          href="/dashboard"
-          className="text-sm font-medium text-blue-700 hover:text-blue-800"
-        >
-          ← {common.backToDashboard}
-        </Link>
+    <PageContainer backHref="/dashboard" backLabel={common.backToDashboard}>
 
         <h1 className="mt-4 text-3xl font-bold text-gray-900">
           {t.heading}
@@ -240,13 +232,11 @@ export default function MembershipPage() {
 
               </div>
 
-              <Link
-                href="/wallet"
-                className="mt-6 block text-center text-sm font-medium
-                text-blue-700 hover:text-blue-800"
-              >
-                {t.makeContribution}
-              </Link>
+              <div className="mt-6 flex justify-center">
+                <Button href="/wallet" size="sm">
+                  {t.makeContribution}
+                </Button>
+              </div>
 
             </div>
 
@@ -254,8 +244,6 @@ export default function MembershipPage() {
 
         ) : null}
 
-      </div>
-
-    </div>
+    </PageContainer>
   );
 }

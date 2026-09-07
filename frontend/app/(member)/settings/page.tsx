@@ -2,13 +2,27 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
+import {
+  AlertCircle,
+  CheckCircle2,
+  ChevronDown,
+  Lock,
+  Eye,
+  EyeOff,
+  Phone,
+  Smartphone,
+  Landmark,
+  ShieldCheck,
+  Sparkles,
+} from "lucide-react";
 
 import { getAccessToken } from "@/lib/utils/permissions";
 import { useLanguage } from "@/lib/context/LanguageContext";
 import { memberSettingsTranslations } from "@/constants/translations/member-settings";
 import { API_URL } from "@/lib/utils/api";
+import PageContainer from "@/components/dashboard/PageContainer";
+import Button from "@/components/common/Button";
 
 interface TelecomOperator {
   operator_id: number;
@@ -21,9 +35,11 @@ interface Bank {
 }
 
 const inputClass =
-  "w-full rounded-lg border border-gray-300 px-4 py-3 " +
+  "w-full rounded-lg border border-gray-300 bg-white px-4 py-3 " +
   "text-gray-900 outline-none transition " +
-  "focus:border-blue-700 focus:ring-2 focus:ring-blue-200";
+  "focus:border-emerald-600 focus:ring-2 focus:ring-emerald-200";
+
+const selectClass = `${inputClass} appearance-none pr-10`;
 
 function useAuthHeaders() {
   const router = useRouter();
@@ -41,6 +57,210 @@ function useAuthHeaders() {
       Authorization: `Bearer ${token}`,
     };
   };
+}
+
+// =====================================================
+// Shared presentational pieces
+// =====================================================
+
+// Grouped panel — the "distinct panel with a clear heading" unit every
+// settings group renders in. Subtly tinted (bg-gray-50) so it separates
+// from the page background without the harder line a border-only card
+// gives; inputs inside stay bg-white so they still pop against it.
+function SettingsPanel({
+  icon: Icon,
+  title,
+  description,
+  children,
+}: {
+  icon: React.ComponentType<{ className?: string; "aria-hidden"?: boolean }>;
+  title: string;
+  description?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <section className="rounded-2xl border border-gray-200 bg-gray-50 p-6 shadow-sm sm:p-8">
+      <div className="flex items-start gap-3">
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-[#064E3B]">
+          <Icon className="h-5 w-5" aria-hidden />
+        </span>
+        <div>
+          <h2 className="text-lg font-bold text-gray-900">{title}</h2>
+          {description && (
+            <p className="mt-1 text-sm text-gray-500">{description}</p>
+          )}
+        </div>
+      </div>
+
+      <div className="mt-6">{children}</div>
+    </section>
+  );
+}
+
+// A setting-level sub-heading, one size down from the panel's own
+// heading — used when a panel holds more than one distinct control
+// (Wallet Sources: phone + bank) so each keeps its own label.
+function SubHeading({
+  icon: Icon,
+  title,
+  description,
+}: {
+  icon?: React.ComponentType<{ className?: string; "aria-hidden"?: boolean }>;
+  title: string;
+  description?: string;
+}) {
+  return (
+    <div className="flex items-start gap-2">
+      {Icon && (
+        <Icon className="mt-0.5 h-4 w-4 shrink-0 text-gray-400" aria-hidden />
+      )}
+      <div>
+        <h3 className="text-base font-semibold text-gray-800">{title}</h3>
+        {description && (
+          <p className="mt-1 text-sm text-gray-500">{description}</p>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function Alert({
+  variant,
+  children,
+}: {
+  variant: "error" | "success";
+  children: React.ReactNode;
+}) {
+  const Icon = variant === "error" ? AlertCircle : CheckCircle2;
+  const styles =
+    variant === "error"
+      ? "border border-red-100 bg-red-50 text-red-700"
+      : "border border-emerald-100 bg-emerald-50 text-emerald-700";
+
+  return (
+    <div className={`mt-4 flex items-start gap-2 rounded-lg px-4 py-3 text-sm ${styles}`}>
+      <Icon className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
+      <span>{children}</span>
+    </div>
+  );
+}
+
+function SelectField({
+  id,
+  name,
+  label,
+  value,
+  onChange,
+  required,
+  children,
+}: {
+  id: string;
+  name: string;
+  label: string;
+  value: string;
+  onChange: (e: React.ChangeEvent<HTMLSelectElement>) => void;
+  required?: boolean;
+  children: React.ReactNode;
+}) {
+  return (
+    <div>
+      <label htmlFor={id} className="mb-2 block text-sm font-semibold text-gray-700">
+        {label}
+      </label>
+      <div className="relative">
+        <select
+          id={id}
+          name={name}
+          value={value}
+          onChange={onChange}
+          required={required}
+          className={selectClass}
+        >
+          {children}
+        </select>
+        <ChevronDown
+          className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400"
+          aria-hidden
+        />
+      </div>
+    </div>
+  );
+}
+
+function PasswordField({
+  id,
+  name,
+  label,
+  value,
+  onChange,
+  autoComplete,
+  minLength,
+  required,
+  hint,
+  showLabel,
+  hideLabel,
+}: {
+  id: string;
+  name: string;
+  label: string;
+  value: string;
+  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  autoComplete: string;
+  minLength?: number;
+  required?: boolean;
+  hint?: { text: string; met: boolean };
+  showLabel: string;
+  hideLabel: string;
+}) {
+  const [visible, setVisible] = useState(false);
+
+  return (
+    <div>
+      <label htmlFor={id} className="mb-2 block text-sm font-semibold text-gray-700">
+        {label}
+      </label>
+
+      <div className="relative">
+        <Lock
+          className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400"
+          aria-hidden
+        />
+
+        <input
+          id={id}
+          name={name}
+          type={visible ? "text" : "password"}
+          value={value}
+          onChange={onChange}
+          autoComplete={autoComplete}
+          minLength={minLength}
+          required={required}
+          className={`${inputClass} pl-10 pr-10`}
+        />
+
+        <button
+          type="button"
+          onClick={() => setVisible((v) => !v)}
+          aria-label={visible ? hideLabel : showLabel}
+          aria-pressed={visible}
+          className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 transition hover:text-gray-600"
+        >
+          {visible ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+        </button>
+      </div>
+
+      {hint && (
+        <p
+          className={`mt-1.5 flex items-center gap-1 text-xs ${
+            hint.met ? "text-emerald-700" : "text-gray-400"
+          }`}
+        >
+          {hint.met && <CheckCircle2 className="h-3.5 w-3.5" aria-hidden />}
+          {hint.text}
+        </p>
+      )}
+    </div>
+  );
 }
 
 // =====================================================
@@ -126,92 +346,61 @@ function ChangePasswordSection() {
   };
 
   return (
-    <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-md">
+    <div>
+      <SubHeading icon={Lock} title={t.changePasswordTitle} />
 
-      <p className="text-lg font-bold text-gray-900">{t.changePasswordTitle}</p>
-
-      {error && (
-        <div className="mt-4 rounded-lg bg-red-100 px-4 py-3 text-sm text-red-700">
-          {error}
-        </div>
-      )}
-
-      {success && (
-        <div className="mt-4 rounded-lg bg-blue-100 px-4 py-3 text-sm text-blue-700">
-          {success}
-        </div>
-      )}
+      {error && <Alert variant="error">{error}</Alert>}
+      {success && <Alert variant="success">{success}</Alert>}
 
       <form onSubmit={handleSubmit} className="mt-4 space-y-4">
 
-        <div>
-          <label
-            htmlFor="currentPassword"
-            className="mb-2 block text-sm font-semibold text-gray-700"
-          >
-            {t.currentPassword}
-          </label>
-          <input
-            id="currentPassword"
-            name="currentPassword"
-            type="password"
-            value={form.currentPassword}
-            onChange={handleChange}
-            autoComplete="current-password"
-            required
-            className={inputClass}
-          />
-        </div>
+        <PasswordField
+          id="currentPassword"
+          name="currentPassword"
+          label={t.currentPassword}
+          value={form.currentPassword}
+          onChange={handleChange}
+          autoComplete="current-password"
+          required
+          showLabel={t.showPassword}
+          hideLabel={t.hidePassword}
+        />
 
-        <div>
-          <label
-            htmlFor="newPassword"
-            className="mb-2 block text-sm font-semibold text-gray-700"
-          >
-            {t.newPassword}
-          </label>
-          <input
-            id="newPassword"
-            name="newPassword"
-            type="password"
-            value={form.newPassword}
-            onChange={handleChange}
-            autoComplete="new-password"
-            minLength={8}
-            required
-            className={inputClass}
-          />
-        </div>
+        <PasswordField
+          id="newPassword"
+          name="newPassword"
+          label={t.newPassword}
+          value={form.newPassword}
+          onChange={handleChange}
+          autoComplete="new-password"
+          minLength={8}
+          required
+          showLabel={t.showPassword}
+          hideLabel={t.hidePassword}
+          hint={{ text: t.passwordMinLengthHint, met: form.newPassword.length >= 8 }}
+        />
 
-        <div>
-          <label
-            htmlFor="confirmNewPassword"
-            className="mb-2 block text-sm font-semibold text-gray-700"
-          >
-            {t.confirmNewPassword}
-          </label>
-          <input
-            id="confirmNewPassword"
-            name="confirmNewPassword"
-            type="password"
-            value={form.confirmNewPassword}
-            onChange={handleChange}
-            autoComplete="new-password"
-            minLength={8}
-            required
-            className={inputClass}
-          />
-        </div>
+        <PasswordField
+          id="confirmNewPassword"
+          name="confirmNewPassword"
+          label={t.confirmNewPassword}
+          value={form.confirmNewPassword}
+          onChange={handleChange}
+          autoComplete="new-password"
+          minLength={8}
+          required
+          showLabel={t.showPassword}
+          hideLabel={t.hidePassword}
+          hint={
+            form.confirmNewPassword.length > 0
+              ? { text: t.passwordsMatchHint, met: form.confirmNewPassword === form.newPassword }
+              : undefined
+          }
+        />
 
-        <button
-          type="submit"
-          disabled={loading}
-          className="rounded-lg bg-blue-700 px-6 py-3 font-semibold
-          text-white transition hover:bg-blue-800
-          disabled:cursor-not-allowed disabled:opacity-60"
-        >
+        <Button type="submit" disabled={loading} size="sm">
           {loading ? t.saving : t.changePasswordButton}
-        </button>
+        </Button>
 
       </form>
 
@@ -302,52 +491,31 @@ function AddPhoneNumberSection() {
   };
 
   return (
-    <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-md">
+    <div>
+      <SubHeading icon={Smartphone} title={t.addPhoneTitle} description={t.addPhoneDescription} />
 
-      <p className="text-lg font-bold text-gray-900">{t.addPhoneTitle}</p>
-      <p className="mt-1 text-sm text-gray-500">
-        {t.addPhoneDescription}
-      </p>
-
-      {error && (
-        <div className="mt-4 rounded-lg bg-red-100 px-4 py-3 text-sm text-red-700">
-          {error}
-        </div>
-      )}
-
-      {success && (
-        <div className="mt-4 rounded-lg bg-blue-100 px-4 py-3 text-sm text-blue-700">
-          {success}
-        </div>
-      )}
+      {error && <Alert variant="error">{error}</Alert>}
+      {success && <Alert variant="success">{success}</Alert>}
 
       <form onSubmit={handleSubmit} className="mt-4 space-y-4">
 
-        <div>
-          <label
-            htmlFor="operatorId"
-            className="mb-2 block text-sm font-semibold text-gray-700"
-          >
-            {t.network}
-          </label>
-          <select
-            id="operatorId"
-            name="operatorId"
-            value={form.operatorId}
-            onChange={handleChange}
-            required
-            className={inputClass}
-          >
-            <option value="" disabled>
-              {t.selectNetwork}
+        <SelectField
+          id="operatorId"
+          name="operatorId"
+          label={t.network}
+          value={form.operatorId}
+          onChange={handleChange}
+          required
+        >
+          <option value="" disabled>
+            {t.selectNetwork}
+          </option>
+          {operators.map((operator) => (
+            <option key={operator.operator_id} value={operator.operator_id}>
+              {operator.operator_name}
             </option>
-            {operators.map((operator) => (
-              <option key={operator.operator_id} value={operator.operator_id}>
-                {operator.operator_name}
-              </option>
-            ))}
-          </select>
-        </div>
+          ))}
+        </SelectField>
 
         <div>
           <label
@@ -368,15 +536,9 @@ function AddPhoneNumberSection() {
           />
         </div>
 
-        <button
-          type="submit"
-          disabled={loading}
-          className="rounded-lg bg-blue-700 px-6 py-3 font-semibold
-          text-white transition hover:bg-blue-800
-          disabled:cursor-not-allowed disabled:opacity-60"
-        >
+        <Button type="submit" disabled={loading} size="sm">
           {loading ? t.adding : t.addPhoneButton}
-        </button>
+        </Button>
 
       </form>
 
@@ -468,52 +630,31 @@ function AddBankAccountSection() {
   };
 
   return (
-    <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-md">
+    <div>
+      <SubHeading icon={Landmark} title={t.addBankTitle} description={t.addBankDescription} />
 
-      <p className="text-lg font-bold text-gray-900">{t.addBankTitle}</p>
-      <p className="mt-1 text-sm text-gray-500">
-        {t.addBankDescription}
-      </p>
-
-      {error && (
-        <div className="mt-4 rounded-lg bg-red-100 px-4 py-3 text-sm text-red-700">
-          {error}
-        </div>
-      )}
-
-      {success && (
-        <div className="mt-4 rounded-lg bg-blue-100 px-4 py-3 text-sm text-blue-700">
-          {success}
-        </div>
-      )}
+      {error && <Alert variant="error">{error}</Alert>}
+      {success && <Alert variant="success">{success}</Alert>}
 
       <form onSubmit={handleSubmit} className="mt-4 space-y-4">
 
-        <div>
-          <label
-            htmlFor="bankId"
-            className="mb-2 block text-sm font-semibold text-gray-700"
-          >
-            {t.bank}
-          </label>
-          <select
-            id="bankId"
-            name="bankId"
-            value={form.bankId}
-            onChange={handleChange}
-            required
-            className={inputClass}
-          >
-            <option value="" disabled>
-              {t.selectBank}
+        <SelectField
+          id="bankId"
+          name="bankId"
+          label={t.bank}
+          value={form.bankId}
+          onChange={handleChange}
+          required
+        >
+          <option value="" disabled>
+            {t.selectBank}
+          </option>
+          {banks.map((bank) => (
+            <option key={bank.bank_id} value={bank.bank_id}>
+              {bank.bank_name}
             </option>
-            {banks.map((bank) => (
-              <option key={bank.bank_id} value={bank.bank_id}>
-                {bank.bank_name}
-              </option>
-            ))}
-          </select>
-        </div>
+          ))}
+        </SelectField>
 
         <div>
           <label
@@ -533,38 +674,24 @@ function AddBankAccountSection() {
           />
         </div>
 
-        <div>
-          <label
-            htmlFor="accountType"
-            className="mb-2 block text-sm font-semibold text-gray-700"
-          >
-            {t.accountType}
-          </label>
-          <select
-            id="accountType"
-            name="accountType"
-            value={form.accountType}
-            onChange={handleChange}
-            required
-            className={inputClass}
-          >
-            <option value="" disabled>
-              {t.selectAccountType}
-            </option>
-            <option value="Savings">{t.savings}</option>
-            <option value="Current">{t.current}</option>
-          </select>
-        </div>
-
-        <button
-          type="submit"
-          disabled={loading}
-          className="rounded-lg bg-blue-700 px-6 py-3 font-semibold
-          text-white transition hover:bg-blue-800
-          disabled:cursor-not-allowed disabled:opacity-60"
+        <SelectField
+          id="accountType"
+          name="accountType"
+          label={t.accountType}
+          value={form.accountType}
+          onChange={handleChange}
+          required
         >
+          <option value="" disabled>
+            {t.selectAccountType}
+          </option>
+          <option value="Savings">{t.savings}</option>
+          <option value="Current">{t.current}</option>
+        </SelectField>
+
+        <Button type="submit" disabled={loading} size="sm">
           {loading ? t.adding : t.addBankButton}
-        </button>
+        </Button>
 
       </form>
 
@@ -634,23 +761,13 @@ function SavingConsentSection() {
   };
 
   return (
-    <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-md">
-      <p className="text-lg font-bold text-gray-900">{t.savingConsentTitle}</p>
-      <p className="mt-2 text-sm text-gray-600">{t.savingConsentDescription}</p>
+    <div>
+      <SubHeading title={t.savingConsentTitle} description={t.savingConsentDescription} />
 
-      {error && (
-        <div className="mt-4 rounded-lg bg-red-100 px-4 py-3 text-sm text-red-700">
-          {error}
-        </div>
-      )}
+      {error && <Alert variant="error">{error}</Alert>}
+      {success && <Alert variant="success">{success}</Alert>}
 
-      {success && (
-        <div className="mt-4 rounded-lg bg-blue-100 px-4 py-3 text-sm text-blue-700">
-          {success}
-        </div>
-      )}
-
-      <div className="mt-4 flex items-center justify-between gap-4">
+      <div className="mt-4 flex items-center justify-between gap-4 rounded-lg bg-white p-4">
         <span className="text-sm font-medium text-gray-700">
           {consented ? t.savingConsentOn : t.savingConsentOff}
         </span>
@@ -676,39 +793,124 @@ function SavingConsentSection() {
   );
 }
 
+// =====================================================
+// Page shell — two tabs (User Settings / Security Settings), each
+// holding its own set of grouped panels.
+// =====================================================
+
+type TabKey = "user" | "security";
+
+function SettingsTabs({
+  active,
+  onChange,
+  userLabel,
+  securityLabel,
+}: {
+  active: TabKey;
+  onChange: (key: TabKey) => void;
+  userLabel: string;
+  securityLabel: string;
+}) {
+  const tabs: { key: TabKey; label: string }[] = [
+    { key: "user", label: userLabel },
+    { key: "security", label: securityLabel },
+  ];
+
+  return (
+    <div role="tablist" className="mt-6 flex gap-6 border-b border-gray-200">
+      {tabs.map((tab) => {
+        const isActive = active === tab.key;
+
+        return (
+          <button
+            key={tab.key}
+            type="button"
+            role="tab"
+            aria-selected={isActive}
+            onClick={() => onChange(tab.key)}
+            className={`relative pb-3 text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 focus-visible:ring-offset-2 rounded-t ${
+              isActive ? "text-[#064E3B]" : "text-gray-500 hover:text-gray-700"
+            }`}
+          >
+            {tab.label}
+            {isActive && (
+              <span className="absolute inset-x-0 -bottom-px h-0.5 rounded-full bg-[#064E3B]" />
+            )}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
 export default function SettingsPage() {
   const { language } = useLanguage();
   const t = memberSettingsTranslations[language];
+  const [activeTab, setActiveTab] = useState<TabKey>("user");
 
   return (
-    <div className="min-h-screen bg-white py-12 px-4">
+    <PageContainer backHref="/profile" backLabel={t.backToProfile}>
 
-      <div className="max-w-2xl mx-auto">
-
-        <Link
-          href="/profile"
-          className="text-sm font-medium text-blue-700 hover:text-blue-800"
-        >
-          ← {t.backToProfile}
-        </Link>
+      <div className="mx-auto max-w-2xl">
 
         <h1 className="mt-4 text-3xl font-bold text-gray-900">
           {t.title}
         </h1>
 
-        <p className="mt-2 text-sm text-gray-600">
+        <p className="mt-2 text-sm text-gray-500">
           {t.description}
         </p>
 
+        <SettingsTabs
+          active={activeTab}
+          onChange={setActiveTab}
+          userLabel={t.userSettingsTab}
+          securityLabel={t.securitySettingsTab}
+        />
+
         <div className="mt-8 space-y-6">
-          <SavingConsentSection />
-          <ChangePasswordSection />
-          <AddPhoneNumberSection />
-          <AddBankAccountSection />
+
+          {activeTab === "user" ? (
+
+            <>
+              <SettingsPanel
+                icon={Sparkles}
+                title={t.microSavingsGroupTitle}
+                description={t.microSavingsGroupDescription}
+              >
+                <SavingConsentSection />
+              </SettingsPanel>
+
+              <SettingsPanel
+                icon={Phone}
+                title={t.walletSourcesGroupTitle}
+                description={t.walletSourcesGroupDescription}
+              >
+                <div className="space-y-8">
+                  <AddPhoneNumberSection />
+                  <div className="border-t border-gray-200 pt-8">
+                    <AddBankAccountSection />
+                  </div>
+                </div>
+              </SettingsPanel>
+            </>
+
+          ) : (
+
+            <SettingsPanel
+              icon={ShieldCheck}
+              title={t.accountSecurityGroupTitle}
+              description={t.accountSecurityGroupDescription}
+            >
+              <ChangePasswordSection />
+            </SettingsPanel>
+
+          )}
+
         </div>
 
       </div>
 
-    </div>
+    </PageContainer>
   );
 }

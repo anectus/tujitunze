@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 import { getAccessToken } from "@/lib/utils/permissions";
@@ -9,6 +8,8 @@ import { useLanguage } from "@/lib/context/LanguageContext";
 import { memberNotificationsTranslations } from "@/constants/translations/member-notifications";
 import { commonTranslations } from "@/constants/translations/common";
 import { API_URL } from "@/lib/utils/api";
+import PageContainer from "@/components/dashboard/PageContainer";
+import Button from "@/components/common/Button";
 
 interface Notification {
   notificationId: number;
@@ -117,16 +118,7 @@ export default function NotificationsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-white py-12 px-4">
-
-      <div className="max-w-2xl mx-auto">
-
-        <Link
-          href="/dashboard"
-          className="text-sm font-medium text-blue-700 hover:text-blue-800"
-        >
-          ← {common.backToDashboard}
-        </Link>
+    <PageContainer backHref="/dashboard" backLabel={common.backToDashboard}>
 
         <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
 
@@ -135,13 +127,9 @@ export default function NotificationsPage() {
           </h1>
 
           {unreadCount > 0 && (
-            <button
-              type="button"
-              onClick={markAllRead}
-              className="text-sm font-semibold text-blue-700 hover:text-blue-800"
-            >
+            <Button variant="secondary" size="sm" onClick={markAllRead}>
               {t.markAllAsRead} ({unreadCount})
-            </button>
+            </Button>
           )}
 
         </div>
@@ -173,14 +161,14 @@ export default function NotificationsPage() {
 
               <li
                 key={notification.notificationId}
-                className={`px-6 py-4 ${notification.readStatus ? "" : "bg-blue-50"}`}
+                className={`px-6 py-4 ${notification.readStatus ? "" : "bg-emerald-50"}`}
               >
                 <div className="flex items-start justify-between gap-4">
 
                   <div>
                     <div className="flex items-center gap-2">
                       {!notification.readStatus && (
-                        <span className="h-2 w-2 rounded-full bg-blue-600" />
+                        <span className="h-2 w-2 rounded-full bg-emerald-600" />
                       )}
                       <p className="font-semibold text-gray-900">
                         {notification.title}
@@ -198,7 +186,7 @@ export default function NotificationsPage() {
                     <button
                       type="button"
                       onClick={() => markRead(notification.notificationId)}
-                      className="shrink-0 text-xs font-semibold text-blue-700 hover:text-blue-800"
+                      className="shrink-0 text-xs font-semibold text-emerald-700 hover:text-emerald-800"
                     >
                       {t.markRead}
                     </button>
@@ -213,8 +201,6 @@ export default function NotificationsPage() {
 
         )}
 
-      </div>
-
-    </div>
+    </PageContainer>
   );
 }

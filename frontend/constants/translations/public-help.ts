@@ -66,21 +66,6 @@ export const helpFaqCategoriesTranslations = {
       ],
     },
     {
-      category: "Hospitals",
-      items: [
-        {
-          question: "How do I find a partner hospital?",
-          answer:
-            "Use the Hospitals section of your dashboard to search partner facilities near you and see which accept your coverage.",
-        },
-        {
-          question: "Does the hospital need anything from me?",
-          answer:
-            "No — hospital staff can verify your membership directly through Tujitunze at the point of care.",
-        },
-      ],
-    },
-    {
       category: "Account & Security",
       items: [
         {
@@ -139,21 +124,6 @@ export const helpFaqCategoriesTranslations = {
           question: "Ninawezaje kuwasilisha dai?",
           answer:
             "Madai huwasilishwa kutoka sehemu ya Bima kwenye dashibodi yako, ambapo unaweza kufuatilia hali yake hadi litakapotatuliwa.",
-        },
-      ],
-    },
-    {
-      category: "Hospitali",
-      items: [
-        {
-          question: "Ninawezaje kupata hospitali mshirika?",
-          answer:
-            "Tumia sehemu ya Hospitali kwenye dashibodi yako kutafuta vituo washirika vilivyo karibu nawe na kuona vinavyokubali bima yako.",
-        },
-        {
-          question: "Je, hospitali inahitaji kitu chochote kutoka kwangu?",
-          answer:
-            "Hapana — wafanyakazi wa hospitali wanaweza kuthibitisha uanachama wako moja kwa moja kupitia Tujitunze wakati wa huduma.",
         },
       ],
     },

@@ -1,5 +1,5 @@
 import Sidebar, { SidebarNavItem } from "@/components/common/Sidebar";
-import Footer from "@/components/common/Footer";
+import DashboardFooter from "@/components/dashboard/DashboardFooter";
 import type { roleLabelTranslations } from "@/constants/translations/common";
 
 interface DashboardLayoutProps {
@@ -24,7 +24,7 @@ export default function DashboardLayout({
 
       <div className="flex min-h-screen flex-col pt-14 md:pt-0 md:pl-64">
         <div className="flex-1">{children}</div>
-        <Footer />
+        <DashboardFooter />
       </div>
 
     </div>

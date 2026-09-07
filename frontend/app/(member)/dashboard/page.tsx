@@ -8,6 +8,7 @@ import { getAccessToken } from "@/lib/utils/permissions";
 import { useLanguage } from "@/lib/context/LanguageContext";
 import { memberDashboardTranslations } from "@/constants/translations/member-dashboard";
 import { API_URL } from "@/lib/utils/api";
+import PageContainer from "@/components/dashboard/PageContainer";
 import Overview from "./Overview";
 
 interface Wallet {
@@ -46,7 +47,7 @@ function Card({
   return (
     <Link
       href={href}
-      className="block rounded-xl bg-white p-6 shadow-md transition hover:shadow-lg hover:-translate-y-0.5"
+      className="block rounded-xl bg-white p-6 shadow-md transition hover:shadow-lg hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 focus-visible:ring-offset-2"
     >
       <p className="text-lg font-semibold text-gray-900">{title}</p>
       <p className="mt-1 text-sm text-gray-500">{subtitle}</p>
@@ -147,50 +148,46 @@ export default function DashboardPage() {
   };
 
   return (
-    <div className="p-4 md:p-8">
+    <PageContainer>
 
-      <div className="mx-auto max-w-5xl">
+      {/* Breadcrumb */}
+      <nav aria-label="Breadcrumb" className="text-sm text-gray-500">
+        <span className="font-semibold text-gray-900">
+          {t.breadcrumbCurrent}
+        </span>
+      </nav>
 
-        {/* Breadcrumb */}
-        <nav aria-label="Breadcrumb" className="text-sm text-gray-500">
-          <span className="font-semibold text-gray-900">
-            {t.breadcrumbCurrent}
-          </span>
-        </nav>
+      <h1 className="mt-2 text-3xl font-bold text-gray-900">
+        {t.welcomeHeading}
+      </h1>
 
-        <h1 className="mt-2 text-2xl font-bold text-gray-900">
-          {t.welcomeHeading}
-        </h1>
+      {/* Overview — KPIs, balance/contribution/allocation charts, and
+          CSV/PDF export. See ./Overview.tsx. */}
+      <section className="mt-8">
+        <h2 className="text-xl font-semibold text-gray-900">
+          {t.overviewHeading}
+        </h2>
 
-        {/* Overview — KPIs, balance/contribution/allocation charts, and
-            CSV/PDF export. See ./Overview.tsx. */}
-        <section className="mt-8">
-          <h2 className="text-xl font-semibold text-gray-900">
-            {t.overviewHeading}
-          </h2>
+        <div className="mt-4">
+          <Overview />
+        </div>
+      </section>
 
-          <div className="mt-4">
-            <Overview />
-          </div>
-        </section>
+      {/* Sections — Wallet, Insurance, Savings, Telecom, Notifications */}
+      <section className="mt-12">
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          {t.cards.map((card) => (
+            <Card
+              key={card.title}
+              href={card.href}
+              title={card.title}
+              subtitle={card.subtitle}
+              detail={cardDetail(card.href)}
+            />
+          ))}
+        </div>
+      </section>
 
-        {/* Sections — Wallet, Insurance, Savings, Telecom, Notifications */}
-        <section className="mt-12">
-          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {t.cards.map((card) => (
-              <Card
-                key={card.title}
-                href={card.href}
-                title={card.title}
-                subtitle={card.subtitle}
-                detail={cardDetail(card.href)}
-              />
-            ))}
-          </div>
-        </section>
-
-      </div>
-
-    </div>
+    </PageContainer>
   );
 }

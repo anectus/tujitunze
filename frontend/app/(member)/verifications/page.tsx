@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 import { getAccessToken } from "@/lib/utils/permissions";
@@ -9,6 +8,7 @@ import { useLanguage } from "@/lib/context/LanguageContext";
 import { memberVerificationsTranslations } from "@/constants/translations/member-verifications";
 import { commonTranslations } from "@/constants/translations/common";
 import { API_URL } from "@/lib/utils/api";
+import PageContainer from "@/components/dashboard/PageContainer";
 
 interface Verification {
   verification_id: number;
@@ -74,16 +74,7 @@ export default function VerificationsPage() {
   }, [router, t.errorFallback]);
 
   return (
-    <div className="min-h-screen bg-white py-12 px-4">
-
-      <div className="max-w-3xl mx-auto">
-
-        <Link
-          href="/dashboard"
-          className="text-sm font-medium text-blue-700 hover:text-blue-800"
-        >
-          ← {common.backToDashboard}
-        </Link>
+    <PageContainer backHref="/dashboard" backLabel={common.backToDashboard}>
 
         <h1 className="mt-4 text-3xl font-bold text-gray-900">
           {t.heading}
@@ -162,8 +153,6 @@ export default function VerificationsPage() {
 
         )}
 
-      </div>
-
-    </div>
+    </PageContainer>
   );
 }

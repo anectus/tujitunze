@@ -2,7 +2,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 import { getAccessToken } from "@/lib/utils/permissions";
@@ -10,6 +9,8 @@ import { useLanguage } from "@/lib/context/LanguageContext";
 import { walletPageTranslations } from "@/constants/translations/member-wallet";
 import { commonTranslations } from "@/constants/translations/common";
 import { API_URL } from "@/lib/utils/api";
+import PageContainer from "@/components/dashboard/PageContainer";
+import Button from "@/components/common/Button";
 
 interface Wallet {
   walletId: number;
@@ -74,73 +75,62 @@ export default function WalletPage() {
   }, [router, t.errorFallback]);
 
   return (
-    <div className="min-h-screen bg-white py-12 px-4">
+    <PageContainer backHref="/dashboard" backLabel={common.backToDashboard}>
 
-      <div className="max-w-lg mx-auto">
+      <h1 className="mt-4 text-3xl font-bold text-gray-900">
+        {t.title}
+      </h1>
 
-        <Link
-          href="/dashboard"
-          className="text-sm font-medium text-blue-700 hover:text-blue-800"
-        >
-          ← {common.backToDashboard}
-        </Link>
+      <p className="mt-2 text-sm text-gray-600">
+        {t.descriptionBefore}{" "}
+        <span className="italic">mtu wa kawaida</span>
+        {t.descriptionAfter}
+      </p>
 
-        <h1 className="mt-4 text-3xl font-bold text-gray-900">
-          {t.title}
-        </h1>
+      {error && (
+        <div className="mt-6 rounded-lg bg-red-100 px-4 py-3 text-sm text-red-700">
+          {error}
+        </div>
+      )}
 
-        <p className="mt-2 text-sm text-gray-600">
-          {t.descriptionBefore}{" "}
-          <span className="italic">mtu wa kawaida</span>
-          {t.descriptionAfter}
-        </p>
+      {loading ? (
 
-        {error && (
-          <div className="mt-6 rounded-lg bg-red-100 px-4 py-3 text-sm text-red-700">
-            {error}
-          </div>
-        )}
+        <p className="mt-8 text-gray-500">{t.loadingWallet}</p>
 
-        {loading ? (
+      ) : wallet ? (
 
-          <p className="mt-8 text-gray-500">{t.loadingWallet}</p>
+        <div className="mx-auto mt-8 max-w-lg">
 
-        ) : wallet ? (
+          <div className="rounded-2xl bg-[#064E3B] p-8 text-center text-white shadow-lg">
 
-          <>
-            <div className="mt-8 rounded-2xl bg-blue-700 p-8 text-center text-white shadow-lg">
-
-              <p className="text-sm font-medium text-blue-100">
-                {t.availableBalance}
-              </p>
-
-              <p className="mt-2 text-4xl font-bold">
-                {formatTsh(wallet.balance)}
-              </p>
-
-              <p className="mt-3 text-xs text-blue-100">
-                {t.wallet} {wallet.walletNumber}
-              </p>
-
-            </div>
-
-            <p className="mt-4 text-center text-xs text-gray-500">
-              {t.fundingNote}
+            <p className="text-sm font-medium text-emerald-100">
+              {t.availableBalance}
             </p>
 
-            <Link
-              href="/wallet/transactions"
-              className="mt-6 block text-center text-sm font-medium
-              text-blue-700 hover:text-blue-800"
-            >
+            <p className="mt-2 text-4xl font-bold">
+              {formatTsh(wallet.balance)}
+            </p>
+
+            <p className="mt-3 text-xs text-emerald-100">
+              {t.wallet} {wallet.walletNumber}
+            </p>
+
+          </div>
+
+          <p className="mt-4 text-center text-xs text-gray-500">
+            {t.fundingNote}
+          </p>
+
+          <div className="mt-6 flex justify-center">
+            <Button href="/wallet/transactions" variant="secondary" size="sm">
               {t.viewTransactionHistory}
-            </Link>
-          </>
+            </Button>
+          </div>
 
-        ) : null}
+        </div>
 
-      </div>
+      ) : null}
 
-    </div>
+    </PageContainer>
   );
 }

@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 import { getAccessToken } from "@/lib/utils/permissions";
@@ -9,6 +8,7 @@ import { useLanguage } from "@/lib/context/LanguageContext";
 import { commonTranslations } from "@/constants/translations/common";
 import { memberSavingsTranslations } from "@/constants/translations/member-savings";
 import { API_URL } from "@/lib/utils/api";
+import PageContainer from "@/components/dashboard/PageContainer";
 
 interface RecentEntry {
   ledgerId: number;
@@ -61,15 +61,7 @@ export default function SavingsPage() {
   }, [router, t.loadError]);
 
   return (
-    <div className="min-h-screen bg-white py-12 px-4">
-      <div className="max-w-4xl mx-auto">
-        <Link
-          href="/dashboard"
-          className="text-sm font-medium text-blue-700 hover:text-blue-800"
-        >
-          ← {common.backToDashboard}
-        </Link>
-
+    <PageContainer backHref="/dashboard" backLabel={common.backToDashboard}>
         <h1 className="mt-4 text-3xl font-bold text-gray-900">{t.title}</h1>
         <p className="mt-2 max-w-xl text-gray-600">{t.subtitle}</p>
 
@@ -84,9 +76,9 @@ export default function SavingsPage() {
         ) : summary ? (
           <>
             <div className="mt-8 grid gap-4 sm:grid-cols-3">
-              <div className="rounded-2xl border border-blue-100 bg-blue-50 p-6 shadow-md">
-                <p className="text-sm font-medium text-blue-700">{t.totalSaved}</p>
-                <p className="mt-2 text-3xl font-bold text-blue-900">
+              <div className="rounded-2xl border border-emerald-100 bg-emerald-50 p-6 shadow-md">
+                <p className="text-sm font-medium text-emerald-700">{t.totalSaved}</p>
+                <p className="mt-2 text-3xl font-bold text-[#064E3B]">
                   {formatTsh(summary.totalSavedTzs)}
                 </p>
               </div>
@@ -143,7 +135,6 @@ export default function SavingsPage() {
             )}
           </>
         ) : null}
-      </div>
-    </div>
+    </PageContainer>
   );
 }

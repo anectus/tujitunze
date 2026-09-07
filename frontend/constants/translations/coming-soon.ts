@@ -3,16 +3,10 @@ import type { Language } from "@/lib/context/LanguageContext";
 // One entry per ComingSoonPage caller in the Member route group.
 export const comingSoonTranslations = {
   en: {
-    hospitalAppointments: {
-      title: "Appointments",
-      description:
-        "Book and track appointments with hospitals in the Tujitunze network.",
-      backLabel: "Back to Hospitals",
-    },
     qr: {
       title: "My QR Code",
       description:
-        "A scannable QR code for fast hospital check-in and identity verification will appear here.",
+        "A scannable QR code for fast identity and membership verification will appear here.",
     },
     reports: {
       title: "Reports",
@@ -50,16 +44,10 @@ export const comingSoonTranslations = {
     },
   },
   sw: {
-    hospitalAppointments: {
-      title: "Miadi",
-      description:
-        "Panga na fuatilia miadi na hospitali zilizo kwenye mtandao wa Tujitunze.",
-      backLabel: "Rudi kwa Hospitali",
-    },
     qr: {
       title: "Msimbo Wangu wa QR",
       description:
-        "Msimbo wa QR unaosomeka kwa haraka wa kuingia hospitalini na kuthibitisha utambulisho utaonekana hapa.",
+        "Msimbo wa QR unaosomeka kwa haraka wa kuthibitisha utambulisho na uanachama utaonekana hapa.",
     },
     reports: {
       title: "Ripoti",

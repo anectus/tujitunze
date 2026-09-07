@@ -1,13 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 import { getAccessToken } from "@/lib/utils/permissions";
 import { useLanguage } from "@/lib/context/LanguageContext";
 import { walletTransactionsTranslations } from "@/constants/translations/member-wallet";
 import { API_URL } from "@/lib/utils/api";
+import PageContainer from "@/components/dashboard/PageContainer";
 
 interface Transaction {
   walletTransactionId: number;
@@ -88,16 +88,7 @@ export default function WalletTransactionsPage() {
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
   return (
-    <div className="min-h-screen bg-white py-12 px-4">
-
-      <div className="max-w-4xl mx-auto">
-
-        <Link
-          href="/wallet"
-          className="text-sm font-medium text-blue-700 hover:text-blue-800"
-        >
-          ← {t.backToWallet}
-        </Link>
+    <PageContainer backHref="/wallet" backLabel={t.backToWallet}>
 
         <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
 
@@ -222,8 +213,6 @@ export default function WalletTransactionsPage() {
 
         )}
 
-      </div>
-
-    </div>
+    </PageContainer>
   );
 }

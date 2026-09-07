@@ -8,6 +8,26 @@ Stack: Next.js (App Router) frontend, NestJS + TypeORM + PostgreSQL backend.
 
 ## Roles
 
+**Hospital role removed (2026-08-26, previously undocumented here — see
+migration `database/migrations/0008_remove_hospital_role.sql`).** Tujitunze
+no longer pays hospitals directly; Insurance replaces Hospital as the
+settlement counterparty in the Member → Telecom/Bank → Insurance →
+Super-admin flow. There is no `Hospital` role, no `backend/src/modules/
+hospital/`, and no `frontend/app/(hospital)/` route group — confirmed
+absent from this checkout. The live `roles` table holds exactly six rows:
+`Member`, `Admin`, `Bank`, `Telecom`, `Insurance`, `Super-admin`.
+`users.hospital_id` is dropped; `settlements.counterparty_type` only
+accepts `Telecom`/`Insurance` now (see the Bank section below). The
+`hospitals`, `healthcare_claims`, and `healthcare_verifications` tables
+are deliberately **kept** as frozen historical/reference data — every
+existing claim/verification row still shows the hospital name it points
+at (joined read-only in `members.service.ts`/`insurance.service.ts`),
+there's just no more write path since the Hospital role that used to
+author those rows is gone. Every "Hospital" mention in the dated
+paragraphs and the route-group table below predates this change and
+describes a role that no longer exists — treat those as historical
+record, not current state.
+
 Source of truth: the `roles` table seed data in `database/schema/tujitunze.sql`
 and the route groups under `frontend/app/(*)`. Backend enforcement is
 `@Roles('RoleName')` + `RolesGuard` (`backend/src/modules/auth/guards/roles.guard.ts`)
@@ -387,7 +407,9 @@ row per (bank, account type) — Settlement / Health Fund / Reserve,
 lazily created the same way `health_wallets` is — with `balance` and
 `reserved_balance` columns; `bank_fund_transfers` is the append-only
 ledger of deposits/withdrawals against them. `settlements` records a
-payout to a Telecom or Hospital partner: creating one reserves the
+payout to a Telecom or Insurance partner (Hospital was a valid
+counterparty at the time this paragraph was written; migration `0008`
+replaced it with Insurance — see the Roles section above): creating one reserves the
 amount from the Settlement account's `reserved_balance` (status
 `Pending`), and `PATCH /bank/settlements/:id/complete` is what actually
 debits `balance` and writes the `Settlement Out` transfer row (status
@@ -409,7 +431,7 @@ rows without checking those records actually belonged to *this* bank
 (that id isn't a bank id) — fixed to match Telecom's narrower, safe
 shape (own profile changes + this staff member's own actions only).
 
-Each role's frontend route group (`app/(admin)`, `(hospital)`, `(bank)`, (`app/(admin)`, `(hospital)`, `(bank)`,
+Each role's frontend route group (`app/(admin)`, `(bank)`,
 `(telecom)`, `(super-admin)`, `(insurance)`, `(member)`) does have a
 client-side gate now: `components/auth/ProtectedRoute.tsx` (using
 `lib/hooks/useAuth.ts` / `lib/utils/permissions.ts`) wraps each
@@ -433,7 +455,7 @@ exists, or it'll 404.
 Route groups don't add a URL prefix in Next.js — `(admin)/dashboard` and
 `(member)/dashboard` would both resolve to `/dashboard` and collide, which
 is why each role's dashboard lives at `/<role>/dashboard`
-(`app/(admin)/admin/dashboard`, `app/(hospital)/hospital/dashboard`, …)
+(`app/(admin)/admin/dashboard`, `app/(bank)/bank/dashboard`, …)
 except `Member`, which already owned the bare `/dashboard`. The other
 folders each route group was originally scaffolded with (e.g. `(admin)/
 claims`, `(admin)/settings`) are still bare, unprefixed segments — the
@@ -444,11 +466,10 @@ same collision is latent there too (two role groups both adding, say, a
 
 | Role | Who | Route group | What they're for |
 |---|---|---|---|
-| `Member` | A registered citizen/patient | `(member)` — dashboard, wallet, telecom, insurance, hospitals, reports, profile, notifications, settings, qr, onboarding | Their own health savings/wallet, linking phone/bank accounts, viewing their own claims and insurance, nothing belonging to another member |
-| `Admin` | Internal Tujitunze staff | `(admin)` — members, users, claims, transactions, hospitals, banks, telecom, reports, audit-logs, settings; dashboard at `/admin/dashboard` | Operational oversight across members: user/claim/transaction management, reviewing audit logs — not the same as `Super-admin` (system-level config) |
-| `Hospital` | Staff at a partner hospital | `(hospital)` — dashboard at `/hospital/dashboard` (only real page so far); patients, claims, billing, appointments, staff, reports, settings folders still empty | Their own hospital's patients/claims/billing/staff only — a hospital must never see another hospital's claims (enforced today via `users.hospital_id` scoping in `hospital.service.ts`, and tested in `backend/test/role-dashboards.e2e-spec.ts`) |
+| `Member` | A registered citizen/patient | `(member)` — dashboard, wallet, telecom, insurance, reports, profile, notifications, settings, qr, onboarding | Their own health savings/wallet, linking phone/bank accounts, viewing their own claims and insurance, nothing belonging to another member |
+| `Admin` | Internal Tujitunze staff | `(admin)` — members, users, claims, transactions, banks, telecom, reports, audit-logs, settings; dashboard at `/admin/dashboard` | Operational oversight across members: user/claim/transaction management, reviewing audit logs — not the same as `Super-admin` (system-level config) |
 | `Insurance` | Staff at an insurance provider | `(insurance)` — dashboard at `/insurance/dashboard` (only page; route group didn't exist before 2026-08-14) | Managing their own plans and reviewing claims routed to them |
-| `Bank` | Staff at a partner bank / bank integration | `(bank)` — real pages now at `/bank/dashboard`, `/bank/profile`, `/bank/fund-accounts`, `/bank/transactions`, `/bank/settlements`, `/bank/reconciliation[/:id]`, `/bank/reports`, `/bank/audit-logs` (all `/bank/...`-prefixed; the old bare `accounts`/`customers`/`transactions`/`transfers`/`reconciliation`/`reports`/`settings` folders are untouched empty stubs, not reused) | Their own bank's linked accounts/transactions, plus HSIMS's own operational fund accounts and settlements at this bank — same cross-tenant boundary concern as Hospital |
+| `Bank` | Staff at a partner bank / bank integration | `(bank)` — real pages now at `/bank/dashboard`, `/bank/profile`, `/bank/fund-accounts`, `/bank/transactions`, `/bank/settlements`, `/bank/reconciliation[/:id]`, `/bank/reports`, `/bank/audit-logs` (all `/bank/...`-prefixed; the old bare `accounts`/`customers`/`transactions`/`transfers`/`reconciliation`/`reports`/`settings` folders are untouched empty stubs, not reused) | Their own bank's linked accounts/transactions, plus HSIMS's own operational fund accounts and settlements at this bank — same cross-tenant boundary concern as Telecom/Insurance below |
 | `Telecom` | Staff at a partner telecom operator | `(telecom)` — real pages now at `/telecom/dashboard`, `/telecom/operator`, `/telecom/members`, `/telecom/contributions`, `/telecom/contribution-rules`, `/telecom/reconciliation[/:id]`, `/telecom/reports`, `/telecom/audit-logs` (all `/telecom/...`-prefixed per the collision rule above — the old bare `customers`/`transactions`/`payments`/`reconciliation`/`reports`/`settings` folders are untouched empty stubs, not reused) | Their own operator's contribution/levy data, member roster, API credentials, and reconciliation only |
 | `Super-admin` | Platform owner/operator | `(super-admin)` — dashboard at `/super-admin/dashboard`, staff provisioning at `/super-admin/administrators`, roles/permissions catalog at `/super-admin/roles`; integrations, system, audit-logs, settings folders still empty | System-wide configuration, managing other Admins, integrations — role is seeded (`role_id 7`); can create a staff account (any role) via `/super-admin/administrators` and manage the roles/permissions catalog via `/super-admin/roles` (create/rename/delete a role, assign its permissions) — the seven core role names can't be renamed or deleted |
 
@@ -516,7 +537,7 @@ a default.
 - Threat-model new features before writing code: who can call this, what do
   they have access to today vs after this change, what's the worst input an
   attacker could send. A few sentences is enough for small features.
-- Default to least privilege: a role (Member/Admin/Hospital/Insurance/Bank/
+- Default to least privilege: a role (Member/Admin/Insurance/Bank/
   Telecom/Super-admin) gets only what its own workflows require — check
   `database/schema/tujitunze.sql` roles table and route groups under
   `frontend/app/(*)` for the current role boundaries.
@@ -546,8 +567,8 @@ a default.
   `security-review` skill (or `/code-review` for correctness/quality) rather
   than self-certifying.
 - New auth/authz logic gets a test that proves the boundary holds (a
-  non-member can't hit a member-only route, a hospital can't see another
-  hospital's claims, etc.), not just a happy-path test.
+  non-member can't hit a member-only route, a bank can't see another
+  bank's settlements, etc.), not just a happy-path test.
 - Run `npm audit` (or equivalent) when dependencies change; don't add a
   package without checking it's maintained.
 
@@ -578,7 +599,7 @@ real entity/service (`backend/src/modules/audit-logs/`), written to
 atomically inside the same DB transaction as the write it's logging
 (`phone_number.add`, `bank_account.add`, `member.password_change`,
 `member.status_change`), with an Admin-only `GET /admin/audit-logs` to
-read it back; `Hospital`/`Bank`/`Telecom`/`Insurance`/`Super-admin` now
+read it back; `Bank`/`Telecom`/`Insurance`/`Super-admin` now
 each have a real guarded `GET /<role>/dashboard` endpoint instead of an
 empty module stub; the `Super-admin` role row (previously believed
 unseeded) was confirmed already present in the live database — no seed
@@ -617,7 +638,7 @@ Still open, flagged so they aren't silently reintroduced or forgotten:
 6. `audit_logs` coverage is partial — only the four write paths listed
    above are instrumented. `POST /members/register` (account creation),
    `PATCH /members/me` (profile updates), and any future
-   Hospital/Bank/Telecom/Insurance writes are not yet logged. Extend each
+   Bank/Telecom/Insurance writes are not yet logged. Extend each
    new sensitive write with `AuditLogsService.record(manager, …)` inside
    its transaction as those land, rather than adding it as an afterthought.
 7. `AuditLogsService.list()` has no pagination or filtering — it returns
@@ -641,7 +662,7 @@ Still open, flagged so they aren't silently reintroduced or forgotten:
    staff account for any role and set its tenant link, but there's still
    no way to edit, deactivate, delete, or reassign one after creation —
    unlike roles (#10 below), administrators have no edit/delete path yet.
-   A Hospital/Bank/Telecom/Insurance login with no tenant link set still
+   A Bank/Telecom/Insurance login with no tenant link set still
    gets a `403 Forbidden` from its dashboard rather than someone else's
    data or a silent empty result — that part of the design hasn't changed,
    only how the link gets set in the first place.
