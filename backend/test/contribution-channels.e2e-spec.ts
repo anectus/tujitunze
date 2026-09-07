@@ -772,12 +772,23 @@ describe('Contribution channels — Airtime & Bank Transfer (e2e)', () => {
     });
   });
 
+  // Renamed from its pre-auto-enrollment form: a member with no other
+  // policy used to leave a contribution 'Validated' (unallocated),
+  // which /fail existed to resolve. WalletsService.creditContribution
+  // now auto-enrolls that same member into Tujitunze Insurance and
+  // allocates the contribution immediately, so 'Validated'-but-
+  // unallocated is no longer a reachable state via this flow — /fail's
+  // own Received/Validated-only guard (telecom.service.ts
+  // markContributionFailed) means it now correctly REJECTS this
+  // contribution instead, and /reverse is what actually undoes it. This
+  // block proves that guard on the one fixture that used to hit the old
+  // path, rather than deleting the coverage.
   describe('Failed transaction — PATCH /telecom/contributions/:id/fail', () => {
     let failMemberId: number;
     let failPhoneNumber: string;
     let failContributionId: number;
 
-    it('sets up a member with no active insurance policy (so the contribution stays Validated, not Allocated)', async () => {
+    it('auto-enrolls a member with no other policy into Tujitunze Insurance, so the contribution is Allocated immediately (not Validated)', async () => {
       failMemberId = await createUser('FailMember', 8);
       failPhoneNumber = `07${String(Number(ts.slice(-8)) + 2).padStart(8, '0')}`;
       const [phone] = await dataSource.query<{ phone_id: number }[]>(
@@ -786,9 +797,7 @@ describe('Contribution channels — Airtime & Bank Transfer (e2e)', () => {
         [failMemberId, operatorId, failPhoneNumber],
       );
       createdPhoneIds.push(phone.phone_id);
-    });
 
-    it('records a contribution with no active policy to allocate against (stays Validated)', async () => {
       const token = signToken(telecomStaffId, ['Telecom'], 'TelecomStaff');
       const res = await request(app.getHttpServer())
         .post('/telecom/contributions')
@@ -800,7 +809,13 @@ describe('Contribution channels — Airtime & Bank Transfer (e2e)', () => {
         })
         .expect(201);
 
-      expect(res.body).toMatchObject({ allocation: null });
+      const body = res.body as {
+        allocation: { status: string; providerName: string } | null;
+      };
+      expect(body.allocation).toMatchObject({
+        status: 'Allocated',
+        providerName: 'Tujitunze Insurance',
+      });
 
       const [row] = await dataSource.query<
         { contribution_id: number; processing_status: string }[]
@@ -808,8 +823,28 @@ describe('Contribution channels — Airtime & Bank Transfer (e2e)', () => {
         `SELECT contribution_id, processing_status FROM telecom_contributions WHERE reference_number = $1`,
         [`AIR-${ts}-fail`],
       );
-      expect(row.processing_status).toBe('Validated');
+      expect(row.processing_status).toBe('Allocated');
       failContributionId = row.contribution_id;
+
+      const [wallet] = await dataSource.query<{ balance: string }[]>(
+        `SELECT balance FROM health_wallets WHERE member_id = $1`,
+        [failMemberId],
+      );
+      expect(Number(wallet.balance)).toBe(15);
+
+      const [policy] = await dataSource.query<{ policy_status: string }[]>(
+        `SELECT policy_status FROM member_insurance WHERE member_id = $1`,
+        [failMemberId],
+      );
+      expect(policy.policy_status).toBe('Active');
+    });
+
+    it('rejects failing an Allocated contribution — it must be reversed instead', async () => {
+      const token = signToken(telecomStaffId, ['Telecom'], 'TelecomStaff');
+      await request(app.getHttpServer())
+        .patch(`/telecom/contributions/${failContributionId}/fail`)
+        .set('Authorization', `Bearer ${token}`)
+        .expect(400);
 
       const [wallet] = await dataSource.query<{ balance: string }[]>(
         `SELECT balance FROM health_wallets WHERE member_id = $1`,
@@ -818,22 +853,14 @@ describe('Contribution channels — Airtime & Bank Transfer (e2e)', () => {
       expect(Number(wallet.balance)).toBe(15);
     });
 
-    it('rejects reversing a non-Allocated contribution (must use fail instead)', async () => {
-      const token = signToken(telecomStaffId, ['Telecom'], 'TelecomStaff');
-      await request(app.getHttpServer())
-        .patch(`/telecom/contributions/${failContributionId}/reverse`)
-        .set('Authorization', `Bearer ${token}`)
-        .expect(400);
-    });
-
-    it('marks the contribution Failed, debits the wallet back, and logs an audit entry', async () => {
+    it('reverses the Allocated contribution instead: debits the wallet back and logs an audit entry', async () => {
       const token = signToken(telecomStaffId, ['Telecom'], 'TelecomStaff');
       const res = await request(app.getHttpServer())
-        .patch(`/telecom/contributions/${failContributionId}/fail`)
+        .patch(`/telecom/contributions/${failContributionId}/reverse`)
         .set('Authorization', `Bearer ${token}`)
         .expect(200);
 
-      expect(res.body).toMatchObject({ processingStatus: 'Failed' });
+      expect(res.body).toMatchObject({ processingStatus: 'Reversed' });
 
       const [wallet] = await dataSource.query<{ balance: string }[]>(
         `SELECT balance FROM health_wallets WHERE member_id = $1`,
@@ -843,16 +870,16 @@ describe('Contribution channels — Airtime & Bank Transfer (e2e)', () => {
 
       const [auditRow] = await dataSource.query<{ action_type: string }[]>(
         `SELECT action_type FROM audit_logs
-         WHERE member_id = $1 AND action_type = 'telecom.contribution_fail'`,
+         WHERE member_id = $1 AND action_type = 'telecom.contribution_reverse'`,
         [failMemberId],
       );
-      expect(auditRow.action_type).toBe('telecom.contribution_fail');
+      expect(auditRow.action_type).toBe('telecom.contribution_reverse');
     });
 
-    it('rejects marking an already-Failed contribution as failed again', async () => {
+    it('rejects reversing an already-Reversed contribution', async () => {
       const token = signToken(telecomStaffId, ['Telecom'], 'TelecomStaff');
       await request(app.getHttpServer())
-        .patch(`/telecom/contributions/${failContributionId}/fail`)
+        .patch(`/telecom/contributions/${failContributionId}/reverse`)
         .set('Authorization', `Bearer ${token}`)
         .expect(400);
     });

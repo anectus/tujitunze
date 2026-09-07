@@ -10,18 +10,18 @@ export default function FAQSection({ title, description, items }: FAQSectionProp
 
   return (
 
-    <section className="bg-gray-50 py-20 px-6">
+    <section className="bg-gradient-to-br from-emerald-50 to-white py-20 px-6">
 
       <div className="max-w-3xl mx-auto">
 
         <div className="text-center max-w-2xl mx-auto">
 
-          <h2 className="text-4xl font-bold text-gray-900">
+          <h2 className="text-[28px] md:text-[40px] font-bold text-emerald-800">
             {title}
           </h2>
 
           {description && (
-            <p className="mt-4 text-gray-600 text-lg">
+            <p className="mt-4 text-base font-medium text-gray-600 leading-[1.7]">
               {description}
             </p>
           )}

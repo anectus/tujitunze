@@ -126,7 +126,7 @@ export default function LoginForm() {
 
       setSuccess(t.successMessage);
 
-      localStorage.setItem(ACCESS_TOKEN_STORAGE_KEY, data.accessToken);
+      sessionStorage.setItem(ACCESS_TOKEN_STORAGE_KEY, data.accessToken);
 
       const payload = decodeAccessToken(data.accessToken);
 

@@ -1,16 +1,9 @@
-import {
-  BadRequestException,
-  ForbiddenException,
-  Injectable,
-} from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { DataSource, EntityManager } from 'typeorm';
 import * as crypto from 'crypto';
 
 import { HealthWallet } from './entities/health-wallet.entity';
 import { WalletTransaction } from './entities/wallet-transaction.entity';
-import { TopUpWalletDto } from './dto/top-up-wallet.dto';
-import { PhoneNumber } from '../members/entities/phone-number.entity';
-import { MemberBankAccount } from '../members/entities/bank-account.entity';
 import { AuditLogsService } from '../audit-logs/audit-logs.service';
 import { NotificationsService } from '../notifications/notifications.service';
 
@@ -117,10 +110,8 @@ export class WalletsService {
     // member's specific contribution go?" (as opposed to Bank's
     // settlements, which are pooled/aggregate payouts). Only possible
     // when the member has an active policy telling us which provider to
-    // allocate to; if not, the contribution is still fully recorded and
-    // credited, it just has no allocation yet (a member without coverage
-    // has nothing to allocate their contribution's coverage against).
-    const [activePolicy] = await manager.query<
+    // allocate to.
+    let [activePolicy] = await manager.query<
       { provider_id: number; provider_name: string; provider_status: string }[]
     >(
       `SELECT prov.provider_id, prov.provider_name, prov.status AS provider_status
@@ -132,6 +123,66 @@ export class WalletsService {
        LIMIT 1`,
       [memberId],
     );
+
+    // A member with no active policy is auto-enrolled into the
+    // platform's own fallback plan (migration 0029) rather than leaving
+    // the contribution unallocated — this is the only insert into
+    // member_insurance anywhere in the codebase today; nothing else
+    // enrolls a member into a plan. Falls through silently (same as
+    // before this existed) only if that seed is somehow missing.
+    if (!activePolicy) {
+      const [fallbackPlan] = await manager.query<
+        {
+          plan_id: number;
+          provider_id: number;
+          provider_name: string;
+          provider_status: string;
+        }[]
+      >(
+        `SELECT ip.plan_id, prov.provider_id, prov.provider_name, prov.status AS provider_status
+         FROM insurance_plans ip
+         JOIN insurance_providers prov ON prov.provider_id = ip.provider_id
+         WHERE prov.provider_name = 'Tujitunze Insurance' AND ip.status = 'Active'
+         ORDER BY ip.plan_id
+         LIMIT 1`,
+      );
+
+      if (fallbackPlan) {
+        const policyNumber = `TJZ-POL-${Date.now().toString(36).toUpperCase()}-${crypto
+          .randomBytes(3)
+          .toString('hex')}`;
+
+        await manager.query(
+          `INSERT INTO member_insurance (member_id, plan_id, policy_number, start_date, policy_status)
+           VALUES ($1, $2, $3, CURRENT_DATE, 'Active')`,
+          [memberId, fallbackPlan.plan_id, policyNumber],
+        );
+
+        await this.auditLogsService.record(manager, {
+          memberId,
+          actionType: 'member.insurance_auto_enroll',
+          affectedTable: 'member_insurance',
+          newValue: {
+            planId: fallbackPlan.plan_id,
+            providerId: fallbackPlan.provider_id,
+            policyNumber,
+          },
+        });
+
+        await this.notificationsService.create(manager, {
+          memberId,
+          notificationType: 'Contribution',
+          title: 'Enrolled in Tujitunze Insurance',
+          message: `You had no active insurance policy, so you were automatically enrolled in Tujitunze Insurance (policy ${policyNumber}). Your contributions will now be allocated to it.`,
+        });
+
+        activePolicy = {
+          provider_id: fallbackPlan.provider_id,
+          provider_name: fallbackPlan.provider_name,
+          provider_status: fallbackPlan.provider_status,
+        };
+      }
+    }
 
     let allocation: {
       allocationId: number;
@@ -332,114 +383,10 @@ export class WalletsService {
     });
   }
 
-  async topUp(
-    memberId: number,
-    data: TopUpWalletDto,
-    ipAddress: string | null = null,
-  ) {
-    return this.dataSource.transaction(async (manager) => {
-      let sourceDescription: string;
-
-      if (data.sourceType === 'phone') {
-        const phone = await manager.findOne(PhoneNumber, {
-          where: { phoneId: data.sourceId },
-        });
-
-        if (!phone || phone.userId !== memberId) {
-          throw new ForbiddenException(
-            'That phone number is not linked to your account.',
-          );
-        }
-
-        sourceDescription = `mobile money (${phone.phoneNumber})`;
-      } else {
-        const account = await manager.findOne(MemberBankAccount, {
-          where: { memberBankAccountId: data.sourceId },
-        });
-
-        if (!account || account.memberId !== memberId) {
-          throw new ForbiddenException(
-            'That bank account is not linked to your account.',
-          );
-        }
-
-        sourceDescription = `bank account ending ${account.accountNumber.slice(-4)}`;
-      }
-
-      const wallet = await this.getOrCreateWallet(manager, memberId);
-
-      if (wallet.walletStatus !== 'Active') {
-        throw new BadRequestException(
-          `Your wallet is ${wallet.walletStatus.toLowerCase()} and cannot receive a top-up.`,
-        );
-      }
-
-      wallet.balance = Number((wallet.balance + data.amount).toFixed(2));
-
-      const savedWallet = await manager.save(HealthWallet, wallet);
-
-      // No live payment gateway is integrated yet (see CLAUDE.md known
-      // gaps) — this credits the wallet ledger directly rather than
-      // capturing a real mobile-money/bank debit. Real settlement is a
-      // separate, larger integration. The system processes a top-up
-      // synchronously, so there is no persisted "pending"/"failed" state
-      // for a contribution — it either fails outright (thrown above) or
-      // this row exists as completed.
-      const transactionReference = `CT-${Date.now().toString(36).toUpperCase()}-${memberId}`;
-
-      const transaction = manager.create(WalletTransaction, {
-        walletId: wallet.walletId,
-        transactionType: 'Top Up',
-        amount: data.amount,
-        transactionReference,
-        remarks: `Top-up via ${sourceDescription}`,
-      });
-
-      const savedTransaction = await manager.save(
-        WalletTransaction,
-        transaction,
-      );
-
-      await this.auditLogsService.record(manager, {
-        memberId,
-        actionType: 'wallet.topup',
-        affectedTable: 'health_wallets',
-        affectedRecordId: wallet.walletId,
-        newValue: {
-          amount: data.amount,
-          newBalance: savedWallet.balance,
-          source: sourceDescription,
-        },
-        ipAddress,
-      });
-
-      await this.notificationsService.create(manager, {
-        memberId,
-        notificationType: 'Contribution',
-        title: 'Contribution received',
-        message: `${formatTsh(data.amount)} was added to your Health Wallet via ${sourceDescription}. Reference: ${transactionReference}.`,
-      });
-
-      return {
-        walletId: savedWallet.walletId,
-        walletNumber: savedWallet.walletNumber,
-        balance: savedWallet.balance,
-        walletStatus: savedWallet.walletStatus,
-        transaction: {
-          walletTransactionId: savedTransaction.walletTransactionId,
-          amount: savedTransaction.amount,
-          transactionReference: savedTransaction.transactionReference,
-          remarks: savedTransaction.remarks,
-          transactionDate: savedTransaction.transactionDate,
-        },
-      };
-    });
-  }
-
   // Backs both the "Contribution" history view and the general
-  // "Transaction History" page — today every row is a completed top-up
-  // (see the note in topUp() above), so there's no status filter; once a
-  // real levy engine writes other transaction types this can grow one.
+  // "Transaction History" page — every row is a Telecom/Bank-collected
+  // deduction credited via creditContribution(), or an insurance payment
+  // debited via reverseContribution()/its future outbound counterpart.
   async listTransactions(memberId: number, page: number, pageSize: number) {
     const wallet = await this.dataSource.transaction((manager) =>
       this.getOrCreateWallet(manager, memberId),
@@ -464,8 +411,8 @@ export class WalletsService {
 
     // Surfaces the collection channel per CLAUDE.md's Member Dashboard
     // requirement, derived purely from which FK is set on the row itself
-    // — no extra query. A row with neither is the pre-existing
-    // self-service top-up path (see topUp() above), not a real
+    // — no extra query. A row with neither is a legacy self-service
+    // top-up row from before that path was removed, not a real
     // Telecom/Bank-collected contribution.
     const itemsWithChannel = items.map((item) => ({
       ...item,

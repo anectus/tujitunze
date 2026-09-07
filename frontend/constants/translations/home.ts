@@ -33,12 +33,16 @@ export const heroTranslations = {
   en: {
     badge: "Health Savings & Insurance Management System",
     titleLine1: "Secure Your",
-    titleHighlight: " Healthcare Future",
+    titleHighlight: " Healthcare Future.",
+    subheadline:
+      "Join thousands of Tanzanians saving for health automatically — no paperwork, no stress.",
     description:
       "Tujitunze is a digital healthcare financial platform that enables members to save healthcare funds, contribute through telecom networks, verify membership status, and access healthcare services securely.",
     signUp: "Sign Up",
     login: "Login",
     getStarted: "Get Started with Tujitunze",
+    becomeMember: "Start Saving Today",
+    partnerWithUs: "Partner With Us",
     whyChoose: "Why Choose Tujitunze?",
     feature1Title: "Health Wallet",
     feature1Description:
@@ -47,16 +51,23 @@ export const heroTranslations = {
     feature2Description: "Supports contributions through mobile networks.",
     feature3Title: "Bank Integration",
     feature3Description: "Connects securely with financial institutions.",
+    feature4Title: "Insurance Coverage",
+    feature4Description:
+      "Every contribution is automatically allocated toward real health insurance coverage.",
   },
   sw: {
     badge: "Mfumo wa Akiba ya Afya na Usimamizi wa Bima",
     titleLine1: "Hakikisha",
-    titleHighlight: " Afya Yako ya Baadaye",
+    titleHighlight: " Afya Yako ya Baadaye.",
+    subheadline:
+      "Jiunge na maelfu ya Watanzania wanaoweka akiba ya afya kiotomatiki — bila karatasi, bila msongo.",
     description:
       "Tujitunze ni jukwaa la kidijitali la fedha za afya linalowawezesha wanachama kuweka akiba ya matibabu, kuchangia kupitia mitandao ya simu, kuthibitisha uanachama, na kupata huduma za afya kwa usalama.",
     signUp: "Jisajili",
     login: "Ingia",
     getStarted: "Anza na Tujitunze",
+    becomeMember: "Anza Kuweka Akiba Leo",
+    partnerWithUs: "Shirikiana Nasi",
     whyChoose: "Kwa Nini Uchague Tujitunze?",
     feature1Title: "Mkoba wa Afya",
     feature1Description:
@@ -65,6 +76,9 @@ export const heroTranslations = {
     feature2Description: "Inasaidia michango kupitia mitandao ya simu.",
     feature3Title: "Uunganisho wa Benki",
     feature3Description: "Inaunganisha kwa usalama na taasisi za fedha.",
+    feature4Title: "Ufunikaji wa Bima",
+    feature4Description:
+      "Kila mchango hugawiwa kiotomatiki kuelekea ufunikaji halisi wa bima ya afya.",
   },
 } as const satisfies Record<Language, Record<string, string>>;
 
@@ -221,8 +235,8 @@ export const homeFaqsTranslations = {
 
 export const footerTranslations = {
   en: {
-    description:
-      "Health Savings and Insurance Management System. A secure digital platform connecting members, healthcare providers, telecom networks, and financial institutions.",
+    tagline:
+      "Health Savings & Insurance Management System — built for the mtu wa kawaida.",
     navigation: "Navigation",
     home: "Home",
     about: "About Us",
@@ -234,14 +248,17 @@ export const footerTranslations = {
     service3: "NIDA Member Verification",
     service5: "Bank Account Integration",
     contactInfo: "Contact Information",
-    location: "Tanzania",
+    location: "Dar es Salaam, Tanzania",
     rightsReserved: "All rights reserved.",
+    regulatoryLine: "Registered under Tanzania Insurance Regulatory Authority",
+    dataProtectionNote:
+      "Data protected under Tanzania Insurance Regulatory Authority guidelines.",
     privacyPolicy: "Privacy Policy",
     terms: "Terms & Conditions",
   },
   sw: {
-    description:
-      "Mfumo wa Akiba ya Afya na Usimamizi wa Bima. Jukwaa salama la kidijitali linaunganisha wanachama, watoa huduma za afya, mitandao ya simu, na taasisi za fedha.",
+    tagline:
+      "Mfumo wa Akiba ya Afya na Usimamizi wa Bima — ulioundwa kwa ajili ya mtu wa kawaida.",
     navigation: "Uelekezaji",
     home: "Nyumbani",
     about: "Kuhusu Sisi",
@@ -253,9 +270,47 @@ export const footerTranslations = {
     service3: "Uthibitisho wa Uanachama wa NIDA",
     service5: "Uunganisho wa Akaunti ya Benki",
     contactInfo: "Taarifa za Mawasiliano",
-    location: "Tanzania",
+    location: "Dar es Salaam, Tanzania",
     rightsReserved: "Haki zote zimehifadhiwa.",
+    regulatoryLine: "Imesajiliwa chini ya Mamlaka ya Usimamizi wa Bima Tanzania",
+    dataProtectionNote:
+      "Taarifa zako zinalindwa kwa mujibu wa miongozo ya Mamlaka ya Usimamizi wa Bima Tanzania.",
     privacyPolicy: "Sera ya Faragha",
     terms: "Vigezo na Masharti",
   },
 } as const satisfies Record<Language, Record<string, string>>;
+
+export const trustTranslations = {
+  en: {
+    heading: "Works With Tanzania's Networks",
+    tagline:
+      "Regulated under Tanzania Insurance Regulatory Authority — trusted nationwide.",
+    networksLabel: "Telecom & Bank Networks",
+  },
+  sw: {
+    heading: "Inafanya Kazi na Mitandao ya Tanzania",
+    tagline:
+      "Imesimamiwa chini ya Mamlaka ya Usimamizi wa Bima Tanzania — inaaminika kitaifa.",
+    networksLabel: "Mitandao ya Simu na Benki",
+  },
+} as const satisfies Record<Language, Record<string, string>>;
+
+export const testimonialsTranslations = {
+  en: {
+    heading: "What Members Say",
+    quotes: [
+      "I save automatically every time I buy airtime — it's effortless.",
+    ],
+    attribution: "— A Tujitunze Member",
+  },
+  sw: {
+    heading: "Wanachama Wanasema Nini",
+    quotes: [
+      "Ninaweka akiba kiotomatiki kila ninaponunua muda wa maongezi — ni rahisi sana.",
+    ],
+    attribution: "— Mwanachama wa Tujitunze",
+  },
+} as const satisfies Record<
+  Language,
+  { heading: string; quotes: string[]; attribution: string }
+>;

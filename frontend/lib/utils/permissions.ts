@@ -15,12 +15,18 @@ export interface AccessTokenPayload {
   exp: number;
 }
 
+// sessionStorage, not localStorage: it's cleared when the browser (or
+// tab) closes, so a member has to log in again on their next visit
+// instead of staying silently authenticated indefinitely. localStorage
+// would survive a full browser restart, which is exactly the behavior
+// reported as a vulnerability — see the httpOnly-cookie session cookie
+// change in auth-cookie.constants.ts for the backend half of this.
 export function getAccessToken(): string | null {
   if (typeof window === "undefined") {
     return null;
   }
 
-  return localStorage.getItem(ACCESS_TOKEN_STORAGE_KEY);
+  return sessionStorage.getItem(ACCESS_TOKEN_STORAGE_KEY);
 }
 
 export function getStoredAuthUser(): StoredAuthUser | null {
@@ -28,7 +34,7 @@ export function getStoredAuthUser(): StoredAuthUser | null {
     return null;
   }
 
-  const storedUser = localStorage.getItem(AUTH_USER_STORAGE_KEY);
+  const storedUser = sessionStorage.getItem(AUTH_USER_STORAGE_KEY);
 
   if (!storedUser) {
     return null;
@@ -37,13 +43,13 @@ export function getStoredAuthUser(): StoredAuthUser | null {
   try {
     return JSON.parse(storedUser) as StoredAuthUser;
   } catch {
-    localStorage.removeItem(AUTH_USER_STORAGE_KEY);
+    sessionStorage.removeItem(AUTH_USER_STORAGE_KEY);
     return null;
   }
 }
 
 export function storeAuthUser(user: StoredAuthUser): void {
-  localStorage.setItem(AUTH_USER_STORAGE_KEY, JSON.stringify(user));
+  sessionStorage.setItem(AUTH_USER_STORAGE_KEY, JSON.stringify(user));
 }
 
 // Decodes the JWT payload only — does not verify the signature. This is a

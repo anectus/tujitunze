@@ -1,50 +1,68 @@
 "use client";
 
 import Link from "next/link";
+import { Mail, MapPin, PhoneCall } from "lucide-react";
 import { useLanguage } from "@/lib/context/LanguageContext";
 import { footerTranslations } from "@/constants/translations/home";
 
 const SOCIAL_LINKS = [
-  { label: "Facebook", glyph: "f" },
-  { label: "X", glyph: "X" },
-  { label: "LinkedIn", glyph: "in" },
+  {
+    label: "Facebook",
+    glyph: "f",
+    href: "https://www.facebook.com/share/1G5E5FSo2i/",
+  },
+  {
+    label: "X",
+    glyph: "X",
+    href: "https://x.com/anectusphilemon",
+  },
+  {
+    label: "LinkedIn",
+    glyph: "in",
+    href: "https://www.linkedin.com/in/anectus-philemon-7a901b337",
+  },
+  {
+    label: "Instagram",
+    glyph: "IG",
+    href: "https://www.instagram.com/anectusphilemon",
+  },
+  {
+    label: "YouTube",
+    glyph: "YT",
+    href: "https://youtube.com/@anectusphilemon",
+  },
 ] as const;
 
 const LINK_CLASS =
-  "text-sm text-[#D1FAE5] hover:text-[#10B981] transition-colors duration-300 ease-in-out";
+  "text-sm text-emerald-200 hover:text-emerald-400 transition-colors duration-200";
 
-const BOTTOM_LINK_CLASS =
-  "text-xs text-[#9CA3AF] hover:text-[#10B981] transition-colors duration-300 ease-in-out";
+const HEADING_CLASS = "text-sm font-semibold text-white mb-4";
 
-const HEADING_CLASS =
-  "text-sm font-semibold text-[#ECFDF5] uppercase tracking-wide mb-4";
-
+// Global footer — mounted on every public page (via the marketing
+// Header's pages) and, via DashboardLayout, at the bottom of every
+// Member/staff route group too. Editing this affects the whole site.
 export default function Footer() {
   const { language } = useLanguage();
   const t = footerTranslations[language];
 
   return (
-    <footer className="bg-gradient-to-b from-[#064E3B] to-[#065F46] text-[#D1FAE5]">
-      {/* Main Footer — a compact 3-column layout (brand, navigation,
-          contact) rather than 4: dropping the services list keeps the
-          footer's footprint light, in line with everything else in it
-          being toned down (muted text, thin divider, no filled social
-          badges). */}
-      <div className="max-w-7xl mx-auto px-6 py-8 sm:py-10">
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 sm:gap-8 divide-y divide-[#065F46] sm:divide-y-0">
-          {/* Brand */}
-          <div className="pt-6 first:pt-0 sm:pt-0 text-center sm:text-left">
-            <Link href="/" className="text-2xl font-bold text-[#ECFDF5]">
+    <footer className="border-t border-emerald-800 bg-gradient-to-b from-emerald-950 to-emerald-900 text-emerald-200">
+      <div className="max-w-7xl mx-auto px-4 py-8 md:px-8 md:py-12">
+        <div className="grid grid-cols-1 gap-8 text-center md:grid-cols-3 md:text-left">
+
+          {/* Left: brand + tagline */}
+          <div>
+            <Link href="/" className="text-2xl font-bold text-white">
               Tujitunze
             </Link>
 
-            <p className="mt-3 text-xs leading-relaxed text-[#D1FAE5]/70">
-              {t.description}
+            <p className="mt-3 text-sm leading-relaxed text-emerald-200">
+              {t.tagline}
             </p>
           </div>
 
-          {/* Navigation */}
-          <div className="pt-6 first:pt-0 sm:pt-0 text-center sm:text-left">
+          {/* Center: navigation */}
+          <div>
             <h3 className={HEADING_CLASS}>{t.navigation}</h3>
 
             <ul className="space-y-3">
@@ -53,101 +71,86 @@ export default function Footer() {
                   {t.home}
                 </Link>
               </li>
-
               <li>
                 <Link href="/about" className={LINK_CLASS}>
                   {t.about}
                 </Link>
               </li>
-
               <li>
                 <Link href="/services" className={LINK_CLASS}>
                   {t.services}
                 </Link>
               </li>
-
               <li>
                 <Link href="/contact" className={LINK_CLASS}>
                   {t.contact}
                 </Link>
               </li>
+              <li>
+                <Link href="/privacy-policy" className={LINK_CLASS}>
+                  {t.privacyPolicy}
+                </Link>
+              </li>
+              <li>
+                <Link href="/terms" className={LINK_CLASS}>
+                  {t.terms}
+                </Link>
+              </li>
             </ul>
           </div>
 
-          {/* Contact + social */}
-          <div className="pt-6 first:pt-0 sm:pt-0 text-center sm:text-left">
+          {/* Right: contact + social */}
+          <div>
             <h3 className={HEADING_CLASS}>{t.contactInfo}</h3>
 
-            <ul className="space-y-3 text-sm">
-              <li className="flex justify-center sm:justify-start gap-3">
-                <span>📧</span>
-                <span>support@Tujitunze.com</span>
+            <ul className="space-y-3 text-sm text-emerald-200">
+              <li className="flex justify-center gap-3 md:justify-start">
+                <Mail className="h-4 w-4 shrink-0 mt-0.5" aria-hidden="true" />
+                <span>tujitunze@gmail.com</span>
               </li>
-
-              <li className="flex justify-center sm:justify-start gap-3">
-                <span>📞</span>
-                <span>+255 617672872</span>
+              <li className="flex justify-center gap-3 md:justify-start">
+                <PhoneCall className="h-4 w-4 shrink-0 mt-0.5" aria-hidden="true" />
+                <span>+255 756 801 149</span>
               </li>
-
-              <li className="flex justify-center sm:justify-start gap-3">
-                <span>📍</span>
+              <li className="flex justify-center gap-3 md:justify-start">
+                <MapPin className="h-4 w-4 shrink-0 mt-0.5" aria-hidden="true" />
                 <span>{t.location}</span>
               </li>
             </ul>
 
-            <div className="mt-5 flex justify-center sm:justify-start gap-3">
+            <div className="mt-5 flex justify-center gap-3 md:justify-start">
               {SOCIAL_LINKS.map((social) => (
-                <span
+                <a
                   key={social.label}
-                  role="button"
+                  href={social.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
                   aria-label={social.label}
                   className="
-                  flex h-11 w-11 sm:h-9 sm:w-9
+                  flex h-11 w-11 md:h-9 md:w-9
                   items-center justify-center
                   rounded-full
-                  border border-[#10B981]/40
-                  text-xs text-[#D1FAE5]
-                  cursor-pointer
-                  transition-colors duration-300 ease-in-out
-                  hover:border-[#10B981] hover:text-[#10B981]
+                  border border-emerald-800
+                  text-xs text-emerald-200
+                  transition-colors duration-200
+                  hover:border-emerald-400 hover:text-emerald-400
                 "
                 >
                   {social.glyph}
-                </span>
+                </a>
               ))}
             </div>
           </div>
+
         </div>
       </div>
 
-      {/* Bottom Section */}
-      <div className="border-t border-[#065F46] mt-2">
-        <div
-          className="
-          max-w-7xl
-          mx-auto
-          px-6
-          py-4
-          flex
-          flex-col
-          items-center
-          gap-3
-          text-center
-        "
-        >
-          <p className="text-xs text-[#9CA3AF]">
-            © {new Date().getFullYear()} Tujitunze. {t.rightsReserved}
+      {/* Bottom bar */}
+      <div className="border-t border-emerald-800">
+        <div className="max-w-7xl mx-auto px-4 py-4 md:px-8 text-center">
+          <p className="text-xs text-emerald-200">
+            © {new Date().getFullYear()} Tujitunze | {t.regulatoryLine} | {t.dataProtectionNote}
           </p>
-
-          <div className="flex justify-center gap-6 sm:gap-8">
-            <Link href="/privacy-policy" className={`${BOTTOM_LINK_CLASS} py-1`}>
-              {t.privacyPolicy}
-            </Link>
-
-            <Link href="/terms" className={`${BOTTOM_LINK_CLASS} py-1`}>
-              {t.terms}
-            </Link>
-          </div>
         </div>
       </div>
     </footer>

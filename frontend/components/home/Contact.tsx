@@ -1,7 +1,10 @@
 
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
+import dynamic from "next/dynamic";
+import { AnimatePresence, motion, useScroll, useTransform } from "framer-motion";
+import { Building, Clock, Mail, MapPin, PhoneCall, Zap } from "lucide-react";
 
 import { useAuth } from "@/lib/hooks/useAuth";
 import { getAccessToken } from "@/lib/utils/permissions";
@@ -13,14 +16,94 @@ import {
 } from "@/constants/translations/public-contact";
 import { API_URL } from "@/lib/utils/api";
 
+// Lazy-loaded: purely decorative (aria-hidden), no reason to block the
+// initial paint of the actual heading/form content.
+const ContactIllustration = dynamic(
+  () => import("@/components/home/ContactIllustration"),
+  {
+    loading: () => (
+      <div
+        aria-hidden="true"
+        className="aspect-[480/420] w-full animate-pulse rounded-3xl bg-emerald-100/60"
+      />
+    ),
+  }
+);
+
 const inputClass =
-  "w-full border rounded-lg px-4 py-3 focus:ring-2 focus:ring-blue-600 outline-none";
+  "w-full border border-gray-300 rounded-lg px-4 py-3 text-base text-gray-900 outline-none transition-colors duration-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-400";
+
+const FOCUS_RING =
+  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 focus-visible:ring-offset-2";
+
+const FADE_UP = {
+  hidden: { opacity: 0, y: 24 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: "easeOut" as const } },
+};
+
+function FadeIn({
+  children,
+  className,
+}: {
+  children: React.ReactNode;
+  className?: string;
+}) {
+  return (
+    <motion.div
+      initial="hidden"
+      whileInView="visible"
+      viewport={{ once: true, amount: 0.2 }}
+      variants={FADE_UP}
+      className={className}
+    >
+      {children}
+    </motion.div>
+  );
+}
+
+// Reused from About.tsx's card treatment: a gradient-bordered card (a
+// 2px gradient-filled wrapper around a white inset, since CSS borders
+// can't take a gradient directly) with lift+shadow on hover.
+function GradientCard({
+  children,
+  className = "",
+}: {
+  children: React.ReactNode;
+  className?: string;
+}) {
+  return (
+    <motion.div
+      whileHover={{ y: -4 }}
+      transition={{ type: "spring", stiffness: 300, damping: 20 }}
+      className="group rounded-2xl bg-gradient-to-br from-emerald-500 to-emerald-200 p-[2px] shadow-md transition-shadow duration-300 hover:shadow-xl"
+    >
+      <div className={`h-full rounded-[calc(1rem-2px)] bg-white ${className}`}>
+        {children}
+      </div>
+    </motion.div>
+  );
+}
+
+function IconBadge({ icon: Icon }: { icon: typeof Building }) {
+  return (
+    <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-emerald-100 text-emerald-600 shadow-[0_0_0_6px_rgba(16,185,129,0.1)] transition-transform duration-300 group-hover:rotate-12">
+      <Icon className="h-5 w-5 md:h-6 md:w-6" aria-hidden="true" />
+    </div>
+  );
+}
 
 export default function Contact() {
   const { isAuthenticated, firstName } = useAuth();
   const { language } = useLanguage();
   const t = contactTranslations[language];
   const categoryLabels = contactCategoryLabelTranslations[language];
+
+  const heroRef = useRef<HTMLDivElement>(null);
+  const { scrollYProgress } = useScroll({
+    target: heroRef,
+    offset: ["start start", "end start"],
+  });
+  const illustrationY = useTransform(scrollYProgress, [0, 1], [0, -30]);
 
   // Only relevant for a guest sender — a logged-in member's name/email
   // are resolved server-side from their verified account, they only
@@ -118,288 +201,317 @@ export default function Contact() {
   };
 
   return (
-    <section className="bg-white pt-36 pb-20 px-12">
+    <section className="bg-gradient-to-br from-emerald-50 to-white pt-36 pb-20 px-12 max-md:px-4">
 
-      <div className="max-w-7xl mx-auto px-6">
+      <div className="max-w-7xl mx-auto px-6 max-md:px-0">
 
-        {/* Page Heading */}
-        <div className="text-center max-w-4xl mx-auto">
+        {/* Hero */}
+        <div ref={heroRef} className="relative grid md:grid-cols-2 gap-12 items-center">
+          <motion.div
+            initial="hidden"
+            animate="visible"
+            variants={FADE_UP}
+            className="text-center md:text-left"
+          >
+            <h1 className="text-[28px] md:text-[40px] font-bold text-emerald-800 leading-tight">
+              {t.heading}
+            </h1>
 
-          <h1 className="text-5xl font-bold text-gray-900">
-            {t.heading}
-          </h1>
+            <p className="mt-6 max-w-xl text-base font-medium text-gray-600 leading-[1.7] max-md:mx-auto">
+              {t.intro}
+            </p>
+          </motion.div>
 
-          <p className="mt-6 text-lg text-gray-600 leading-8">
-            {t.intro}
-          </p>
-
+          <motion.div style={{ y: illustrationY }} className="drop-shadow-xl">
+            <ContactIllustration />
+          </motion.div>
         </div>
 
         {/* Information Cards */}
+        <motion.div
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, amount: 0.2 }}
+          transition={{ staggerChildren: 0.12 }}
+          className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-16"
+        >
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-16">
+          <motion.div variants={FADE_UP}>
+            <GradientCard className="p-6 md:p-8 text-center">
+              <IconBadge icon={Building} />
 
-          <div className="bg-white rounded-2xl shadow-lg p-8">
+              <h3 className="mt-4 text-[22px] font-semibold text-gray-800">
+                {t.headquartersTitle}
+              </h3>
 
-            <h3 className="text-2xl font-bold text-blue-700">
-              {t.headquartersTitle}
-            </h3>
+              <p className="mt-4 text-base font-medium text-gray-600 leading-[1.7]">
+                {t.headquartersBody}
+                <br />
+                {t.city}
+                <br />
+                {t.country}
+              </p>
+            </GradientCard>
+          </motion.div>
 
-            <p className="mt-4 text-gray-600 leading-7">
-              {t.headquartersBody}
-              <br />
-              {t.city}
-              <br />
-              {t.country}
-            </p>
+          <motion.div variants={FADE_UP}>
+            <GradientCard className="p-6 md:p-8 text-center">
+              <IconBadge icon={Clock} />
 
-          </div>
+              <h3 className="mt-4 text-[22px] font-semibold text-gray-800">
+                {t.officeHoursTitle}
+              </h3>
 
-          <div className="bg-white rounded-2xl shadow-lg p-8">
+              <p className="mt-4 text-base font-medium text-gray-600 leading-[1.7]">
+                {t.officeHoursDays}
+                <br />
+                {t.officeHoursTime}
+              </p>
 
-            <h3 className="text-2xl font-bold text-blue-700">
-              {t.officeHoursTitle}
-            </h3>
+              <p className="mt-4 text-base font-medium text-gray-600 leading-[1.7]">
+                {t.officeHoursNote}
+              </p>
+            </GradientCard>
+          </motion.div>
 
-            <p className="mt-4 text-gray-600">
-              {t.officeHoursDays}
-              <br />
-              {t.officeHoursTime}
-            </p>
+          <motion.div variants={FADE_UP}>
+            <GradientCard className="p-6 md:p-8 text-center">
+              <IconBadge icon={Zap} />
 
-            <p className="mt-4 text-gray-600">
-              {t.officeHoursNote}
-            </p>
+              <h3 className="mt-4 text-[22px] font-semibold text-gray-800">
+                {t.responseTimeTitle}
+              </h3>
 
-          </div>
+              <p className="mt-4 text-base font-medium text-gray-600 leading-[1.7]">
+                {t.generalEnquiriesLabel}
+                <strong> {t.generalEnquiriesValue}</strong>
+              </p>
 
-          <div className="bg-white rounded-2xl shadow-lg p-8">
+              <p className="mt-3 text-base font-medium text-gray-600 leading-[1.7]">
+                {t.priorityNote}
+              </p>
+            </GradientCard>
+          </motion.div>
 
-            <h3 className="text-2xl font-bold text-blue-700">
-              {t.responseTimeTitle}
-            </h3>
-
-            <p className="mt-4 text-gray-600">
-              {t.generalEnquiriesLabel}
-              <strong> {t.generalEnquiriesValue}</strong>
-            </p>
-
-            <p className="mt-3 text-gray-600">
-              {t.priorityNote}
-            </p>
-
-          </div>
-
-        </div>
+        </motion.div>
 
         {/* Main Content */}
-
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 mt-20">
 
           {/* Contact Details */}
+          <FadeIn>
+            <GradientCard className="p-6 md:p-8">
+              <h2 className="text-[22px] font-semibold text-gray-800 mb-8">
+                {t.contactInfoTitle}
+              </h2>
 
-          <div className="bg-white rounded-2xl shadow-lg p-8">
+              <div className="space-y-8">
 
-            <h2 className="text-3xl font-bold text-blue-700 mb-8">
-              {t.contactInfoTitle}
-            </h2>
+                <div className="flex gap-4">
+                  <MapPin className="h-5 w-5 md:h-6 md:w-6 shrink-0 text-emerald-600 transition-colors duration-200" aria-hidden="true" />
+                  <div>
+                    <h3 className="font-semibold text-xl text-gray-900">
+                      {t.addressTitle}
+                    </h3>
+                    <p className="mt-2 text-base font-medium text-gray-600 leading-[1.7]">
+                      {t.headquartersBody}
+                      <br />
+                      {t.city}
+                      <br />
+                      {t.country}
+                    </p>
+                  </div>
+                </div>
 
-            <div className="space-y-8">
+                <div className="flex gap-4">
+                  <Mail className="h-5 w-5 md:h-6 md:w-6 shrink-0 text-emerald-600 transition-colors duration-200" aria-hidden="true" />
+                  <div>
+                    <h3 className="font-semibold text-xl text-gray-900">
+                      {t.generalSupportTitle}
+                    </h3>
+                    <p className="mt-2 text-base font-medium text-gray-600 leading-[1.7]">
+                      tujitunze@gmail.com
+                    </p>
+                  </div>
+                </div>
 
-              <div>
+                <div className="flex gap-4">
+                  <Mail className="h-5 w-5 md:h-6 md:w-6 shrink-0 text-emerald-600 transition-colors duration-200" aria-hidden="true" />
+                  <div>
+                    <h3 className="font-semibold text-xl text-gray-900">
+                      {t.technicalSupportTitle}
+                    </h3>
+                    <p className="mt-2 text-base font-medium text-gray-600 leading-[1.7]">
+                      tujitunze@gmail.com
+                    </p>
+                  </div>
+                </div>
 
-                <h3 className="font-semibold text-xl">
-                  {t.addressTitle}
-                </h3>
+                <div className="flex gap-4">
+                  <PhoneCall className="h-5 w-5 md:h-6 md:w-6 shrink-0 text-emerald-600 transition-colors duration-200" aria-hidden="true" />
+                  <div>
+                    <h3 className="font-semibold text-xl text-gray-900">
+                      {t.telephoneTitle}
+                    </h3>
+                    <p className="mt-2 text-base font-medium text-gray-600 leading-[1.7]">
+                      +255 756 801 149
+                    </p>
+                  </div>
+                </div>
 
-                <p className="mt-2 text-gray-600">
-                  {t.headquartersBody}
-                  <br />
-                  {t.city}
-                  <br />
-                  {t.country}
-                </p>
+                <div>
+                  <h3 className="font-semibold text-xl text-gray-900">
+                    {t.weSupportTitle}
+                  </h3>
 
-              </div>
-
-              <div>
-
-                <h3 className="font-semibold text-xl">
-                  {t.generalSupportTitle}
-                </h3>
-
-                <p className="mt-2 text-gray-600">
-                  support@Tujitunze.co.tz
-                </p>
-
-              </div>
-
-              <div>
-
-                <h3 className="font-semibold text-xl">
-                  {t.technicalSupportTitle}
-                </h3>
-
-                <p className="mt-2 text-gray-600">
-                  techsupport@Tujitunze.co.tz
-                </p>
-
-              </div>
-
-              <div>
-
-                <h3 className="font-semibold text-xl">
-                  {t.telephoneTitle}
-                </h3>
-
-                <p className="mt-2 text-gray-600">
-                  +255 617 672 872
-                </p>
-
-              </div>
-
-              <div>
-
-                <h3 className="font-semibold text-xl">
-                  {t.weSupportTitle}
-                </h3>
-
-                <ul className="mt-3 space-y-2 text-gray-600 list-disc list-inside">
-
-                  {t.supportList.map((item) => (
-                    <li key={item}>{item}</li>
-                  ))}
-
-                </ul>
+                  <ul className="mt-3 space-y-2 text-base font-medium text-gray-600 leading-[1.7] list-disc list-inside">
+                    {t.supportList.map((item) => (
+                      <li key={item}>{item}</li>
+                    ))}
+                  </ul>
+                </div>
 
               </div>
-
-            </div>
-
-          </div>
+            </GradientCard>
+          </FadeIn>
 
           {/* Contact Form */}
+          <FadeIn>
+            <GradientCard className="p-6 md:p-8">
+              <h2 className="text-[22px] font-semibold text-gray-800 mb-8">
+                {t.sendMessageTitle}
+              </h2>
 
-          <div className="bg-white rounded-2xl shadow-lg p-8">
+              <p className="text-base font-medium text-gray-600 leading-[1.7] mb-8">
+                {t.sendMessageIntro}
+              </p>
 
-            <h2 className="text-3xl font-bold text-blue-700 mb-8">
-              {t.sendMessageTitle}
-            </h2>
-
-            <p className="text-gray-600 mb-8">
-              {t.sendMessageIntro}
-            </p>
-
-            {isAuthenticated && (
-              <div className="mb-6 rounded-lg bg-blue-100 px-4 py-3 text-sm text-blue-700">
-                {t.sendingAsPrefix} {firstName || t.yourAccount} {t.sendingAsSuffix}
-              </div>
-            )}
-
-            {error && (
-              <div className="mb-6 rounded-lg bg-red-100 px-4 py-3 text-sm text-red-700">
-                {error}
-              </div>
-            )}
-
-            {success && (
-              <div className="mb-6 rounded-lg bg-blue-100 px-4 py-3 text-sm text-blue-700">
-                {success}
-              </div>
-            )}
-
-            <form onSubmit={handleSubmit} className="space-y-6">
-
-              {!isAuthenticated && (
-                <>
-                  <input
-                    type="text"
-                    name="name"
-                    value={guestDetails.name}
-                    onChange={handleGuestChange}
-                    placeholder={t.fullNamePlaceholder}
-                    required
-                    className={inputClass}
-                  />
-
-                  <input
-                    type="text"
-                    name="nidaNumber"
-                    value={guestDetails.nidaNumber}
-                    onChange={handleGuestChange}
-                    placeholder={t.nationalIdPlaceholder}
-                    className={inputClass}
-                  />
-
-                  <input
-                    type="email"
-                    name="email"
-                    value={guestDetails.email}
-                    onChange={handleGuestChange}
-                    placeholder={t.emailPlaceholder}
-                    required
-                    className={inputClass}
-                  />
-
-                  <input
-                    type="tel"
-                    name="phone"
-                    value={guestDetails.phone}
-                    onChange={handleGuestChange}
-                    placeholder={t.phonePlaceholder}
-                    className={inputClass}
-                  />
-                </>
+              {isAuthenticated && (
+                <div className="mb-6 rounded-lg bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+                  {t.sendingAsPrefix} {firstName || t.yourAccount} {t.sendingAsSuffix}
+                </div>
               )}
 
-              <select
-                name="category"
-                value={form.category}
-                onChange={handleFormChange}
-                required
-                className={inputClass}
-              >
-                <option value="" disabled>
-                  {t.selectCategoryPlaceholder}
-                </option>
-                {CONTACT_CATEGORIES.map((category) => (
-                  <option key={category} value={category}>
-                    {categoryLabels[category]}
+              {error && (
+                <div className="mb-6 rounded-lg bg-red-100 px-4 py-3 text-sm text-red-700">
+                  {error}
+                </div>
+              )}
+
+              <AnimatePresence>
+                {success && (
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.95, y: -8 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.95 }}
+                    transition={{ duration: 0.3, ease: "easeOut" }}
+                    className="mb-6 rounded-lg bg-emerald-100 px-4 py-3 text-sm font-medium text-emerald-800 shadow-md"
+                  >
+                    {success}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
+              <form onSubmit={handleSubmit} className="space-y-6">
+
+                {!isAuthenticated && (
+                  <>
+                    <input
+                      type="text"
+                      name="name"
+                      value={guestDetails.name}
+                      onChange={handleGuestChange}
+                      placeholder={t.fullNamePlaceholder}
+                      aria-label={t.fullNamePlaceholder}
+                      required
+                      className={inputClass}
+                    />
+
+                    <input
+                      type="text"
+                      name="nidaNumber"
+                      value={guestDetails.nidaNumber}
+                      onChange={handleGuestChange}
+                      placeholder={t.nationalIdPlaceholder}
+                      aria-label={t.nationalIdPlaceholder}
+                      className={inputClass}
+                    />
+
+                    <input
+                      type="email"
+                      name="email"
+                      value={guestDetails.email}
+                      onChange={handleGuestChange}
+                      placeholder={t.emailPlaceholder}
+                      aria-label={t.emailPlaceholder}
+                      required
+                      className={inputClass}
+                    />
+
+                    <input
+                      type="tel"
+                      name="phone"
+                      value={guestDetails.phone}
+                      onChange={handleGuestChange}
+                      placeholder={t.phonePlaceholder}
+                      aria-label={t.phonePlaceholder}
+                      className={inputClass}
+                    />
+                  </>
+                )}
+
+                <select
+                  name="category"
+                  value={form.category}
+                  onChange={handleFormChange}
+                  aria-label={t.selectCategoryPlaceholder}
+                  required
+                  className={inputClass}
+                >
+                  <option value="" disabled>
+                    {t.selectCategoryPlaceholder}
                   </option>
-                ))}
-              </select>
+                  {CONTACT_CATEGORIES.map((category) => (
+                    <option key={category} value={category}>
+                      {categoryLabels[category]}
+                    </option>
+                  ))}
+                </select>
 
-              <input
-                type="text"
-                name="subject"
-                value={form.subject}
-                onChange={handleFormChange}
-                placeholder={t.subjectPlaceholder}
-                required
-                className={inputClass}
-              />
+                <input
+                  type="text"
+                  name="subject"
+                  value={form.subject}
+                  onChange={handleFormChange}
+                  placeholder={t.subjectPlaceholder}
+                  aria-label={t.subjectPlaceholder}
+                  required
+                  className={inputClass}
+                />
 
-              <textarea
-                name="message"
-                value={form.message}
-                onChange={handleFormChange}
-                rows={6}
-                placeholder={t.messagePlaceholder}
-                required
-                className={inputClass}
-              />
+                <textarea
+                  name="message"
+                  value={form.message}
+                  onChange={handleFormChange}
+                  rows={6}
+                  placeholder={t.messagePlaceholder}
+                  aria-label={t.messagePlaceholder}
+                  required
+                  className={inputClass}
+                />
 
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full bg-blue-700 hover:bg-blue-800 text-white py-4 rounded-lg font-semibold transition duration-300 disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                {loading ? t.sending : t.submitEnquiry}
-              </button>
+                <motion.button
+                  type="submit"
+                  disabled={loading}
+                  whileHover={!loading ? { y: -2 } : undefined}
+                  className={`w-full bg-emerald-600 hover:bg-emerald-700 text-white py-4 rounded-full font-semibold shadow-lg transition-colors duration-300 disabled:cursor-not-allowed disabled:opacity-60 ${FOCUS_RING}`}
+                >
+                  {loading ? t.sending : t.submitEnquiry}
+                </motion.button>
 
-            </form>
-
-          </div>
+              </form>
+            </GradientCard>
+          </FadeIn>
 
         </div>
 

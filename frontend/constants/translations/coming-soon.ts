@@ -48,12 +48,6 @@ export const comingSoonTranslations = {
         "Transferring funds from your Main Wallet to your Health Wallet, or to another member, will be available here.",
       backLabel: "Back to Wallet",
     },
-    walletWithdraw: {
-      title: "Withdraw",
-      description:
-        "Withdrawing from your Health Wallet back to mobile money or a bank account will be available here.",
-      backLabel: "Back to Wallet",
-    },
   },
   sw: {
     hospitalAppointments: {
@@ -99,12 +93,6 @@ export const comingSoonTranslations = {
       title: "Hamisha",
       description:
         "Kuhamisha fedha kutoka kwenye Mkoba wako Mkuu kwenda Mkoba wa Afya, au kwa mwanachama mwingine, kutapatikana hapa.",
-      backLabel: "Rudi kwenye Mkoba",
-    },
-    walletWithdraw: {
-      title: "Toa Fedha",
-      description:
-        "Kutoa fedha kutoka Mkoba wako wa Afya kurudi kwenye pesa za simu au akaunti ya benki kutapatikana hapa.",
       backLabel: "Rudi kwenye Mkoba",
     },
   },

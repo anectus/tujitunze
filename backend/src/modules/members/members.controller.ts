@@ -171,6 +171,13 @@ export class MembersController {
 
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('Member')
+  @Get('insurance-allocations-summary')
+  async insuranceAllocationsSummary(@CurrentUser() user: AuthenticatedUser) {
+    return this.membersService.getInsuranceAllocationsSummary(user.userId);
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('Member')
   @Get('claims')
   async claims(@CurrentUser() user: AuthenticatedUser) {
     return this.membersService.listClaims(user.userId);

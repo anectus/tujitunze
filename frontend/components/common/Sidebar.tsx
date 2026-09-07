@@ -52,7 +52,7 @@ export default function Sidebar({ roleLabel, navItems }: SidebarProps) {
         <Link
           href="/"
           onClick={onNavigate}
-          className="text-xl font-bold text-blue-700"
+          className="text-xl font-bold text-[#064E3B]"
         >
           Tujitunze
         </Link>
@@ -86,8 +86,8 @@ export default function Sidebar({ roleLabel, navItems }: SidebarProps) {
               transition
               ${
                 isActive
-                  ? "bg-blue-50 text-blue-700"
-                  : "text-gray-600 hover:bg-gray-50 hover:text-blue-700"
+                  ? "bg-emerald-50 text-[#064E3B]"
+                  : "text-gray-600 hover:bg-gray-50 hover:text-[#064E3B]"
               }`}
             >
               {navLabels[item.labelKey] ?? item.labelKey}
@@ -102,7 +102,7 @@ export default function Sidebar({ roleLabel, navItems }: SidebarProps) {
         <button
           type="button"
           onClick={handleLogout}
-          className="w-full rounded-lg px-3 py-2 text-left text-sm font-medium text-gray-600 transition hover:bg-gray-50 hover:text-blue-700"
+          className="w-full rounded-lg px-3 py-2 text-left text-sm font-medium text-gray-600 transition hover:bg-gray-50 hover:text-[#064E3B]"
         >
           {t.logOut}
         </button>
@@ -117,7 +117,7 @@ export default function Sidebar({ roleLabel, navItems }: SidebarProps) {
           screen. */}
       <div className="md:hidden fixed inset-x-0 top-0 z-40 flex h-14 items-center justify-between border-b border-gray-100 bg-white px-4">
 
-        <Link href="/" className="text-lg font-bold text-blue-700">
+        <Link href="/" className="text-lg font-bold text-[#064E3B]">
           Tujitunze
         </Link>
 
@@ -126,7 +126,7 @@ export default function Sidebar({ roleLabel, navItems }: SidebarProps) {
           onClick={() => setMobileOpen(true)}
           aria-label={t.openMenu}
           aria-expanded={mobileOpen}
-          className="rounded-lg p-2 text-gray-600 transition hover:bg-gray-50 hover:text-blue-700"
+          className="rounded-lg p-2 text-gray-600 transition hover:bg-gray-50 hover:text-[#064E3B]"
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -163,7 +163,7 @@ export default function Sidebar({ roleLabel, navItems }: SidebarProps) {
                 type="button"
                 onClick={() => setMobileOpen(false)}
                 aria-label={t.closeMenu}
-                className="rounded-lg p-2 text-gray-600 transition hover:bg-gray-50 hover:text-blue-700"
+                className="rounded-lg p-2 text-gray-600 transition hover:bg-gray-50 hover:text-[#064E3B]"
               >
                 <svg
                   xmlns="http://www.w3.org/2000/svg"

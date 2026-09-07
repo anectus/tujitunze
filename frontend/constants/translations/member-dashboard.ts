@@ -4,62 +4,74 @@ export const memberDashboardTranslations = {
   en: {
     loadingDashboard: "Loading your dashboard...",
     welcomeHeading: "Welcome to Tujitunze",
-    sections: [
-      {
-        href: "/profile",
-        title: "My Profile",
-        description: "Personal information, phone numbers, and bank accounts.",
-      },
-      {
-        href: "/membership",
-        title: "My Membership",
-        description: "Member ID, status, registration date, and eligibility.",
-      },
+    breadcrumbCurrent: "Dashboard",
+    overviewHeading: "Overview",
+    noActivePolicy: "Not enrolled yet",
+    comingSoon: "Coming soon",
+    unreadTemplate: "{count} unread",
+    allCaughtUp: "All caught up",
+    cards: [
       {
         href: "/wallet",
-        title: "Contribution",
-        description: "Make a contribution and see how much you've saved in total.",
+        title: "Wallet",
+        subtitle: "Your Health Wallet balance and transaction history.",
       },
       {
-        href: "/wallet/transactions",
-        title: "Transaction History",
-        description: "Every contribution and wallet transaction, filterable.",
+        href: "/insurance/plans",
+        title: "Insurance",
+        subtitle: "Your active policy and coverage details.",
       },
       {
         href: "/savings",
-        title: "Micro-Savings",
-        description: "Automatic savings from bundle purchases and outgoing transactions.",
+        title: "Savings",
+        subtitle: "Automatic micro-savings from your contributions.",
+      },
+      {
+        href: "/telecom",
+        title: "Telecom",
+        subtitle: "Airtime, data bundles, and telecom payments.",
+      },
+      {
+        href: "/notifications",
+        title: "Notifications",
+        subtitle: "Account activity and updates.",
       },
     ],
   },
   sw: {
     loadingDashboard: "Inapakia dashibodi yako...",
     welcomeHeading: "Karibu Tujitunze",
-    sections: [
-      {
-        href: "/profile",
-        title: "Wasifu Wangu",
-        description: "Taarifa binafsi, namba za simu, na akaunti za benki.",
-      },
-      {
-        href: "/membership",
-        title: "Uanachama Wangu",
-        description: "Kitambulisho cha mwanachama, hali, tarehe ya usajili, na ustahiki.",
-      },
+    breadcrumbCurrent: "Dashibodi",
+    overviewHeading: "Muhtasari",
+    noActivePolicy: "Bado hujajiunga",
+    comingSoon: "Inakuja hivi karibuni",
+    unreadTemplate: "Arifa {count} mpya",
+    allCaughtUp: "Hakuna jipya",
+    cards: [
       {
         href: "/wallet",
-        title: "Mchango",
-        description: "Fanya mchango na uone kiasi ulichoweka akiba kwa jumla.",
+        title: "Mkoba",
+        subtitle: "Salio la Mkoba wako wa Afya na historia ya miamala.",
       },
       {
-        href: "/wallet/transactions",
-        title: "Historia ya Miamala",
-        description: "Kila mchango na muamala wa mkoba, unaoweza kuchujwa.",
+        href: "/insurance/plans",
+        title: "Bima",
+        subtitle: "Sera yako inayoendelea na maelezo ya ufunikaji.",
       },
       {
         href: "/savings",
-        title: "Akiba Ndogo",
-        description: "Akiba ya moja kwa moja kutoka ununuzi wa bando na miamala ya kutoka.",
+        title: "Akiba",
+        subtitle: "Akiba ya moja kwa moja kutoka kwenye michango yako.",
+      },
+      {
+        href: "/telecom",
+        title: "Simu",
+        subtitle: "Muda wa maongezi, vifurushi vya data, na malipo ya simu.",
+      },
+      {
+        href: "/notifications",
+        title: "Arifa",
+        subtitle: "Shughuli na taarifa za akaunti yako.",
       },
     ],
   },
@@ -68,6 +80,12 @@ export const memberDashboardTranslations = {
   {
     loadingDashboard: string;
     welcomeHeading: string;
-    sections: { href: string; title: string; description: string }[];
+    breadcrumbCurrent: string;
+    overviewHeading: string;
+    noActivePolicy: string;
+    comingSoon: string;
+    unreadTemplate: string;
+    allCaughtUp: string;
+    cards: { href: string; title: string; subtitle: string }[];
   }
 >;

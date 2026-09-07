@@ -188,6 +188,19 @@ describe('Bank webhook security — signature & replay (e2e)', () => {
   });
 
   afterAll(async () => {
+    // insurance_allocations FKs to wallet_transactions and now always
+    // has a row for these fixture members (WalletsService.creditContribution
+    // auto-enrolls anyone with no active policy into Tujitunze Insurance
+    // before allocating), so both it and the auto-created member_insurance
+    // row must clear before wallet_transactions can be deleted.
+    await dataSource.query(
+      `DELETE FROM insurance_allocations WHERE member_id = ANY($1)`,
+      [createdUserIds],
+    );
+    await dataSource.query(
+      `DELETE FROM member_insurance WHERE member_id = ANY($1)`,
+      [createdUserIds],
+    );
     await dataSource.query(
       `DELETE FROM wallet_transactions WHERE wallet_id IN (SELECT wallet_id FROM health_wallets WHERE member_id = ANY($1))`,
       [createdUserIds],

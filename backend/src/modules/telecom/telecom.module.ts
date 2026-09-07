@@ -11,6 +11,7 @@ import { VodacomC2BService } from './vodacom/vodacom-c2b.service';
 import { VodacomMpesaHttpService } from './vodacom/vodacom-mpesa-http.service';
 import { VodacomSessionCacheService } from './vodacom/vodacom-session-cache.service';
 import { VodacomTransactionRecorder } from './vodacom/vodacom-transaction-recorder.service';
+import { VodacomProviderService } from './providers/vodacom/vodacom-provider.service';
 import { AuditLogsModule } from '../audit-logs/audit-logs.module';
 import { WalletsModule } from '../wallets/wallets.module';
 
@@ -30,6 +31,7 @@ import { WalletsModule } from '../wallets/wallets.module';
     VodacomSessionCacheService,
     VodacomTransactionRecorder,
     VodacomC2BService,
+    VodacomProviderService,
   ],
 })
 export class TelecomModule {}

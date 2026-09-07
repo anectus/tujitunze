@@ -1,94 +1,35 @@
 import type { Language } from "@/lib/context/LanguageContext";
 
+// Read-only balance view — the Health Wallet only grows through
+// deductions from a member's linked telecom/bank accounts, never a
+// member-initiated top-up, and funds are never cashed out back to a
+// phone or bank account. See app/(member)/wallet/page.tsx.
 export const walletPageTranslations = {
   en: {
     title: "Your Wallet",
     descriptionBefore:
       "Save a little at a time, straight from your phone — no bank account needed. Tujitunze is built for the",
-    descriptionAfter: ": top up whenever you can, however small.",
+    descriptionAfter: ".",
     loadingWallet: "Loading your wallet...",
     availableBalance: "Available Balance",
     wallet: "Wallet",
-    topUp: "Top Up",
-    addPhoneToTopUp: "Add a phone number in your profile to top up.",
-    from: "From",
-    primarySuffix: " (Primary)",
-    amountLabel: "Amount (TSh)",
-    amountPlaceholder: "e.g. 2000",
-    sending: "Sending...",
-    confirmTopUp: "Confirm Top Up",
+    fundingNote:
+      "Your balance grows automatically from your linked telecom and bank accounts — there's nothing to top up yourself.",
     viewTransactionHistory: "View transaction history →",
     errorFallback: "Unable to load your wallet.",
-    topUpErrorFallback: "Unable to top up your wallet.",
-    choosePhoneError: "Choose which phone number to top up from.",
-    amountError: "Enter an amount greater than zero.",
-    topUpSuccessTemplate: "{amount} added to your wallet.",
   },
   sw: {
     title: "Mkoba Wako",
     descriptionBefore:
       "Weka akiba kidogo kwa kidogo, moja kwa moja kutoka simu yako — hauhitaji akaunti ya benki. Tujitunze imeundwa kwa ajili ya",
-    descriptionAfter: ": ongeza fedha wakati wowote unapoweza, hata kidogo kiasi gani.",
+    descriptionAfter: ".",
     loadingWallet: "Inapakia mkoba wako...",
     availableBalance: "Salio Lililopo",
     wallet: "Mkoba",
-    topUp: "Ongeza Fedha",
-    addPhoneToTopUp: "Ongeza namba ya simu kwenye wasifu wako ili kuongeza fedha.",
-    from: "Kutoka",
-    primarySuffix: " (Msingi)",
-    amountLabel: "Kiasi (TSh)",
-    amountPlaceholder: "mfano 2000",
-    sending: "Inatuma...",
-    confirmTopUp: "Thibitisha Kuongeza Fedha",
+    fundingNote:
+      "Salio lako huongezeka moja kwa moja kutoka kwenye akaunti zako za simu na benki zilizounganishwa — hakuna unachohitajika kuongeza wewe mwenyewe.",
     viewTransactionHistory: "Angalia historia ya miamala →",
     errorFallback: "Imeshindwa kupakia mkoba wako.",
-    topUpErrorFallback: "Imeshindwa kuongeza fedha kwenye mkoba wako.",
-    choosePhoneError: "Chagua namba ya simu ya kuongeza fedha kutoka.",
-    amountError: "Weka kiasi kikubwa kuliko sifuri.",
-    topUpSuccessTemplate: "{amount} imeongezwa kwenye mkoba wako.",
-  },
-} as const satisfies Record<Language, Record<string, string>>;
-
-export const walletDepositTranslations = {
-  en: {
-    backToWallet: "Back to Wallet",
-    title: "Deposit",
-    description: "Add money to your wallet from a linked mobile money number.",
-    loading: "Loading...",
-    addPhonePrefix: "Add a phone number in your",
-    profileLink: "profile",
-    addPhoneSuffix: "to deposit.",
-    from: "From",
-    primarySuffix: " (Primary)",
-    amountLabel: "Amount (TSh)",
-    amountPlaceholder: "e.g. 2000",
-    sending: "Sending...",
-    confirmDeposit: "Confirm Deposit",
-    loadErrorFallback: "Unable to load your phone numbers.",
-    errorFallback: "Unable to deposit into your wallet.",
-    choosePhoneError: "Choose which phone number to deposit from.",
-    amountError: "Enter an amount greater than zero.",
-    successTemplate: "{amount} added to your wallet.",
-  },
-  sw: {
-    backToWallet: "Rudi kwenye Mkoba",
-    title: "Weka Fedha",
-    description: "Ongeza fedha kwenye mkoba wako kutoka namba ya pesa za simu iliyounganishwa.",
-    loading: "Inapakia...",
-    addPhonePrefix: "Ongeza namba ya simu kwenye",
-    profileLink: "wasifu wako",
-    addPhoneSuffix: "ili kuweka fedha.",
-    from: "Kutoka",
-    primarySuffix: " (Msingi)",
-    amountLabel: "Kiasi (TSh)",
-    amountPlaceholder: "mfano 2000",
-    sending: "Inatuma...",
-    confirmDeposit: "Thibitisha Kuweka Fedha",
-    loadErrorFallback: "Imeshindwa kupakia namba zako za simu.",
-    errorFallback: "Imeshindwa kuweka fedha kwenye mkoba wako.",
-    choosePhoneError: "Chagua namba ya simu ya kuweka fedha kutoka.",
-    amountError: "Weka kiasi kikubwa kuliko sifuri.",
-    successTemplate: "{amount} imeongezwa kwenye mkoba wako.",
   },
 } as const satisfies Record<Language, Record<string, string>>;
 
@@ -100,7 +41,7 @@ export const walletTransactionsTranslations = {
     loading: "Loading...",
     noTransactionsTitle: "No transactions yet.",
     noTransactionsDescription:
-      "Every deposit into your Health Wallet will show up here — every row today is a completed top-up; the system processes them synchronously, so there's no pending/failed state yet.",
+      "Every deduction from your linked telecom or bank accounts, and every insurance payment made from your Health Wallet, will show up here.",
     columnDate: "Date",
     columnDescription: "Description",
     columnReference: "Reference",
@@ -118,7 +59,7 @@ export const walletTransactionsTranslations = {
     loading: "Inapakia...",
     noTransactionsTitle: "Hakuna miamala bado.",
     noTransactionsDescription:
-      "Kila fedha unayoweka kwenye Mkoba wako wa Afya itaonekana hapa — kila mstari leo ni ongezeko lililokamilika; mfumo unayachakata papo hapo, hivyo bado hakuna hali ya kusubiri/kushindwa.",
+      "Kila upunguzaji kutoka kwenye akaunti zako za simu au benki zilizounganishwa, na kila malipo ya bima kutoka kwenye Mkoba wako wa Afya, itaonekana hapa.",
     columnDate: "Tarehe",
     columnDescription: "Maelezo",
     columnReference: "Kumbukumbu",

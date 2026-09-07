@@ -44,6 +44,8 @@ export default function FormField({
   trailing,
 }: FormFieldProps) {
   const showCheck = !trailing && valid && !error;
+  const messageId = `${id}-message`;
+  const hasMessage = !!(error || helpText);
 
   return (
     <div>
@@ -74,6 +76,7 @@ export default function FormField({
           inputMode={inputMode}
           maxLength={maxLength}
           aria-invalid={!!error}
+          aria-describedby={hasMessage ? messageId : undefined}
           className={`w-full rounded-lg border px-4 py-3 text-gray-900 outline-none transition ${
             trailing || showCheck ? "pr-11" : ""
           } ${
@@ -108,9 +111,9 @@ export default function FormField({
       </div>
 
       {error ? (
-        <p className="mt-1 text-xs text-red-600">{error}</p>
+        <p id={messageId} className="mt-1 text-xs text-red-600">{error}</p>
       ) : helpText ? (
-        <p className="mt-1 text-xs text-gray-500">{helpText}</p>
+        <p id={messageId} className="mt-1 text-xs text-gray-500">{helpText}</p>
       ) : null}
     </div>
   );

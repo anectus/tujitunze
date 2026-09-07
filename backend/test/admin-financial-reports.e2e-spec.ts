@@ -344,7 +344,7 @@ describe('Admin financial reporting (e2e)', () => {
         .expect(200);
     });
 
-    it('E — Airtime, no active policy -> no allocation at all', async () => {
+    it('E — Airtime, no active policy -> auto-enrolled into Tujitunze Insurance and Allocated', async () => {
       const memberId = await createUser('FinReportMemberE', 8);
       const phoneNumber = `07${String(Number(ts.slice(-8)) + 3).padStart(8, '0')}`;
       const [phone] = await dataSource.query<{ phone_id: number }[]>(
@@ -359,10 +359,17 @@ describe('Admin financial reporting (e2e)', () => {
         .set('Authorization', `Bearer ${telecomToken}`)
         .send({ phoneNumber, amount: 6, referenceNumber: `${REF}-E` })
         .expect(201);
-      expect(res.body).toMatchObject({
-        processingStatus: 'Validated',
-        allocation: null,
-      });
+
+      // WalletsService.creditContribution auto-enrolls a member with no
+      // active policy into the "Tujitunze Insurance" fallback (migration
+      // 0029) before allocating, so this no longer stays Validated/
+      // unallocated the way it did before that existed.
+      const body = res.body as {
+        processingStatus: string;
+        allocation: { providerName: string } | null;
+      };
+      expect(body.processingStatus).toBe('Allocated');
+      expect(body.allocation?.providerName).toBe('Tujitunze Insurance');
     });
 
     it('F — Airtime, Active provider -> Allocated, then forced to Pending (simulates an in-flight allocation)', async () => {
@@ -402,12 +409,16 @@ describe('Admin financial reporting (e2e)', () => {
         .set('Authorization', `Bearer ${adminToken}`)
         .expect(200);
 
+      // totalInsuranceAllocations/allocated are each one higher than
+      // before WalletsService.creditContribution auto-enrolled member E
+      // into the Tujitunze Insurance fallback — E now produces an
+      // Allocated row instead of no allocation at all.
       expect(res.body).toMatchObject({
         totalContributions: { count: 6 },
         telecomContributions: { count: 5 },
         bankContributions: { count: 1, amount: 30 },
-        totalInsuranceAllocations: { count: 5 },
-        allocated: { count: 2 },
+        totalInsuranceAllocations: { count: 6 },
+        allocated: { count: 3 },
         pending: { count: 1 },
         failed: { count: 1, amount: 8 },
         reversed: { count: 1, amount: 9 },
@@ -478,22 +489,22 @@ describe('Admin financial reporting (e2e)', () => {
       expect(res.body).toMatchObject({ totalContributions: { count: 1 } });
     });
 
-    it('status=Validated matches C and E', async () => {
+    it('status=Validated matches only C (E is now auto-enrolled and Allocated, not Validated)', async () => {
       const res = await request(app.getHttpServer())
         .get('/admin/reports/financial')
         .query({ reference: REF, status: 'Validated' })
         .set('Authorization', `Bearer ${adminToken}`)
         .expect(200);
-      expect(res.body).toMatchObject({ totalContributions: { count: 2 } });
+      expect(res.body).toMatchObject({ totalContributions: { count: 1 } });
     });
 
-    it('status=Allocated matches A, B, F', async () => {
+    it('status=Allocated matches A, B, F, and E (auto-enrolled into Tujitunze Insurance)', async () => {
       const res = await request(app.getHttpServer())
         .get('/admin/reports/financial')
         .query({ reference: REF, status: 'Allocated' })
         .set('Authorization', `Bearer ${adminToken}`)
         .expect(200);
-      expect(res.body).toMatchObject({ totalContributions: { count: 3 } });
+      expect(res.body).toMatchObject({ totalContributions: { count: 4 } });
     });
 
     it('memberId isolates a single member', async () => {

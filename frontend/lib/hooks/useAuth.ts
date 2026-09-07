@@ -54,8 +54,8 @@ export function useAuth(): AuthState & { logout: () => void } {
   }, []);
 
   const logout = () => {
-    localStorage.removeItem(ACCESS_TOKEN_STORAGE_KEY);
-    localStorage.removeItem(AUTH_USER_STORAGE_KEY);
+    sessionStorage.removeItem(ACCESS_TOKEN_STORAGE_KEY);
+    sessionStorage.removeItem(AUTH_USER_STORAGE_KEY);
     setState({
       userId: null,
       roles: [],

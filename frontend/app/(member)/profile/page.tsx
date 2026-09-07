@@ -4,6 +4,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { motion } from "framer-motion";
 
 import { getAccessToken } from "@/lib/utils/permissions";
 import StatusBadge from "@/components/common/StatusBadge";
@@ -175,13 +176,13 @@ export default function ProfilePage() {
     : "";
 
   return (
-    <div className="min-h-screen bg-white py-12 px-4">
+    <div className="min-h-screen bg-[#F0FDF4] py-12 px-4">
 
       <div className="max-w-2xl mx-auto">
 
         <Link
           href="/dashboard"
-          className="text-sm font-medium text-blue-700 hover:text-blue-800"
+          className="text-sm font-medium text-[#064E3B] hover:text-[#065F46]"
         >
           ← {common.backToDashboard}
         </Link>
@@ -204,11 +205,17 @@ export default function ProfilePage() {
           <div className="mt-8 space-y-6">
 
             {/* Identity card */}
-            <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-md">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, amount: 0.3 }}
+              transition={{ duration: 0.5, ease: "easeOut" }}
+              className="rounded-xl border border-gray-100 bg-white p-6 md:p-8 shadow-md"
+            >
 
               <div className="flex items-center gap-4">
 
-                <div className="flex h-16 w-16 items-center justify-center rounded-full bg-blue-100 text-xl font-bold text-blue-700">
+                <div className="flex h-16 w-16 items-center justify-center rounded-full bg-emerald-100 text-xl font-bold text-[#064E3B]">
                   {initials}
                 </div>
 
@@ -264,15 +271,21 @@ export default function ProfilePage() {
 
               <Link
                 href="/onboarding/mobile-money"
-                className="mt-6 inline-block text-sm font-semibold text-blue-700 hover:text-blue-800"
+                className="mt-6 inline-block text-sm font-semibold text-[#064E3B] hover:text-[#065F46]"
               >
                 {t.updatePermittedInfo}
               </Link>
 
-            </div>
+            </motion.div>
 
             {/* Phone numbers */}
-            <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-md">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, amount: 0.3 }}
+              transition={{ duration: 0.5, ease: "easeOut", delay: 0.15 }}
+              className="rounded-xl border border-gray-100 bg-white p-6 md:p-8 shadow-md"
+            >
 
               <div className="flex items-center justify-between">
                 <p className="text-lg font-bold text-gray-900">
@@ -281,7 +294,7 @@ export default function ProfilePage() {
 
                 <Link
                   href="/onboarding/mobile-money"
-                  className="text-sm font-semibold text-blue-700 hover:text-blue-800"
+                  className="text-sm font-semibold text-[#064E3B] hover:text-[#065F46]"
                 >
                   {t.addAnother}
                 </Link>
@@ -300,7 +313,7 @@ export default function ProfilePage() {
                       <p className="font-semibold text-gray-900">
                         {phone.phoneNumber}
                         {phone.isPrimary && (
-                          <span className="ml-2 rounded-full bg-blue-100 px-2 py-0.5 text-xs font-semibold text-blue-700">
+                          <span className="ml-2 rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-semibold text-[#064E3B]">
                             {t.primary}
                           </span>
                         )}
@@ -321,8 +334,8 @@ export default function ProfilePage() {
                           type="button"
                           onClick={() => setPrimaryPhone(phone.phoneId)}
                           disabled={settingPrimaryId === phone.phoneId}
-                          className="text-xs font-semibold text-blue-700
-                          hover:text-blue-800 disabled:cursor-not-allowed
+                          className="text-xs font-semibold text-[#064E3B]
+                          hover:text-[#065F46] disabled:cursor-not-allowed
                           disabled:opacity-50"
                         >
                           {settingPrimaryId === phone.phoneId ? t.setting : t.setAsPrimary}
@@ -336,10 +349,16 @@ export default function ProfilePage() {
 
               </ul>
 
-            </div>
+            </motion.div>
 
             {/* Bank accounts */}
-            <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-md">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, amount: 0.3 }}
+              transition={{ duration: 0.5, ease: "easeOut", delay: 0.3 }}
+              className="rounded-xl border border-gray-100 bg-white p-6 md:p-8 shadow-md"
+            >
 
               <div className="flex items-center justify-between">
                 <p className="text-lg font-bold text-gray-900">
@@ -348,7 +367,7 @@ export default function ProfilePage() {
 
                 <Link
                   href="/onboarding/mobile-money"
-                  className="text-sm font-semibold text-blue-700 hover:text-blue-800"
+                  className="text-sm font-semibold text-[#064E3B] hover:text-[#065F46]"
                 >
                   {t.addAnother}
                 </Link>
@@ -375,7 +394,7 @@ export default function ProfilePage() {
                         <p className="font-semibold text-gray-900">
                           {bankName(account.bankId)} · ····{account.accountNumber.slice(-4)}
                           {account.isPrimary && (
-                            <span className="ml-2 rounded-full bg-blue-100 px-2 py-0.5 text-xs font-semibold text-blue-700">
+                            <span className="ml-2 rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-semibold text-[#064E3B]">
                               {t.primary}
                             </span>
                           )}
@@ -398,7 +417,7 @@ export default function ProfilePage() {
 
               )}
 
-            </div>
+            </motion.div>
 
           </div>
         )}

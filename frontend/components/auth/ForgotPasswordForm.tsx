@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useLanguage } from "@/lib/context/LanguageContext";
 import { forgotPasswordTranslations } from "@/constants/translations/auth";
-import LanguageSwitcher from "@/components/common/LanguageSwitcher";
+import Spinner from "@/components/auth/Spinner";
 import { API_URL } from "@/lib/utils/api";
 
 export default function ForgotPasswordForm() {
@@ -110,13 +110,21 @@ export default function ForgotPasswordForm() {
   return (
     <main className="flex min-h-screen items-center justify-center bg-white px-6 py-12">
       <div className="w-full max-w-md">
-        <div className="mb-4 flex justify-end"><LanguageSwitcher /></div>
         <div className="rounded-2xl border border-gray-100 bg-white p-8 shadow-xl">
-          <Link href="/login" className="text-2xl font-bold text-blue-700">Tujitunze</Link>
+          <Link href="/login" className="text-2xl font-bold text-[#064E3B] tracking-tight">Tujitunze</Link>
           <h1 className="mt-6 text-3xl font-bold text-gray-900">{t.title}</h1>
           <p className="mt-2 text-sm text-gray-600">{t.description}</p>
-          {error && <p className="mt-6 rounded-lg bg-red-100 px-4 py-3 text-sm text-red-700">{error}</p>}
-          {message && <p className="mt-6 rounded-lg bg-blue-100 px-4 py-3 text-sm text-blue-700">{message}</p>}
+          {error && (
+            <p role="alert" className="mt-6 rounded-lg bg-red-100 px-4 py-3 text-sm text-red-700">
+              {error}
+            </p>
+          )}
+          {message && (
+            <div aria-live="polite" className="mt-6 rounded-lg bg-green-50 px-4 py-3 text-sm text-[#064E3B]">
+              <p>{message}</p>
+              <p className="mt-1 text-emerald-700">{t.successExpiryNote}</p>
+            </div>
+          )}
           {!phoneFlow && !message && <form onSubmit={handleSubmit} className="mt-6 space-y-5">
             <label className="block text-sm font-semibold text-gray-700">
               {t.identifier}
@@ -126,10 +134,13 @@ export default function ForgotPasswordForm() {
                 autoComplete="username"
                 value={identifier}
                 onChange={(event) => setIdentifier(event.target.value)}
-                className="mt-2 w-full rounded-lg border border-gray-300 px-4 py-3 text-gray-900 outline-none focus:border-blue-700 focus:ring-2 focus:ring-blue-200"
+                className="mt-2 w-full rounded-lg border border-gray-300 px-4 py-3 text-gray-900 outline-none transition-colors focus:border-[#064E3B] focus:ring-2 focus:ring-[#064E3B]/20"
               />
             </label>
-            <button type="submit" disabled={loading} className="w-full rounded-lg bg-blue-700 py-3 font-semibold text-white hover:bg-blue-800 disabled:opacity-60">{loading ? t.submitting : t.submit}</button>
+            <button type="submit" disabled={loading} className="flex w-full items-center justify-center gap-2 rounded-lg bg-[#064E3B] py-3 font-semibold text-white transition-colors duration-300 ease-in-out hover:bg-[#065F46] focus:outline-none focus:ring-2 focus:ring-[#064E3B] focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60">
+              {loading && <Spinner />}
+              {loading ? t.submitting : t.submit}
+            </button>
           </form>}
           {phoneFlow && <form onSubmit={verifyOtp} className="mt-6 space-y-5">
             <p className="text-sm text-gray-600">{t.otpDescription}</p>
@@ -144,15 +155,18 @@ export default function ForgotPasswordForm() {
                 maxLength={6}
                 value={otp}
                 onChange={(event) => setOtp(event.target.value.replace(/\D/g, ""))}
-                className="mt-2 w-full rounded-lg border border-gray-300 px-4 py-3 text-center text-xl tracking-[0.5em] text-gray-900 outline-none focus:border-blue-700 focus:ring-2 focus:ring-blue-200"
+                className="mt-2 w-full rounded-lg border border-gray-300 px-4 py-3 text-center text-xl tracking-[0.5em] text-gray-900 outline-none transition-colors focus:border-[#064E3B] focus:ring-2 focus:ring-[#064E3B]/20"
               />
             </label>
-            <button type="submit" disabled={loading} className="w-full rounded-lg bg-blue-700 py-3 font-semibold text-white hover:bg-blue-800 disabled:opacity-60">{loading ? t.verifying : t.verify}</button>
-            <button type="button" onClick={resendOtp} disabled={loading || resendCooldown > 0} className="w-full text-sm font-semibold text-blue-700 disabled:text-gray-400">
+            <button type="submit" disabled={loading} className="flex w-full items-center justify-center gap-2 rounded-lg bg-[#064E3B] py-3 font-semibold text-white transition-colors duration-300 ease-in-out hover:bg-[#065F46] focus:outline-none focus:ring-2 focus:ring-[#064E3B] focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60">
+              {loading && <Spinner />}
+              {loading ? t.verifying : t.verify}
+            </button>
+            <button type="button" onClick={resendOtp} disabled={loading || resendCooldown > 0} className="w-full text-sm font-semibold text-[#064E3B] hover:text-[#065F46] hover:underline disabled:text-gray-400 disabled:no-underline">
               {resendCooldown > 0 ? `${t.resend} (${resendCooldown}s)` : t.resend}
             </button>
           </form>}
-          <Link href="/login" className="mt-6 block text-center text-sm font-semibold text-blue-700">{t.backToLogin}</Link>
+          <Link href="/login" className="mt-6 block text-center text-sm font-semibold text-[#064E3B] hover:text-[#065F46] hover:underline">{t.backToLogin}</Link>
         </div>
       </div>
     </main>

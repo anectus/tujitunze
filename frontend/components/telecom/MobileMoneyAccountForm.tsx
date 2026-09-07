@@ -238,7 +238,7 @@ export default function MobileMoneyAccountForm() {
     setError("");
     setSuccess("");
 
-    const token = localStorage.getItem(ACCESS_TOKEN_STORAGE_KEY);
+    const token = sessionStorage.getItem(ACCESS_TOKEN_STORAGE_KEY);
 
     if (!token) {
       router.push("/login");

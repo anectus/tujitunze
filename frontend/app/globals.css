@@ -2,12 +2,25 @@
 
 :root {
   --background: #ffffff;
-  --foreground: #171717;
+  --foreground: #1f2937;
+
+  /* Brand palette — see frontend design brief: emerald (trust/health/
+     growth) as primary, mint as a light accent/gradient partner,
+     charcoal for body text, gold reserved for highlights/CTAs so it
+     stays rare and doesn't compete with emerald as "the" brand color. */
+  --color-brand-emerald: #065f46;
+  --color-brand-mint: #a7f3d0;
+  --color-brand-charcoal: #1f2937;
+  --color-brand-gold: #fbbf24;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-brand-emerald: var(--color-brand-emerald);
+  --color-brand-mint: var(--color-brand-mint);
+  --color-brand-charcoal: var(--color-brand-charcoal);
+  --color-brand-gold: var(--color-brand-gold);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
@@ -20,5 +33,27 @@
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans), Arial, Helvetica, sans-serif;
+}
+
+/* Hero illustration motion (HeroIllustration.tsx) — plain CSS keyframes
+   rather than canvas: these are simple, static shapes getting a gentle
+   float/glow, which transform-based CSS animation already runs on the
+   compositor (GPU-accelerated) with far less code and better battery
+   behavior than drawing/animating the same shapes on a <canvas> would.
+   Each consumer also applies Tailwind's motion-reduce: variant so this
+   respects prefers-reduced-motion. */
+@keyframes float-slow {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+
+@keyframes float-slower {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-5px); }
+}
+
+@keyframes shield-glow {
+  0%, 100% { filter: drop-shadow(0 0 0px rgba(20, 184, 166, 0.5)); }
+  50% { filter: drop-shadow(0 0 16px rgba(20, 184, 166, 0.75)); }
 }

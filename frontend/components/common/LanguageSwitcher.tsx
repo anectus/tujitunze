@@ -84,8 +84,8 @@ export default function LanguageSwitcher({ className = "" }: LanguageSwitcherPro
         rounded-lg
         text-sm
         font-semibold
-        hover:border-blue-700
-        hover:text-blue-700
+        hover:border-[#064E3B]
+        hover:text-[#064E3B]
         transition"
       >
         <span className="hidden md:inline">{current.label}</span>
@@ -145,8 +145,8 @@ export default function LanguageSwitcher({ className = "" }: LanguageSwitcherPro
                   transition
                   ${
                     isSelected
-                      ? "bg-blue-50 font-semibold text-blue-700"
-                      : "text-gray-700 hover:bg-gray-50 hover:text-blue-700"
+                      ? "bg-emerald-50 font-semibold text-[#064E3B]"
+                      : "text-gray-700 hover:bg-gray-50 hover:text-[#064E3B]"
                   }`}
                 >
                   <span>{option.label}</span>

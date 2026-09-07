@@ -1099,6 +1099,34 @@ export class MembersService {
     );
   }
 
+  // Backs the dashboard's allocation-by-provider pie chart — Tujitunze
+  // Insurance (the auto-enrollment fallback) is just another
+  // provider_name here, not special-cased, since insurance_allocations
+  // never distinguishes it from an external provider. Scoped to
+  // 'Allocated' only (not Pending/Failed/Reversed) so this reads as
+  // "where my money actually ended up", not every attempt ever made.
+  async getInsuranceAllocationsSummary(userId: number) {
+    const items = await this.dataSource.query<
+      { provider_name: string; count: number; total_tzs: string }[]
+    >(
+      `SELECT ipr.provider_name, COUNT(*)::int AS count, COALESCE(SUM(ia.amount), 0) AS total_tzs
+       FROM insurance_allocations ia
+       JOIN insurance_providers ipr ON ipr.provider_id = ia.insurance_provider_id
+       WHERE ia.member_id = $1 AND ia.allocation_status = 'Allocated'
+       GROUP BY ipr.provider_name
+       ORDER BY total_tzs DESC`,
+      [userId],
+    );
+
+    return {
+      items: items.map((row) => ({
+        providerName: row.provider_name,
+        count: row.count,
+        totalTzs: Number(row.total_tzs),
+      })),
+    };
+  }
+
   // =====================================================
   // Claims — the member's own healthcare_claims, joined out to the
   // hospital name for historical context. Read-only: the Hospital role

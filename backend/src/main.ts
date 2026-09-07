@@ -1,5 +1,6 @@
 import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
+import cookieParser from 'cookie-parser';
 import { AppModule } from './app.module';
 
 async function bootstrap() {
@@ -29,7 +30,18 @@ async function bootstrap() {
 
       callback(allowed ? null : new Error('Not allowed by CORS'), allowed);
     },
+    // Required for the browser to both send and accept the httpOnly
+    // auth cookie cross-origin (frontend and backend are different
+    // ports, hence different origins, even in local dev) — without
+    // this the Set-Cookie from login and the cookie on every later
+    // request are both silently dropped by the browser.
+    credentials: true,
   });
+  // Reads the httpOnly auth cookie into req.cookies for JwtStrategy's
+  // cookie extractor (see jwt.strategy.ts) — signed: false since this
+  // cookie already carries a JWT, which is itself signed/verified by
+  // JwtStrategy; double-signing it here would be redundant.
+  app.use(cookieParser());
   // Explicit '0.0.0.0': accept connections on every interface, not just
   // loopback, so a device other than this host can reach the API
   // through the port Docker publishes (see docker-compose.yml). Node

@@ -1,36 +1,45 @@
 import type { Language } from "@/lib/context/LanguageContext";
 
+// Deliberately scoped to what this system actually does today, not
+// aspirational compliance claims — see CLAUDE.md's Known Security Gaps
+// for the source of truth this stays in sync with. No TLS/ISO 27001/
+// penetration-test/regulator-supervision claims: none of those are true
+// yet, and a privacy policy is a legal document, not marketing copy.
 export const privacyPolicyTranslations = {
   en: {
     heading: "Privacy Policy",
     lastUpdatedLabel: "Last updated",
     lastUpdatedDate: "September 2026",
     intro:
-      "Tujitunze (Health Savings and Insurance Management System) is built to handle national ID (NIDA) numbers, health records, and financial transactions on behalf of our members. This policy explains what we collect, why, and how it is protected.",
+      "Tujitunze (Health Savings and Insurance Management System) values your privacy. This policy explains how we collect, use, and protect your information, based on the current system implementation.",
     sections: [
       {
         title: "Information We Collect",
-        body: "To create and operate your account we collect identity information (full name, NIDA number, date of birth, contact details), financial information (wallet balance, telecom contributions, linked bank accounts, transaction history), and health-related information (insurance plans, claims, hospital verification records) tied to your membership.",
+        body: "We collect only the data necessary to operate your account and deliver services: identity information (name, contact details, and membership records); financial information (wallet balances, telecom contributions, linked bank accounts, and transaction history); health information (insurance plan details and claim records); and technical information (device type and usage logs for fraud prevention).",
       },
       {
         title: "How We Use Your Information",
-        body: "Your information is used to verify your identity, operate your health wallet and insurance coverage, process contributions made through telecom and bank partners, allow partner hospitals to verify your membership at the point of care, and maintain the audit trail required for a financial and health-records system.",
+        body: "Your data is used to verify your identity and membership, operate your health wallet and insurance coverage, process contributions through telecom and bank partners, allow partner hospitals to confirm your membership at the point of care, and maintain audit logs for selected write operations (such as contributions and role changes).",
       },
       {
-        title: "Who Can Access Your Data",
-        body: "Access is role-based: Tujitunze staff, partner hospitals, banks, telecom operators, and insurance providers can only see the data required for their specific role, scoped to their own tenant. Every access to a role-scoped endpoint is authenticated and logged.",
+        title: "Security Measures",
+        body: "Passwords are hashed using bcrypt and never stored in plain text. Authentication is enforced with JWT tokens and role-based access controls, scoped to your account and role. Webhook secrets are encrypted at rest using AES-256-GCM; other stored data is not encrypted at rest. Audit logs capture sensitive write operations, but not all actions are logged yet. Transport security: the system currently runs on HTTP in development — HTTPS will be required before any production deployment.",
       },
       {
-        title: "Data Retention & Security",
-        body: "Passwords are stored hashed, never in plain text. Sensitive writes to wallets, claims, and bank accounts are captured in an audit log. We retain your data for as long as your account is active and as required by applicable financial and health-record regulations.",
+        title: "Data Retention",
+        body: "Data is retained while your account is active, or as required by applicable financial and health-record regulations. Logs and records are kept to support system integrity and troubleshooting.",
       },
       {
         title: "Your Rights",
-        body: "You may review and update your profile information from your account settings at any time, and may contact us to request further information about the data we hold on you.",
+        body: "You may review and update your profile information from your account settings at any time, request correction of inaccurate records, and request deletion of your account, subject to applicable regulatory requirements.",
+      },
+      {
+        title: "Future Improvements",
+        body: "We plan to introduce full HTTPS/TLS transport security, expanded audit-log coverage, encryption of wallet and claim data at rest, and formal compliance registration with the relevant regulators.",
       },
       {
         title: "Contact Us",
-        body: "Questions about this policy can be sent to support@tujitunze.com or through the Contact page.",
+        body: "For privacy inquiries or data requests, contact tujitunze@gmail.com, call +255 756 801 149, or write to us in Dar es Salaam, Tanzania.",
       },
     ],
   },
@@ -39,31 +48,35 @@ export const privacyPolicyTranslations = {
     lastUpdatedLabel: "Ilisasishwa mara ya mwisho",
     lastUpdatedDate: "Septemba 2026",
     intro:
-      "Tujitunze (Mfumo wa Akiba ya Afya na Usimamizi wa Bima) umeundwa kushughulikia namba za Kitambulisho cha Taifa (NIDA), taarifa za afya, na miamala ya fedha kwa niaba ya wanachama wetu. Sera hii inaeleza tunachokusanya, kwa nini, na jinsi kinavyolindwa.",
+      "Tujitunze (Mfumo wa Akiba ya Afya na Usimamizi wa Bima) unathamini faragha yako. Sera hii inaeleza jinsi tunavyokusanya, kutumia, na kulinda taarifa zako, kulingana na hali halisi ya mfumo kwa sasa.",
     sections: [
       {
         title: "Taarifa Tunazokusanya",
-        body: "Ili kufungua na kuendesha akaunti yako tunakusanya taarifa za utambulisho (jina kamili, namba ya NIDA, tarehe ya kuzaliwa, mawasiliano), taarifa za fedha (salio la mkoba, michango ya simu, akaunti za benki zilizounganishwa, historia ya miamala), na taarifa zinazohusiana na afya (mipango ya bima, madai, rekodi za uthibitisho wa hospitali) zinazohusiana na uanachama wako.",
+        body: "Tunakusanya tu taarifa zinazohitajika kuendesha akaunti yako na kutoa huduma: taarifa za utambulisho (jina, mawasiliano, na rekodi za uanachama); taarifa za fedha (salio la mkoba, michango ya simu, akaunti za benki zilizounganishwa, na historia ya miamala); taarifa za afya (maelezo ya mipango ya bima na rekodi za madai); na taarifa za kiufundi (aina ya kifaa na kumbukumbu za matumizi kwa ajili ya kuzuia udanganyifu).",
       },
       {
         title: "Jinsi Tunavyotumia Taarifa Zako",
-        body: "Taarifa zako hutumika kuthibitisha utambulisho wako, kuendesha mkoba wako wa afya na huduma za bima, kuchakata michango inayofanywa kupitia washirika wa simu na benki, kuruhusu hospitali washirika kuthibitisha uanachama wako wakati wa huduma, na kudumisha kumbukumbu za ukaguzi zinazohitajika kwa mfumo wa fedha na rekodi za afya.",
+        body: "Taarifa zako hutumika kuthibitisha utambulisho na uanachama wako, kuendesha mkoba wako wa afya na huduma za bima, kuchakata michango kupitia washirika wa simu na benki, kuruhusu hospitali washirika kuthibitisha uanachama wako wakati wa huduma, na kudumisha kumbukumbu za ukaguzi kwa baadhi ya matendo (kama vile michango na mabadiliko ya majukumu).",
       },
       {
-        title: "Nani Anaweza Kufikia Taarifa Zako",
-        body: "Ufikiaji unategemea jukumu: wafanyakazi wa Tujitunze, hospitali washirika, benki, watoa huduma za simu, na watoa bima wanaweza kuona tu taarifa zinazohitajika kwa jukumu lao mahususi. Kila ufikiaji wa taarifa hulindwa na huthibitishwa na kurekodiwa.",
+        title: "Hatua za Usalama",
+        body: "Nywila husimbwa kwa njia ya bcrypt na hazihifadhiwi kama maandishi wazi kamwe. Uthibitishaji hutekelezwa kwa kutumia tokeni za JWT na udhibiti wa ufikiaji unaotegemea jukumu, ukilenga akaunti na jukumu lako. Siri za webhook husimbwa zikiwa zimehifadhiwa kwa kutumia AES-256-GCM; taarifa nyingine zilizohifadhiwa hazijasimbwa. Kumbukumbu za ukaguzi hurekodi matendo nyeti ya kuandika, lakini si matendo yote yanayorekodiwa bado. Usalama wa usafirishaji: mfumo kwa sasa unafanya kazi kwa HTTP wakati wa maendeleo — HTTPS itahitajika kabla ya matumizi rasmi.",
       },
       {
-        title: "Uhifadhi na Usalama wa Taarifa",
-        body: "Nywila huhifadhiwa kwa njia iliyosimbwa, hazihifadhiwi kama maandishi wazi. Maandiko nyeti kwenye mikoba, madai, na akaunti za benki hurekodiwa kwenye kumbukumbu ya ukaguzi. Tunahifadhi taarifa zako kadri akaunti yako inavyoendelea kuwa hai na kama inavyohitajika na kanuni za fedha na rekodi za afya zinazotumika.",
+        title: "Uhifadhi wa Taarifa",
+        body: "Taarifa huhifadhiwa wakati akaunti yako inaendelea kuwa hai, au kama inavyohitajika na kanuni husika za fedha na rekodi za afya. Kumbukumbu na rekodi huhifadhiwa ili kusaidia uadilifu wa mfumo na utatuzi wa matatizo.",
       },
       {
         title: "Haki Zako",
-        body: "Unaweza kukagua na kusasisha taarifa za wasifu wako kutoka kwenye mipangilio ya akaunti yako wakati wowote, na unaweza kuwasiliana nasi kuomba taarifa zaidi kuhusu data tunayoihifadhi kukuhusu.",
+        body: "Unaweza kukagua na kusasisha taarifa za wasifu wako kutoka kwenye mipangilio ya akaunti yako wakati wowote, kuomba urekebishaji wa rekodi zisizo sahihi, na kuomba ufutaji wa akaunti yako, kwa kuzingatia matakwa husika ya kikanuni.",
+      },
+      {
+        title: "Maboresho Yajayo",
+        body: "Tunapanga kuanzisha usalama kamili wa usafirishaji wa HTTPS/TLS, upanuzi wa kumbukumbu za ukaguzi, usimbaji wa data ya mkoba na madai ikiwa imehifadhiwa, na usajili rasmi wa utii kwa mamlaka husika.",
       },
       {
         title: "Wasiliana Nasi",
-        body: "Maswali kuhusu sera hii yanaweza kutumwa kwa support@tujitunze.com au kupitia ukurasa wa Wasiliana Nasi.",
+        body: "Kwa maswali ya faragha au maombi ya taarifa, wasiliana nasi kupitia tujitunze@gmail.com, piga simu +255 756 801 149, au tuandikie Dar es Salaam, Tanzania.",
       },
     ],
   },
