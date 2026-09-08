@@ -10,6 +10,7 @@ import { useLanguage } from "@/lib/context/LanguageContext";
 import { commonTranslations, navLabelTranslations } from "@/constants/translations/common";
 import { memberHeaderTranslations } from "@/constants/translations/member-header";
 import { API_URL } from "@/lib/utils/api";
+import SearchBar from "@/components/common/SearchBar";
 
 interface DashboardHeaderProps {
   title?: string;
@@ -120,7 +121,10 @@ export default function DashboardHeader({ title }: DashboardHeaderProps) {
   };
 
   return (
-    <header className="border-b border-gray-100 bg-white px-4 py-4 sm:px-8">
+    // relative: SearchBar's mobile expand-in-place overlay is `absolute
+    // inset-x-0 top-0`, sized against this element rather than whatever
+    // positioned ancestor happens to be further up the tree.
+    <header className="relative border-b border-gray-100 bg-white px-4 py-4 sm:px-8">
 
       <div className="flex items-center justify-between gap-4">
 
@@ -128,11 +132,22 @@ export default function DashboardHeader({ title }: DashboardHeaderProps) {
           <h1 className="text-xl font-bold text-gray-900 sm:text-2xl">
             {title}
           </h1>
+        ) : isMember ? (
+          // Member's left slot has no title (the page renders its own
+          // heading inline) and used to sit empty — Search lives here for
+          // Member specifically, on the left, rather than in the
+          // right-hand icon cluster staff roles use. (This slot briefly
+          // rendered a CompactLogo instead; removed as a genuine
+          // duplicate, since Sidebar.tsx already shows the logo at every
+          // page's actual left edge regardless of role.)
+          <SearchBar className="w-48 md:w-64" />
         ) : (
           <span />
         )}
 
         <div className="flex items-center gap-2">
+
+        {!isMember && <SearchBar className="w-48 md:w-64" />}
 
         {isMember && (
           <Link

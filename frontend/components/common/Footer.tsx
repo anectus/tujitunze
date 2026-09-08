@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Mail, MapPin, PhoneCall } from "lucide-react";
 import { useLanguage } from "@/lib/context/LanguageContext";
 import { footerTranslations } from "@/constants/translations/home";
+import { LogoMark } from "@/components/common/Logo";
 
 const SOCIAL_LINKS = [
   {
@@ -53,9 +54,16 @@ export default function Footer() {
       <div className="max-w-7xl mx-auto px-4 py-8 md:px-8 md:py-12">
         <div className="grid grid-cols-1 gap-8 text-center md:grid-cols-3 md:text-left">
 
-          {/* Left: brand + tagline */}
+          {/* Left: brand + tagline — same shield mark as Header.tsx, kept
+              as a manual icon+text lockup (not the shared Logo component)
+              since this footer's white-on-dark text doesn't fit Logo's
+              dark-green-on-white default. */}
           <div>
-            <Link href="/" className="text-2xl font-bold text-white">
+            <Link
+              href="/"
+              className="group inline-flex items-center justify-center gap-2 text-2xl font-bold text-white md:justify-start"
+            >
+              <LogoMark className="h-7 w-7 shrink-0" />
               Tujitunze
             </Link>
 

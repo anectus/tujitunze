@@ -23,6 +23,8 @@ export const loginFormTranslations = {
     copyright: "© 2026 Tujitunze. Health Savings & Insurance Management System.",
     usernameRequired: "Enter your NIDA number or email.",
     passwordRequired: "Enter your password.",
+    welcomeTitle: "Welcome Back",
+    welcomeMessage: "Welcome back — secure your health savings effortlessly.",
   },
   sw: {
     title: "Ingia",
@@ -46,6 +48,8 @@ export const loginFormTranslations = {
     copyright: "© 2026 Tujitunze. Mfumo wa Akiba ya Afya na Usimamizi wa Bima.",
     usernameRequired: "Weka namba yako ya NIDA au barua pepe.",
     passwordRequired: "Weka nywila yako.",
+    welcomeTitle: "Karibu Tena",
+    welcomeMessage: "Karibu tena — hifadhi akiba yako ya afya kwa urahisi.",
   },
 } as const satisfies Record<Language, Record<string, string>>;
 

@@ -90,10 +90,54 @@ export class SuperAdminSavingRulesService {
     return rows.map(mapSavingRuleRow);
   }
 
+  // Records a failed create/update attempt outside any transaction the
+  // attempt itself opened — a validation/conflict failure rolls that
+  // transaction back, which would silently discard an audit row written
+  // inside it. `attempted` is the request body the Super-admin actually
+  // submitted, not the (nonexistent) result, so this row shows what was
+  // tried, not what happened.
+  private async recordFailedAttempt(
+    actionType: string,
+    actorId: number,
+    ipAddress: string | null,
+    attempted: Record<string, unknown>,
+    error: unknown,
+  ): Promise<void> {
+    await this.auditLogsService.record(this.dataSource.manager, {
+      memberId: actorId,
+      actionType,
+      affectedTable: 'contribution_rules',
+      newValue: {
+        attempted,
+        error: error instanceof Error ? error.message : 'Unknown error',
+      },
+      ipAddress,
+    });
+  }
+
   async createSavingRule(
     dto: CreateSavingRuleDto,
     actorId: number,
     ipAddress: string | null = null,
+  ) {
+    try {
+      return await this.createSavingRuleOrThrow(dto, actorId, ipAddress);
+    } catch (error) {
+      await this.recordFailedAttempt(
+        'saving_rule.create_failed',
+        actorId,
+        ipAddress,
+        { ...dto },
+        error,
+      );
+      throw error;
+    }
+  }
+
+  private async createSavingRuleOrThrow(
+    dto: CreateSavingRuleDto,
+    actorId: number,
+    ipAddress: string | null,
   ) {
     const spec = RULE_TYPES_BY_PRINCIPLE[dto.principle];
     const ruleType = dto.ruleType.trim().toUpperCase();
@@ -161,6 +205,31 @@ export class SuperAdminSavingRulesService {
     actorId: number,
     ipAddress: string | null = null,
   ) {
+    try {
+      return await this.updateSavingRuleOrThrow(
+        ruleId,
+        dto,
+        actorId,
+        ipAddress,
+      );
+    } catch (error) {
+      await this.recordFailedAttempt(
+        'saving_rule.update_failed',
+        actorId,
+        ipAddress,
+        { ruleId, ...dto },
+        error,
+      );
+      throw error;
+    }
+  }
+
+  private async updateSavingRuleOrThrow(
+    ruleId: number,
+    dto: UpdateSavingRuleDto,
+    actorId: number,
+    ipAddress: string | null,
+  ) {
     return this.dataSource.transaction(async (manager) => {
       const [existing] = await manager.query<SavingRuleRow[]>(
         `SELECT rule_id, rule_type, principle, transaction_type, channel,
@@ -180,7 +249,19 @@ export class SuperAdminSavingRulesService {
           ? Math.round((dto.ratePercent / 100) * 10000) / 10000
           : Number(existing.rate);
 
-      const [updated] = await manager.query<SavingRuleRow[]>(
+      // manager.query() on an UPDATE ... RETURNING (unlike an INSERT ...
+      // RETURNING, or a plain SELECT) resolves to a [rows, affectedCount]
+      // tuple, not just rows — see insurance.service.ts's
+      // updateClaimStatus for the same fix. The old
+      // `const [updated] = await manager.query(...)` bound `updated` to
+      // the whole one-row *array* rather than the row, so every field
+      // read off it below (the PATCH response and the audit log's
+      // newValue) came back undefined and JSON-serialized to `{}` — the
+      // UPDATE itself still committed correctly, only the returned/logged
+      // snapshot was empty. Confirmed via
+      // backend/test/super-admin-saving-rules.e2e-spec.ts, which failed
+      // exactly this way before this fix.
+      const [[updated]] = await manager.query<[SavingRuleRow[], number]>(
         `UPDATE contribution_rules
          SET rate_percent = $2, rate = $3, minimum_amount = $4,
              effective_date = $5, effective_to = $6, is_active = $7

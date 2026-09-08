@@ -6,11 +6,28 @@ import { useRouter } from "next/navigation";
 import { getAccessToken } from "@/lib/utils/permissions";
 import { formatNidaNumber } from "@/lib/utils/nida";
 import DashboardHeader from "@/components/dashboard/DashboardHeader";
+import PageContainer from "@/components/dashboard/PageContainer";
+import StatGroup from "@/components/dashboard/StatGroup";
+import StatisticCard from "@/components/cards/StatisticCard";
+import QuickActions, {
+  type QuickAction,
+} from "@/components/dashboard/QuickActions";
 import StatusBadge from "@/components/common/StatusBadge";
 import { useLanguage } from "@/lib/context/LanguageContext";
 import { superAdminAdministratorsTranslations } from "@/constants/translations/super-admin-administrators";
+import { superAdminDashboardTranslations } from "@/constants/translations/super-admin-dashboard";
 import { roleLabelTranslations } from "@/constants/translations/common";
 import { API_URL } from "@/lib/utils/api";
+import {
+  ClipboardIcon,
+  CoinsIcon,
+  KeyIcon,
+  PlusIcon,
+  ShieldIcon,
+  UserCircleIcon,
+  UsersIcon,
+  WalletIcon,
+} from "@/components/common/SidebarIcons";
 
 const STAFF_ROLES = [
   "Admin",
@@ -81,6 +98,7 @@ export default function SuperAdminAdministratorsPage() {
   const router = useRouter();
   const { language } = useLanguage();
   const t = superAdminAdministratorsTranslations[language];
+  const dt = superAdminDashboardTranslations[language];
   const roleLabels = roleLabelTranslations[language];
 
   const [administrators, setAdministrators] = useState<Administrator[]>([]);
@@ -92,54 +110,66 @@ export default function SuperAdminAdministratorsPage() {
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState("");
 
-  useEffect(() => {
-    const loadData = async () => {
-      const token = getAccessToken();
+  const loadData = async () => {
+    const token = getAccessToken();
 
-      if (!token) {
+    if (!token) {
+      router.push("/login");
+      return;
+    }
+
+    try {
+      const [administratorsRes, tenantsRes] = await Promise.all([
+        fetch(`${API_URL}/super-admin/administrators`, {
+          headers: { Authorization: `Bearer ${token}` },
+        }),
+        fetch(`${API_URL}/super-admin/tenants`, {
+          headers: { Authorization: `Bearer ${token}` },
+        }),
+      ]);
+
+      if (administratorsRes.status === 401 || tenantsRes.status === 401) {
         router.push("/login");
         return;
       }
 
-      try {
-        const [administratorsRes, tenantsRes] = await Promise.all([
-          fetch(`${API_URL}/super-admin/administrators`, {
-            headers: { Authorization: `Bearer ${token}` },
-          }),
-          fetch(`${API_URL}/super-admin/tenants`, {
-            headers: { Authorization: `Bearer ${token}` },
-          }),
-        ]);
+      const administratorsBody = await administratorsRes.json();
+      const tenantsBody = await tenantsRes.json();
 
-        if (administratorsRes.status === 401 || tenantsRes.status === 401) {
-          router.push("/login");
-          return;
-        }
-
-        const administratorsBody = await administratorsRes.json();
-        const tenantsBody = await tenantsRes.json();
-
-        if (!administratorsRes.ok) {
-          throw new Error(
-            extractMessage(administratorsBody, t.loadAdministratorsError)
-          );
-        }
-
-        if (!tenantsRes.ok) {
-          throw new Error(extractMessage(tenantsBody, t.loadTenantsError));
-        }
-
-        setAdministrators(administratorsBody);
-        setTenants(tenantsBody);
-      } catch (err) {
-        setLoadError(err instanceof Error ? err.message : t.loadPageError);
-      } finally {
-        setLoading(false);
+      if (!administratorsRes.ok) {
+        throw new Error(
+          extractMessage(administratorsBody, t.loadAdministratorsError)
+        );
       }
-    };
 
+      if (!tenantsRes.ok) {
+        throw new Error(extractMessage(tenantsBody, t.loadTenantsError));
+      }
+
+      setAdministrators(administratorsBody);
+      setTenants(tenantsBody);
+    } catch (err) {
+      setLoadError(err instanceof Error ? err.message : t.loadPageError);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- initial fetch on mount, not a derived-state sync
     loadData();
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- mount-only fetch, not a value this effect should re-sync to
   }, [router, t.loadAdministratorsError, t.loadTenantsError, t.loadPageError]);
+
+  // Revalidate on tab focus — a change made elsewhere (another tab, a
+  // teammate) shows up without a full reload. See the Saving Rules page
+  // for the same pattern and why this is scoped to focus rather than a
+  // data-fetching library.
+  useEffect(() => {
+    window.addEventListener("focus", loadData);
+    return () => window.removeEventListener("focus", loadData);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- subscribe once; loadData reads current state via closures at call time
+  }, []);
 
   const tenantOptionsForRole = (role: StaffRole): TenantOption[] => {
     const key = TENANT_ROLE_KEY[role];
@@ -147,6 +177,30 @@ export default function SuperAdminAdministratorsPage() {
   };
 
   const requiresTenant = Boolean(TENANT_ROLE_KEY[form.role]);
+
+  const quickActions: QuickAction[] = [
+    {
+      label: dt.quickActionRolesPermissions,
+      href: "/super-admin/roles",
+      icon: KeyIcon,
+    },
+    {
+      label: dt.quickActionSavingRules,
+      href: "/super-admin/saving-rules",
+      icon: CoinsIcon,
+    },
+    {
+      label: dt.quickActionAuditLogs,
+      href: "/super-admin/audit-logs",
+      icon: ClipboardIcon,
+    },
+  ];
+
+  const tenantLinkedCount = administrators.filter((admin) =>
+    (["Bank", "Telecom", "Insurance"] as StaffRole[]).includes(
+      admin.role as StaffRole
+    )
+  ).length;
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -226,25 +280,59 @@ export default function SuperAdminAdministratorsPage() {
 
       <DashboardHeader title={t.title} />
 
-      <div className="p-4 sm:p-8">
+      <PageContainer maxWidth="6xl">
+
+        <QuickActions actions={quickActions} />
 
         {loadError && (
-          <div className="mb-6 rounded-lg bg-red-100 px-4 py-3 text-sm text-red-700">
+          <div className="mt-6 rounded-lg bg-red-100 px-4 py-3 text-sm text-red-700">
             {loadError}
           </div>
         )}
 
-        <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-md">
+        {!loading && (
+          <StatGroup title={dt.sectionStaffOverview}>
+            <StatisticCard
+              label={dt.totalAdministrators}
+              value={administrators.length}
+              icon={UsersIcon}
+            />
+            <StatisticCard
+              label={dt.admins}
+              value={administrators.filter((a) => a.role === "Admin").length}
+              icon={UserCircleIcon}
+            />
+            <StatisticCard
+              label={t.colTenant}
+              value={tenantLinkedCount}
+              icon={WalletIcon}
+            />
+            <StatisticCard
+              label={roleLabels["Super-admin"]}
+              value={
+                administrators.filter((a) => a.role === "Super-admin").length
+              }
+              icon={ShieldIcon}
+            />
+          </StatGroup>
+        )}
 
-          <h2 className="text-lg font-bold text-gray-900">{t.createTitle}</h2>
-          <p className="mt-1 text-sm text-gray-600">
+        <div className="mt-10 rounded-2xl border border-gray-100 bg-white p-6 shadow-md">
+
+          <div className="flex items-center gap-3">
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-emerald-50 text-[#064E3B]">
+              <PlusIcon className="h-5 w-5" />
+            </span>
+            <h2 className="text-lg font-bold text-gray-900">{t.createTitle}</h2>
+          </div>
+          <p className="mt-1 text-sm text-slate-600">
             {t.createSubtitle}
           </p>
 
           <form onSubmit={handleSubmit} className="mt-6 grid gap-4 sm:grid-cols-2">
 
             <div>
-              <label className="block text-sm font-medium text-gray-700">{t.firstName}</label>
+              <label className="block text-sm font-medium text-slate-700">{t.firstName}</label>
               <input
                 required
                 value={form.firstName}
@@ -254,7 +342,7 @@ export default function SuperAdminAdministratorsPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700">{t.surname}</label>
+              <label className="block text-sm font-medium text-slate-700">{t.surname}</label>
               <input
                 required
                 value={form.surname}
@@ -264,7 +352,7 @@ export default function SuperAdminAdministratorsPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700">{t.email}</label>
+              <label className="block text-sm font-medium text-slate-700">{t.email}</label>
               <input
                 required
                 type="email"
@@ -275,7 +363,7 @@ export default function SuperAdminAdministratorsPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700">{t.nidaNumber}</label>
+              <label className="block text-sm font-medium text-slate-700">{t.nidaNumber}</label>
               <input
                 required
                 value={form.nidaNumber}
@@ -288,7 +376,7 @@ export default function SuperAdminAdministratorsPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700">{t.password}</label>
+              <label className="block text-sm font-medium text-slate-700">{t.password}</label>
               <input
                 required
                 type="password"
@@ -300,7 +388,7 @@ export default function SuperAdminAdministratorsPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700">{t.role}</label>
+              <label className="block text-sm font-medium text-slate-700">{t.role}</label>
               <select
                 value={form.role}
                 onChange={(e) =>
@@ -322,7 +410,7 @@ export default function SuperAdminAdministratorsPage() {
 
             {requiresTenant && (
               <div className="sm:col-span-2">
-                <label className="block text-sm font-medium text-gray-700">
+                <label className="block text-sm font-medium text-slate-700">
                   {roleLabels[form.role]}
                 </label>
                 <select
@@ -353,7 +441,7 @@ export default function SuperAdminAdministratorsPage() {
               <button
                 type="submit"
                 disabled={submitting}
-                className="rounded-lg bg-blue-700 px-6 py-3 font-semibold text-white transition hover:bg-blue-800 disabled:opacity-50"
+                className="rounded-lg bg-emerald-700 px-6 py-3 font-semibold text-white transition hover:bg-emerald-800 disabled:opacity-50"
               >
                 {submitting ? t.creating : t.createButton}
               </button>
@@ -367,7 +455,7 @@ export default function SuperAdminAdministratorsPage() {
 
           <table className="w-full text-left text-sm">
 
-            <thead className="bg-gray-50 text-xs uppercase text-gray-500">
+            <thead className="bg-gray-50 text-xs uppercase text-slate-500">
               <tr>
                 <th className="px-6 py-3 font-semibold">{t.colName}</th>
                 <th className="px-6 py-3 font-semibold">{t.colEmail}</th>
@@ -382,33 +470,33 @@ export default function SuperAdminAdministratorsPage() {
 
               {loading ? (
                 <tr>
-                  <td className="px-6 py-4 text-gray-500" colSpan={6}>
+                  <td className="px-6 py-4 text-slate-500" colSpan={6}>
                     {t.loadingRow}
                   </td>
                 </tr>
               ) : administrators.length === 0 ? (
                 <tr>
-                  <td className="px-6 py-4 text-gray-500" colSpan={6}>
+                  <td className="px-6 py-4 text-slate-500" colSpan={6}>
                     {t.emptyRow}
                   </td>
                 </tr>
               ) : (
                 administrators.map((admin) => (
-                  <tr key={admin.userId}>
+                  <tr key={admin.userId} className="transition hover:bg-gray-50">
                     <td className="px-6 py-4 font-medium text-gray-900">
                       {admin.firstName} {admin.surname}
                     </td>
-                    <td className="px-6 py-4 text-gray-600">{admin.email}</td>
-                    <td className="px-6 py-4 text-gray-600">
+                    <td className="px-6 py-4 text-slate-600">{admin.email}</td>
+                    <td className="px-6 py-4 text-slate-600">
                       {roleLabels[admin.role as StaffRole] ?? admin.role}
                     </td>
-                    <td className="px-6 py-4 text-gray-600">
+                    <td className="px-6 py-4 text-slate-600">
                       {admin.tenantName ?? "—"}
                     </td>
                     <td className="px-6 py-4">
                       <StatusBadge domain="member" status={admin.status} />
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-gray-600">
+                    <td className="px-6 py-4 whitespace-nowrap text-slate-600">
                       {new Date(admin.createdAt).toLocaleDateString("en-TZ")}
                     </td>
                   </tr>
@@ -421,7 +509,7 @@ export default function SuperAdminAdministratorsPage() {
 
         </div>
 
-      </div>
+      </PageContainer>
 
     </div>
   );

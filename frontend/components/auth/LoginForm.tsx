@@ -16,6 +16,13 @@ import { loginFormTranslations } from "@/constants/translations/auth";
 import { API_URL } from "@/lib/utils/api";
 import FormField from "@/components/auth/FormField";
 import Spinner from "@/components/auth/Spinner";
+import { FullLogo, LogoMark } from "@/components/common/Logo";
+
+// Matches the duration of the slide-in-left/slide-in-right entrance
+// animations in globals.css (0.8s) closely enough that the card doesn't
+// visibly jump — this is purely how long the post-submit fade-out plays
+// before navigating, not tied to the request itself in any way.
+const SUCCESS_TRANSITION_MS = 300;
 
 type FieldName = "identifier" | "password";
 
@@ -35,6 +42,12 @@ export default function LoginForm() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [loading, setLoading] = useState(false);
+  // True from the moment login succeeds until the delayed router.push()
+  // below actually navigates away — drives the card's fade-out. Kept
+  // separate from `loading` (still true too, through the same window) so
+  // the button's own disabled/spinner state and the card's exit
+  // animation can be styled independently.
+  const [submitted, setSubmitted] = useState(false);
 
   const validateField = (field: FieldName, value: string): string | undefined => {
     if (field === "identifier" && !value.trim()) {
@@ -146,62 +159,87 @@ export default function LoginForm() {
       // the route-group table in CLAUDE.md. All paths here are relative —
       // never a hardcoded origin — so this redirect works unchanged across
       // dev, staging, and production.
-      router.push(staffDashboardPath ?? "/dashboard");
+      const destination = staffDashboardPath ?? "/dashboard";
 
+      // `loading` deliberately stays true here (not reset in a `finally`
+      // below) so the button keeps its spinner/disabled state through the
+      // fade-out instead of flickering back to normal right before the
+      // page navigates away. A reduced-motion preference skips the delay
+      // and the fade entirely — this is a real user-facing wait before
+      // navigation, not just decoration, so it has to be opt-out-able the
+      // same way every other animation in this codebase is.
+      const prefersReducedMotion = window.matchMedia(
+        "(prefers-reduced-motion: reduce)"
+      ).matches;
+
+      if (prefersReducedMotion) {
+        router.push(destination);
+      } else {
+        setSubmitted(true);
+        setTimeout(() => router.push(destination), SUCCESS_TRANSITION_MS);
+      }
+
+      return;
     } catch (error) {
       if (error instanceof Error) {
         setError(error.message);
       } else {
         setError(t.genericErrorFallback);
       }
-    } finally {
-      setLoading(false);
     }
+
+    setLoading(false);
   };
 
   return (
-    <section className="min-h-screen flex items-center justify-center bg-white px-6 py-12">
+    <section className="flex min-h-screen items-center justify-center bg-gradient-to-br from-emerald-50 via-white to-white px-4 py-12 sm:px-6">
 
-      <div className="w-full max-w-md">
+      <div className="flex w-full max-w-5xl flex-col items-center">
 
-        {/* Minimal logo + title (no marketing navbar on the auth page) */}
-        <div className="text-center mb-8">
+        {/* The card itself fades/scales out once login succeeds, right
+            before the delayed navigation in handleSubmit fires — a
+            reduced-motion preference skips straight to navigating
+            instead (see SUCCESS_TRANSITION_MS above), so this transition
+            never becomes an unskippable wait. */}
+        <div
+          className={`flex w-full flex-col overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-2xl transition-all duration-300 lg:flex-row ${
+            submitted ? "scale-95 opacity-0" : "scale-100 opacity-100"
+          }`}
+        >
 
-          <Link
-            href="/"
-            className="text-2xl font-bold text-[#064E3B] tracking-tight"
-          >
-            Tujitunze
-          </Link>
+          {/* Form side — left on desktop (lg:flex-row's first child),
+              on top on mobile (this container is flex-col below lg) */}
+          <div className="flex-1 p-8 [animation:slide-in-left_0.8s_ease-out_forwards] motion-reduce:[animation:none] sm:p-10 lg:p-12">
 
-          <h1 className="mt-6 text-3xl font-bold text-gray-900">
-            {t.title}
-          </h1>
+            <div className="text-center mb-8">
 
-          <p className="mt-2 text-sm text-gray-600">
-            {t.subtitle}
-          </p>
+              <FullLogo href="/" className="justify-center" />
 
-        </div>
+              <h1 className="mt-6 text-3xl font-bold text-gray-900">
+                {t.title}
+              </h1>
 
-        {/* Login Card */}
-        <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-8">
+              <p className="mt-2 text-sm text-gray-600">
+                {t.subtitle}
+              </p>
 
-          {/* Error */}
-          {error && (
-            <div className="mb-6 rounded-lg bg-red-100 px-4 py-3 text-sm text-red-700">
-              {error}
             </div>
-          )}
 
-          {/* Success */}
-          {success && (
-            <div className="mb-6 rounded-lg bg-green-50 px-4 py-3 text-sm text-[#064E3B]">
-              {success}
-            </div>
-          )}
+            {/* Error */}
+            {error && (
+              <div className="mb-6 rounded-lg bg-red-100 px-4 py-3 text-sm text-red-700 [animation:fade-in_0.3s_ease-out_forwards] motion-reduce:[animation:none]">
+                {error}
+              </div>
+            )}
 
-          <form
+            {/* Success */}
+            {success && (
+              <div className="mb-6 rounded-lg bg-green-50 px-4 py-3 text-sm text-[#064E3B] [animation:fade-in_0.3s_ease-out_forwards] motion-reduce:[animation:none]">
+                {success}
+              </div>
+            )}
+
+            <form
             onSubmit={handleSubmit}
             className="space-y-4"
             noValidate
@@ -353,8 +391,10 @@ export default function LoginForm() {
                 rounded-lg
                 font-semibold
                 hover:bg-[#065F46]
+                hover:scale-105
                 transition-colors
-                duration-300
+                transition-transform
+                duration-200
                 ease-in-out
                 focus:outline-none
                 focus:ring-2
@@ -362,6 +402,8 @@ export default function LoginForm() {
                 focus:ring-offset-2
                 disabled:opacity-60
                 disabled:cursor-not-allowed
+                disabled:hover:scale-100
+                motion-reduce:hover:scale-100
               "
             >
               {loading && <Spinner />}
@@ -370,22 +412,40 @@ export default function LoginForm() {
 
           </form>
 
-          {/* Sign Up */}
-          <div className="mt-8 text-center">
+            {/* Sign Up */}
+            <div className="mt-8 text-center">
 
-            <p className="text-sm text-gray-600">
+              <p className="text-sm text-gray-600">
 
-              {t.noAccount}{" "}
+                {t.noAccount}{" "}
 
-              <Link
-                href="/register"
-                className="font-semibold text-[#064E3B] hover:text-[#065F46] hover:underline"
-              >
-                {t.signUp}
-              </Link>
+                <Link
+                  href="/register"
+                  className="font-semibold text-[#064E3B] hover:text-[#065F46] hover:underline"
+                >
+                  {t.signUp}
+                </Link>
 
+              </p>
+
+            </div>
+
+          </div>
+
+          {/* Welcome panel — right on desktop, below the form on mobile
+              (this whole card is flex-col until lg:, so this is simply
+              the second child rather than a separate hidden-on-mobile
+              element). LogoMark's existing fill colors (mint greens,
+              dark stroke) already read correctly against a dark emerald
+              background — same combination Header.tsx uses on its own
+              bg-emerald-900 bar — so no separate "light" variant of the
+              mark was needed. */}
+          <div className="flex flex-1 flex-col items-center justify-center bg-gradient-to-br from-[#064E3B] to-emerald-800 p-10 text-center text-white [animation:slide-in-right_0.8s_ease-out_forwards] motion-reduce:[animation:none] sm:p-12">
+            <LogoMark className="h-16 w-16" />
+            <h2 className="mt-6 text-2xl font-bold">{t.welcomeTitle}</h2>
+            <p className="mt-3 max-w-xs text-sm text-emerald-100">
+              {t.welcomeMessage}
             </p>
-
           </div>
 
         </div>

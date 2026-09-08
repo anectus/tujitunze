@@ -5,9 +5,24 @@ import { useRouter } from "next/navigation";
 
 import { getAccessToken } from "@/lib/utils/permissions";
 import DashboardHeader from "@/components/dashboard/DashboardHeader";
+import PageContainer from "@/components/dashboard/PageContainer";
+import StatGroup from "@/components/dashboard/StatGroup";
+import StatisticCard from "@/components/cards/StatisticCard";
+import QuickActions, {
+  type QuickAction,
+} from "@/components/dashboard/QuickActions";
 import { useLanguage } from "@/lib/context/LanguageContext";
 import { superAdminRolesTranslations } from "@/constants/translations/super-admin-roles";
+import { superAdminDashboardTranslations } from "@/constants/translations/super-admin-dashboard";
 import { API_URL } from "@/lib/utils/api";
+import {
+  ClipboardIcon,
+  CoinsIcon,
+  KeyIcon,
+  LockIcon,
+  PlusIcon,
+  UsersIcon,
+} from "@/components/common/SidebarIcons";
 
 interface Permission {
   id: number;
@@ -53,6 +68,7 @@ export default function SuperAdminRolesPage() {
   const router = useRouter();
   const { language } = useLanguage();
   const t = superAdminRolesTranslations[language];
+  const dt = superAdminDashboardTranslations[language];
 
   const [roles, setRoles] = useState<Role[]>([]);
   const [permissions, setPermissions] = useState<Permission[]>([]);
@@ -74,6 +90,12 @@ export default function SuperAdminRolesPage() {
   const [deletingRoleId, setDeletingRoleId] = useState<number | null>(null);
   const [deleteError, setDeleteError] = useState("");
 
+  // Deliberately no revalidate-on-focus here (unlike Administrators/Audit
+  // Logs, which are read-only lists): a role's permission checkboxes and,
+  // for a custom role, its name/description fields are locally edited
+  // before an explicit Save — overwriting `roles` wholesale on tab focus
+  // would silently discard an in-progress, unsaved edit. See the Saving
+  // Rules page for the same call.
   useEffect(() => {
     const loadData = async () => {
       const token = getAccessToken();
@@ -317,17 +339,61 @@ export default function SuperAdminRolesPage() {
     }
   };
 
+  const customRoleCount = roles.filter(
+    (role) => !CORE_ROLE_NAMES.includes(role.roleName)
+  ).length;
+
+  const quickActions: QuickAction[] = [
+    {
+      label: dt.quickActionCreateAdministrator,
+      href: "/super-admin/administrators",
+      icon: PlusIcon,
+    },
+    {
+      label: dt.quickActionSavingRules,
+      href: "/super-admin/saving-rules",
+      icon: CoinsIcon,
+    },
+    {
+      label: dt.quickActionAuditLogs,
+      href: "/super-admin/audit-logs",
+      icon: ClipboardIcon,
+    },
+  ];
+
   return (
     <div>
 
       <DashboardHeader title={t.title} />
 
-      <div className="p-4 sm:p-8">
+      <PageContainer maxWidth="6xl">
+
+        <QuickActions actions={quickActions} />
 
         {loadError && (
-          <div className="mb-6 rounded-lg bg-red-100 px-4 py-3 text-sm text-red-700">
+          <div className="mt-6 rounded-lg bg-red-100 px-4 py-3 text-sm text-red-700">
             {loadError}
           </div>
+        )}
+
+        {!loading && (
+          <StatGroup title={dt.sectionGovernance}>
+            <StatisticCard
+              label={dt.totalRoles}
+              value={roles.length}
+              icon={KeyIcon}
+            />
+            <StatisticCard
+              label={dt.totalPermissions}
+              value={permissions.length}
+              icon={LockIcon}
+            />
+            <StatisticCard
+              label={dt.customRoles}
+              value={customRoleCount}
+              icon={UsersIcon}
+            />
+          </StatGroup>
         )}
 
         {saveError && (
@@ -348,17 +414,22 @@ export default function SuperAdminRolesPage() {
           </div>
         )}
 
-        <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-md">
+        <div className="mt-10 rounded-2xl border border-gray-100 bg-white p-6 shadow-md">
 
-          <h2 className="text-lg font-bold text-gray-900">{t.createRoleTitle}</h2>
-          <p className="mt-1 text-sm text-gray-600">
+          <div className="flex items-center gap-3">
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-emerald-50 text-[#064E3B]">
+              <PlusIcon className="h-5 w-5" />
+            </span>
+            <h2 className="text-lg font-bold text-gray-900">{t.createRoleTitle}</h2>
+          </div>
+          <p className="mt-1 text-sm text-slate-600">
             {t.createRoleSubtitle}
           </p>
 
           <form onSubmit={handleCreate} className="mt-6 grid gap-4 sm:grid-cols-2">
 
             <div>
-              <label className="block text-sm font-medium text-gray-700">{t.roleName}</label>
+              <label className="block text-sm font-medium text-slate-700">{t.roleName}</label>
               <input
                 required
                 maxLength={50}
@@ -369,7 +440,7 @@ export default function SuperAdminRolesPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700">{t.description}</label>
+              <label className="block text-sm font-medium text-slate-700">{t.description}</label>
               <input
                 maxLength={255}
                 value={form.description}
@@ -388,7 +459,7 @@ export default function SuperAdminRolesPage() {
               <button
                 type="submit"
                 disabled={creating}
-                className="rounded-lg bg-blue-700 px-6 py-3 font-semibold text-white transition hover:bg-blue-800 disabled:opacity-50"
+                className="rounded-lg bg-emerald-700 px-6 py-3 font-semibold text-white transition hover:bg-emerald-800 disabled:opacity-50"
               >
                 {creating ? t.creating : t.createRoleButton}
               </button>
@@ -401,7 +472,7 @@ export default function SuperAdminRolesPage() {
         <div className="mt-8 space-y-6">
 
           {loading ? (
-            <div className="rounded-2xl border border-gray-100 bg-white p-6 text-sm text-gray-500 shadow-md">
+            <div className="rounded-2xl border border-gray-100 bg-white p-6 text-sm text-slate-500 shadow-md">
               {t.loading}
             </div>
           ) : (
@@ -411,7 +482,7 @@ export default function SuperAdminRolesPage() {
               return (
               <div
                 key={role.roleId}
-                className="rounded-2xl border border-gray-100 bg-white p-6 shadow-md"
+                className="rounded-2xl border border-gray-100 bg-white p-6 shadow-md transition hover:shadow-lg"
               >
 
                 <div className="flex flex-wrap items-start justify-between gap-4">
@@ -421,7 +492,7 @@ export default function SuperAdminRolesPage() {
                         <h3 className="text-base font-bold text-gray-900">
                           {role.roleName}
                         </h3>
-                        <p className="mt-1 text-sm text-gray-600">
+                        <p className="mt-1 text-sm text-slate-600">
                           {role.description ?? t.noDescription}
                         </p>
                       </>
@@ -450,11 +521,11 @@ export default function SuperAdminRolesPage() {
                               e.target.value
                             )
                           }
-                          className="rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-600"
+                          className="rounded-lg border border-gray-200 px-3 py-2 text-sm text-slate-600"
                         />
                       </div>
                     )}
-                    <p className="mt-1 text-xs text-gray-500">
+                    <p className="mt-1 text-xs text-slate-500">
                       {role.userCount}{" "}
                       {role.userCount === 1 ? t.accountSingular : t.accountPlural}
                       {isCoreRole && ` · ${t.corePlatformRole}`}
@@ -468,7 +539,7 @@ export default function SuperAdminRolesPage() {
                           type="button"
                           onClick={() => saveRoleDetails(role)}
                           disabled={savingDetailsRoleId === role.roleId}
-                          className="rounded-lg border border-gray-200 px-4 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-50 disabled:opacity-50"
+                          className="rounded-lg border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:opacity-50"
                         >
                           {savingDetailsRoleId === role.roleId
                             ? t.saving
@@ -490,7 +561,7 @@ export default function SuperAdminRolesPage() {
                       type="button"
                       onClick={() => saveRolePermissions(role)}
                       disabled={savingRoleId === role.roleId}
-                      className="rounded-lg bg-blue-700 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-800 disabled:opacity-50"
+                      className="rounded-lg bg-emerald-700 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-800 disabled:opacity-50"
                     >
                       {savingRoleId === role.roleId ? t.saving : t.savePermissions}
                     </button>
@@ -535,7 +606,7 @@ export default function SuperAdminRolesPage() {
 
         </div>
 
-      </div>
+      </PageContainer>
 
     </div>
   );

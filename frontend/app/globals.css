@@ -36,6 +36,18 @@ body {
   font-family: var(--font-sans), Arial, Helvetica, sans-serif;
 }
 
+/* Smooth in-page scrolling (anchor links, programmatic scrollIntoView)
+   site-wide. Scoped to prefers-reduced-motion: no-preference rather than
+   applied unconditionally — smooth-scrolling is exactly the kind of
+   motion that's uncomfortable or disorienting for vestibular-disorder
+   users, so it must stay opt-out-able, matching the motion-reduce:
+   convention HeroIllustration.tsx already follows for its animations. */
+@media (prefers-reduced-motion: no-preference) {
+  html {
+    scroll-behavior: smooth;
+  }
+}
+
 /* Hero illustration motion (HeroIllustration.tsx) — plain CSS keyframes
    rather than canvas: these are simple, static shapes getting a gentle
    float/glow, which transform-based CSS animation already runs on the
@@ -56,4 +68,24 @@ body {
 @keyframes shield-glow {
   0%, 100% { filter: drop-shadow(0 0 0px rgba(20, 184, 166, 0.5)); }
   50% { filter: drop-shadow(0 0 16px rgba(20, 184, 166, 0.75)); }
+}
+
+/* LoginForm.tsx's split layout — one-shot entrance animations (run once,
+   `forwards` holds the end state), not the looping ambient motion above.
+   Same motion-reduce:[animation:none] convention applied at each call
+   site, not baked in here, so this file stays just keyframe
+   definitions. */
+@keyframes slide-in-left {
+  from { transform: translateX(-40px); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+
+@keyframes slide-in-right {
+  from { transform: translateX(40px); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
 }

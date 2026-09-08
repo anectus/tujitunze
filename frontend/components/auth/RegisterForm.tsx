@@ -13,6 +13,7 @@ import { commonTranslations } from "@/constants/translations/common";
 import { API_URL } from "@/lib/utils/api";
 import FormField from "@/components/auth/FormField";
 import Spinner from "@/components/auth/Spinner";
+import { FullLogo } from "@/components/common/Logo";
 
 type RequiredField =
   | "firstName"
@@ -274,12 +275,7 @@ export default function RegisterForm() {
         {/* Minimal logo + title (no marketing navbar on the auth page) */}
         <div className="text-center mb-8">
 
-          <Link
-            href="/"
-            className="text-2xl font-bold text-[#064E3B] tracking-tight"
-          >
-            Tujitunze
-          </Link>
+          <FullLogo href="/" className="justify-center" />
 
           <h1 className="mt-6 text-3xl font-bold text-gray-900">
             {t.title}

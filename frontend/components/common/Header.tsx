@@ -10,6 +10,7 @@ import { useLanguage } from "@/lib/context/LanguageContext";
 import { headerTranslations } from "@/constants/translations/home";
 import { commonTranslations } from "@/constants/translations/common";
 import LanguageSwitcher from "@/components/common/LanguageSwitcher";
+import { LogoMark } from "@/components/common/Logo";
 import { API_URL } from "@/lib/utils/api";
 
 const NAV_LINKS = [
@@ -42,34 +43,6 @@ function HomeIcon({ className }: { className?: string }) {
   );
 }
 
-// The logo mark — a shield-with-cross, matching the brand's health/
-// security positioning. Solid-fill (not outline, unlike the header's
-// other icons) since it's a wordmark companion, not an interactive
-// control.
-function LogoMark({ className }: { className?: string }) {
-  return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      viewBox="0 0 24 24"
-      aria-hidden="true"
-      className={className}
-    >
-      <path
-        d="M12 2 L20 5.2 C20 12.4 16.8 18.2 12 21 C7.2 18.2 4 12.4 4 5.2 Z"
-        fill="#6ee7b7"
-      />
-      <path
-        d="M12 4.3 L17.6 6.5 C17.6 11.8 15.3 16 12 18.2 C8.7 16 6.4 11.8 6.4 6.5 Z"
-        fill="#a7f3d0"
-      />
-      <g stroke="#064e3b" strokeWidth="1.6" strokeLinecap="round">
-        <line x1="12" y1="8.6" x2="12" y2="14" />
-        <line x1="9.3" y1="11.3" x2="14.7" y2="11.3" />
-      </g>
-    </svg>
-  );
-}
-
 export default function Header() {
   const router = useRouter();
   const pathname = usePathname();
@@ -90,6 +63,7 @@ export default function Header() {
   // of being redirected straight into that form after login.
   useEffect(() => {
     if (!isAuthenticated || !roles.includes("Member")) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- syncing to an external signal (auth/role state), not derivable during render
       setNeedsMembershipCompletion(false);
       return;
     }
@@ -113,6 +87,7 @@ export default function Header() {
   // hamburger-driven panel is the only way to reach them, so close it on
   // every route change rather than leaving it open behind the new page.
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- syncing to an external signal (route change), not derivable during render
     setMobileMenuOpen(false);
   }, [pathname]);
 
@@ -123,7 +98,11 @@ export default function Header() {
   };
 
   return (
-    <header className="bg-emerald-900/95 backdrop-blur-sm border-b border-emerald-800 fixed top-0 left-0 w-full z-50">
+    <header className="bg-emerald-900/95 backdrop-blur-sm border-b border-emerald-800 fixed top-0 left-0 w-full z-50 pt-[env(safe-area-inset-top,0px)] pl-[env(safe-area-inset-left,0px)] pr-[env(safe-area-inset-right,0px)]">
+      {/* pt-/pl-/pr- above are on the fixed bar itself (not this inner
+          content div) so the dark background still fills the notch/
+          corner area edge-to-edge and only the actual content shifts
+          inward — same pattern as Sidebar.tsx's mobile top bar. */}
 
       <div className="max-w-7xl mx-auto px-6 py-4 max-md:px-4 max-md:py-3 flex items-center justify-between">
 
@@ -131,7 +110,7 @@ export default function Header() {
         <div className="min-w-0">
           <Link
             href="/"
-            className="flex items-center gap-2 text-2xl font-bold text-white"
+            className="group flex items-center gap-2 text-2xl font-bold text-white"
           >
             <LogoMark className="h-7 w-7 shrink-0" />
             Tujitunze

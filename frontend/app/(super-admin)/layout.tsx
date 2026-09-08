@@ -6,6 +6,7 @@ const NAV_ITEMS = [
   { labelKey: "administrators", href: "/super-admin/administrators" },
   { labelKey: "rolesPermissions", href: "/super-admin/roles" },
   { labelKey: "savingRules", href: "/super-admin/saving-rules" },
+  { labelKey: "auditLogs", href: "/super-admin/audit-logs" },
 ] as const;
 
 export default function SuperAdminLayout({

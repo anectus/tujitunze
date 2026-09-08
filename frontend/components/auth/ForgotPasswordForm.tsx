@@ -7,6 +7,7 @@ import { useLanguage } from "@/lib/context/LanguageContext";
 import { forgotPasswordTranslations } from "@/constants/translations/auth";
 import Spinner from "@/components/auth/Spinner";
 import { API_URL } from "@/lib/utils/api";
+import { FullLogo } from "@/components/common/Logo";
 
 export default function ForgotPasswordForm() {
   const { language } = useLanguage();
@@ -111,7 +112,7 @@ export default function ForgotPasswordForm() {
     <main className="flex min-h-screen items-center justify-center bg-white px-6 py-12">
       <div className="w-full max-w-md">
         <div className="rounded-2xl border border-gray-100 bg-white p-8 shadow-xl">
-          <Link href="/login" className="text-2xl font-bold text-[#064E3B] tracking-tight">Tujitunze</Link>
+          <FullLogo href="/login" />
           <h1 className="mt-6 text-3xl font-bold text-gray-900">{t.title}</h1>
           <p className="mt-2 text-sm text-gray-600">{t.description}</p>
           {error && (

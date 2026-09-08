@@ -7,7 +7,7 @@ import { RolesGuard } from '../auth/guards/roles.guard';
 
 @Controller('admin/audit-logs')
 @UseGuards(JwtAuthGuard, RolesGuard)
-@Roles('Admin')
+@Roles('Admin', 'Super-admin')
 export class AuditLogsController {
   constructor(private readonly auditLogsService: AuditLogsService) {}
 

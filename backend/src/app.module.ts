@@ -15,6 +15,7 @@ import { NotificationsModule } from './modules/notifications/notifications.modul
 import { AuditLogsModule } from './modules/audit-logs/audit-logs.module';
 import { WalletsModule } from './modules/wallets/wallets.module';
 import { ContactModule } from './modules/contact/contact.module';
+import { SearchModule } from './modules/search/search.module';
 
 @Module({
   imports: [
@@ -53,6 +54,7 @@ import { ContactModule } from './modules/contact/contact.module';
     AuditLogsModule,
     WalletsModule,
     ContactModule,
+    SearchModule,
   ],
   providers: [
     {

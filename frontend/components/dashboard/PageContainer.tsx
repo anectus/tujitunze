@@ -9,6 +9,11 @@ interface PageContainerProps {
   children: React.ReactNode;
   backHref?: string;
   backLabel?: string;
+  // "5xl" (default) matches every Member/staff page that predates this;
+  // "6xl" is for a page whose content is a wide multi-column grid (the
+  // Super-admin dashboard and its sibling pages) that would feel
+  // cramped at 5xl.
+  maxWidth?: "5xl" | "6xl";
 }
 
 // The one content wrapper every authenticated (member/staff) page renders
@@ -26,13 +31,14 @@ export default function PageContainer({
   children,
   backHref,
   backLabel,
+  maxWidth = "5xl",
 }: PageContainerProps) {
   const { language } = useLanguage();
   const t = commonTranslations[language];
 
   return (
     <div className="p-4 md:p-8">
-      <div className="mx-auto max-w-5xl">
+      <div className={`mx-auto ${maxWidth === "6xl" ? "max-w-6xl" : "max-w-5xl"}`}>
         {backHref && (
           <Link
             href={backHref}
