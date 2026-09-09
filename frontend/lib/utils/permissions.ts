@@ -1,6 +1,14 @@
 export const ACCESS_TOKEN_STORAGE_KEY = "tujitunze_access_token";
 export const AUTH_USER_STORAGE_KEY = "tujitunze_auth_user";
 
+// One-shot signal set by MobileMoneyAccountForm right after a successful
+// submit, consumed (and cleared) by the Settings page's own "onboarding
+// complete" banner the next time it mounts — sessionStorage rather than
+// a query param since the redirect target on completion is /dashboard,
+// not /settings, so there's no URL to carry this on for that page.
+export const MEMBERSHIP_JUST_COMPLETED_STORAGE_KEY =
+  "tujitunze_membership_just_completed";
+
 export interface StoredAuthUser {
   userId: number;
   roles: string[];

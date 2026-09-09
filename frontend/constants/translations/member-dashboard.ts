@@ -3,13 +3,19 @@ import type { Language } from "@/lib/context/LanguageContext";
 export const memberDashboardTranslations = {
   en: {
     loadingDashboard: "Loading your dashboard...",
+    membershipVerifiedToast: "Membership verified successfully!",
     welcomeHeading: "Welcome to Tujitunze",
     breadcrumbCurrent: "Dashboard",
-    overviewHeading: "Overview",
     noActivePolicy: "Not enrolled yet",
     comingSoon: "Coming soon",
     unreadTemplate: "{count} unread",
     allCaughtUp: "All caught up",
+    quickAccessHeading: "Quick Access",
+    quickAccessSubtitle:
+      "Jump straight to your wallet, insurance, savings, telecom, and notifications.",
+    viewDetails: "View Details",
+    savingsProgressTemplate:
+      "{percent}% of your wallet balance built from automatic micro-savings",
     cards: [
       {
         href: "/wallet",
@@ -40,13 +46,19 @@ export const memberDashboardTranslations = {
   },
   sw: {
     loadingDashboard: "Inapakia dashibodi yako...",
+    membershipVerifiedToast: "Uanachama umethibitishwa kwa mafanikio!",
     welcomeHeading: "Karibu Tujitunze",
     breadcrumbCurrent: "Dashibodi",
-    overviewHeading: "Muhtasari",
     noActivePolicy: "Bado hujajiunga",
     comingSoon: "Inakuja hivi karibuni",
     unreadTemplate: "Arifa {count} mpya",
     allCaughtUp: "Hakuna jipya",
+    quickAccessHeading: "Ufikiaji wa Haraka",
+    quickAccessSubtitle:
+      "Nenda moja kwa moja kwenye mkoba, bima, akiba, simu, na arifa zako.",
+    viewDetails: "Angalia Maelezo",
+    savingsProgressTemplate:
+      "{percent}% ya salio la mkoba wako limetokana na akiba ya kiotomatiki",
     cards: [
       {
         href: "/wallet",
@@ -79,13 +91,17 @@ export const memberDashboardTranslations = {
   Language,
   {
     loadingDashboard: string;
+    membershipVerifiedToast: string;
     welcomeHeading: string;
     breadcrumbCurrent: string;
-    overviewHeading: string;
     noActivePolicy: string;
     comingSoon: string;
     unreadTemplate: string;
     allCaughtUp: string;
+    quickAccessHeading: string;
+    quickAccessSubtitle: string;
+    viewDetails: string;
+    savingsProgressTemplate: string;
     cards: { href: string; title: string; subtitle: string }[];
   }
 >;

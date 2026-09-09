@@ -40,6 +40,7 @@ export const navLabelTranslations = {
     qrCode: "QR Code",
     profile: "Profile",
     settings: "Settings",
+    completeMembership: "Complete Membership",
   },
   sw: {
     dashboard: "Dashibodi",
@@ -74,6 +75,7 @@ export const navLabelTranslations = {
     qrCode: "Msimbo wa QR",
     profile: "Wasifu",
     settings: "Mipangilio",
+    completeMembership: "Kamilisha Uanachama",
   },
 } as const satisfies Record<Language, Record<string, string>>;
 

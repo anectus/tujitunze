@@ -20,6 +20,9 @@ import { getAccessToken } from "@/lib/utils/permissions";
 import { useLanguage } from "@/lib/context/LanguageContext";
 import { overviewTranslations } from "@/constants/translations/member-overview";
 import { API_URL } from "@/lib/utils/api";
+import StatisticCard from "@/components/cards/StatisticCard";
+import SectionHeader from "@/components/dashboard/SectionHeader";
+import { CoinsIcon, ShieldIcon, SwapIcon } from "@/components/common/SidebarIcons";
 
 interface WalletTxn {
   walletTransactionId: number;
@@ -52,15 +55,6 @@ function formatTsh(amount: number) {
   return `TSh ${amount.toLocaleString("en-TZ", { minimumFractionDigits: 2 })}`;
 }
 
-function KpiTile({ label, value }: { label: string; value: string | number }) {
-  return (
-    <div className="rounded-xl bg-white p-6 shadow-md">
-      <p className="text-sm text-gray-500">{label}</p>
-      <p className="mt-2 text-2xl font-bold text-gray-900">{value}</p>
-    </div>
-  );
-}
-
 function ChartCard({
   title,
   subtitle,
@@ -71,9 +65,9 @@ function ChartCard({
   children: React.ReactNode;
 }) {
   return (
-    <div className="rounded-xl bg-white p-6 shadow-md">
+    <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-md transition hover:-translate-y-0.5 hover:shadow-lg">
       <p className="text-lg font-semibold text-gray-900">{title}</p>
-      <p className="mt-1 text-sm text-gray-500">{subtitle}</p>
+      <p className="mt-1 text-sm text-gray-600">{subtitle}</p>
       <div className="mt-4 h-64">{children}</div>
     </div>
   );
@@ -96,7 +90,7 @@ export default function Overview() {
   >(null);
   const [error, setError] = useState("");
 
-  useEffect(() => {
+  const loadOverview = () => {
     const token = getAccessToken();
 
     if (!token) {
@@ -122,7 +116,21 @@ export default function Overview() {
       .then((response) => (response.ok ? response.json() : null))
       .then((data) => setAllocations(data?.items ?? []))
       .catch(() => setAllocations([]));
+  };
+
+  useEffect(() => {
+    loadOverview();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- mount-only fetch, not a value this effect should re-sync to
   }, [t.errorFallback]);
+
+  // Real-time-ish refresh: contributions/policies are read-only here, so
+  // it's safe to silently replace them when the member tabs back in —
+  // same reasoning as the Super-admin dashboard's own focus refresh.
+  useEffect(() => {
+    window.addEventListener("focus", loadOverview);
+    return () => window.removeEventListener("focus", loadOverview);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- subscribe once
+  }, []);
 
   const balanceHistory = useMemo(() => {
     if (!transactions) {
@@ -278,14 +286,28 @@ export default function Overview() {
         </div>
       )}
 
-      {/* KPIs */}
-      <div className="grid grid-cols-1 gap-6 sm:grid-cols-3">
-        <KpiTile
+      {/* Overview — KPIs */}
+      <SectionHeader
+        title={t.sectionOverviewTitle}
+        subtitle={t.sectionOverviewSubtitle}
+      />
+
+      <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <StatisticCard
           label={t.kpiTotalContributions}
           value={formatTsh(totalContributions)}
+          icon={CoinsIcon}
         />
-        <KpiTile label={t.kpiActivePolicies} value={activePoliciesCount} />
-        <KpiTile label={t.kpiRefunds} value={refundsCount} />
+        <StatisticCard
+          label={t.kpiActivePolicies}
+          value={activePoliciesCount}
+          icon={ShieldIcon}
+        />
+        <StatisticCard
+          label={t.kpiRefunds}
+          value={refundsCount}
+          icon={SwapIcon}
+        />
       </div>
 
       {/* Export buttons */}
@@ -312,8 +334,13 @@ export default function Overview() {
         </button>
       </div>
 
-      {/* Charts */}
-      <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-3">
+      {/* Insights — charts */}
+      <SectionHeader
+        title={t.sectionInsightsTitle}
+        subtitle={t.sectionInsightsSubtitle}
+      />
+
+      <div className="mt-4 grid grid-cols-1 gap-6 lg:grid-cols-3">
 
         <ChartCard
           title={t.balanceChartTitle}

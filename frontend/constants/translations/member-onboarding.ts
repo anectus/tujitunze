@@ -7,6 +7,28 @@ export const mobileMoneyFormTranslations = {
       "A few more details, then link a mobile money account so we can attribute your contributions.",
     lookupErrorFallback: "Unable to load bank/region options. Please try again.",
 
+    incompleteBanner:
+      "Your membership setup is incomplete. Please finish linking your mobile account.",
+
+    sectionPersonalInfo: "Personal Information",
+    sectionLocationInfo: "Location Information",
+    sectionMobileMoney: "Mobile Money Accounts",
+    sectionBankAccounts: "Bank Accounts",
+
+    progressLabelTemplate: "Profile {percent}% complete",
+    progressBankHint: " — link your bank account to finish",
+    progressComplete: "Profile 100% complete — you're all set!",
+
+    genderRequiredError: "Gender is required.",
+    regionRequiredError: "Region is required.",
+    phoneRequiredError: "Phone number is required.",
+
+    bankAccountTooltip:
+      "Optional, but recommended: a linked bank account lets Insurance/Bank settlements reach you directly and gives you a backup way to top up your wallet.",
+
+    successModalTitle: "🎉 Membership completed successfully!",
+    successModalBody: "You can now access your dashboard.",
+
     gender: "Gender",
     selectGender: "Select your gender",
     male: "Male",
@@ -57,6 +79,28 @@ export const mobileMoneyFormTranslations = {
     subtitle:
       "Taarifa chache zaidi, kisha unganisha akaunti ya pesa za simu ili tuweze kuhusisha michango yako.",
     lookupErrorFallback: "Imeshindwa kupakia chaguo za benki/mkoa. Tafadhali jaribu tena.",
+
+    incompleteBanner:
+      "Usanidi wa uanachama wako haujakamilika. Tafadhali maliza kuunganisha akaunti yako ya simu.",
+
+    sectionPersonalInfo: "Taarifa Binafsi",
+    sectionLocationInfo: "Taarifa za Mahali",
+    sectionMobileMoney: "Akaunti za Pesa za Simu",
+    sectionBankAccounts: "Akaunti za Benki",
+
+    progressLabelTemplate: "Wasifu umekamilika {percent}%",
+    progressBankHint: " — unganisha akaunti yako ya benki ili kukamilisha",
+    progressComplete: "Wasifu umekamilika 100% — uko tayari!",
+
+    genderRequiredError: "Jinsia inahitajika.",
+    regionRequiredError: "Mkoa unahitajika.",
+    phoneRequiredError: "Namba ya simu inahitajika.",
+
+    bankAccountTooltip:
+      "Si lazima, lakini inapendekezwa: akaunti ya benki iliyounganishwa huruhusu malipo ya Bima/Benki kufika kwako moja kwa moja na hukupa njia mbadala ya kuongeza fedha kwenye mkoba wako.",
+
+    successModalTitle: "🎉 Uanachama umekamilika kwa mafanikio!",
+    successModalBody: "Sasa unaweza kufikia dashibodi yako.",
 
     gender: "Jinsia",
     selectGender: "Chagua jinsia yako",

@@ -1,11 +1,17 @@
+"use client";
+
 import ProtectedRoute from "@/components/auth/ProtectedRoute";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import DashboardHeader from "@/components/dashboard/DashboardHeader";
+import { useMembershipStatus } from "@/lib/hooks/useMembershipStatus";
+import type { SidebarNavItem } from "@/components/common/Sidebar";
 
 // Real (member) pages only — see frontend AGENTS notes elsewhere in the
 // codebase about not copying a nav entry without checking the page
-// exists first.
-const NAV_ITEMS = [
+// exists first. Split from one flat list into three groups so the
+// Profile/Settings vs. Complete Membership swap below only touches the
+// items that actually change.
+const BASE_NAV_ITEMS: readonly SidebarNavItem[] = [
   { labelKey: "dashboard", href: "/dashboard" },
   { labelKey: "wallet", href: "/wallet" },
   { labelKey: "savings", href: "/savings" },
@@ -16,18 +22,39 @@ const NAV_ITEMS = [
   { labelKey: "notifications", href: "/notifications" },
   { labelKey: "reports", href: "/reports" },
   { labelKey: "qrCode", href: "/qr" },
+];
+
+const ACCOUNT_MANAGEMENT_ITEMS: readonly SidebarNavItem[] = [
   { labelKey: "profile", href: "/profile" },
   { labelKey: "settings", href: "/settings" },
-] as const;
+];
+
+const COMPLETE_MEMBERSHIP_ITEM: SidebarNavItem = {
+  labelKey: "completeMembership",
+  href: "/onboarding/mobile-money",
+};
 
 export default function MemberLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const membershipComplete = useMembershipStatus();
+
+  // null (not resolved yet) renders the same nav a complete member sees
+  // — most members are complete, so this avoids Profile/Settings
+  // visibly flashing away and back while the one /members/me fetch is
+  // in flight, at the cost of a completed-looking sidebar for the
+  // instant before an incomplete member's redirect (useMembershipGate,
+  // on the page itself) kicks in.
+  const navItems: readonly SidebarNavItem[] =
+    membershipComplete === false
+      ? [...BASE_NAV_ITEMS, COMPLETE_MEMBERSHIP_ITEM]
+      : [...BASE_NAV_ITEMS, ...ACCOUNT_MANAGEMENT_ITEMS];
+
   return (
     <ProtectedRoute allowedRoles={["Member"]}>
-      <DashboardLayout roleLabel="Member" navItems={NAV_ITEMS}>
+      <DashboardLayout roleLabel="Member" navItems={navItems}>
         <DashboardHeader />
         {children}
       </DashboardLayout>

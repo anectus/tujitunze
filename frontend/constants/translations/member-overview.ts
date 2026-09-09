@@ -4,6 +4,11 @@ export const overviewTranslations = {
   en: {
     loading: "Loading your overview...",
     errorFallback: "Unable to load your overview.",
+    sectionOverviewTitle: "Overview",
+    sectionOverviewSubtitle: "Your contributions, coverage, and refunds at a glance.",
+    sectionInsightsTitle: "Insights",
+    sectionInsightsSubtitle:
+      "Trends across your wallet balance, contribution sources, and insurance allocations.",
     kpiTotalContributions: "Total Contributions",
     kpiActivePolicies: "Active Policies",
     kpiRefunds: "Refunds",
@@ -23,6 +28,11 @@ export const overviewTranslations = {
   sw: {
     loading: "Inapakia muhtasari wako...",
     errorFallback: "Imeshindwa kupakia muhtasari wako.",
+    sectionOverviewTitle: "Muhtasari",
+    sectionOverviewSubtitle: "Michango, ufunikaji, na marejesho yako kwa muhtasari.",
+    sectionInsightsTitle: "Uchambuzi",
+    sectionInsightsSubtitle:
+      "Mienendo ya salio la mkoba wako, vyanzo vya michango, na ugawaji wa bima.",
     kpiTotalContributions: "Jumla ya Michango",
     kpiActivePolicies: "Sera Zinazoendelea",
     kpiRefunds: "Marejesho",

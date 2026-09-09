@@ -32,6 +32,37 @@ function formatMemberId(userId: number): string {
   return `TB${String(userId).padStart(6, '0')}`;
 }
 
+// Single source of truth for "has this member finished the Complete
+// Your Membership step" (MobileMoneyAccountForm / POST-register
+// onboarding), read by both the dashboard's redirect gate and the
+// header's "Complete Membership" nudge so the two can never disagree.
+// Deliberately mirrors what that form actually requires — gender,
+// region, and at least one linked mobile money number — not what it
+// merely offers: a bank account is explicitly optional there (its own
+// label says so, and nothing in the form marks it `required`), so it is
+// intentionally excluded here too rather than gating members who chose
+// not to link one.
+interface MembershipCompletionStatus {
+  membershipComplete: boolean;
+  // Same value as membershipComplete today — kept as its own named flag
+  // (not just an alias read off membershipComplete at each call site) so
+  // a future rule stricter than plain onboarding completion (e.g. a
+  // suspended member) can diverge from it without another signature
+  // change here.
+  canManageAccounts: boolean;
+}
+
+function isMembershipComplete(
+  user: Pick<User, 'gender' | 'region' | 'phoneNumbers'>,
+): MembershipCompletionStatus {
+  const membershipComplete =
+    !!user.gender &&
+    !!user.region &&
+    user.phoneNumbers.some((phone) => phone.phoneStatus === 'Active');
+
+  return { membershipComplete, canManageAccounts: membershipComplete };
+}
+
 interface MemberInsurancePolicy {
   member_insurance_id: number;
   policy_number: string;
@@ -444,8 +475,15 @@ export class MembersService {
     });
 
     const { passwordHash: _passwordHash, ...safeUser } = user;
+    const { membershipComplete, canManageAccounts } =
+      isMembershipComplete(user);
 
-    return { ...safeUser, bankAccounts };
+    return {
+      ...safeUser,
+      bankAccounts,
+      membershipComplete,
+      canManageAccounts,
+    };
   }
 
   async updateProfile(userId: number, data: UpdateProfileDto) {
@@ -554,6 +592,24 @@ export class MembersService {
     );
   }
 
+  // Mirrors getSavingConsent's own "absence of a row means consented"
+  // rule (see that method's doc comment) — kept as a separate helper
+  // rather than having addPhoneNumber/addBankAccount call
+  // getSavingConsent itself, since that method reads via
+  // this.dataSource.query outside any transaction, while these two need
+  // the read inside their own transaction's manager.
+  private async isSavingConsented(
+    manager: EntityManager,
+    userId: number,
+  ): Promise<boolean> {
+    const [row] = await manager.query<{ consented: boolean }[]>(
+      `SELECT consented FROM member_saving_consents WHERE member_id = $1`,
+      [userId],
+    );
+
+    return row ? row.consented : true;
+  }
+
   async addPhoneNumber(
     userId: number,
     data: AddPhoneNumberDto,
@@ -564,6 +620,38 @@ export class MembersService {
     const accountNumber = data.accountNumber?.trim() || null;
 
     return this.dataSource.transaction(async (manager) => {
+      const user = await manager.findOne(User, {
+        where: { userId },
+        relations: { phoneNumbers: true },
+      });
+
+      if (!user) {
+        throw new NotFoundException('Member not found');
+      }
+
+      // Onboarding itself calls this endpoint (see MobileMoneyAccountForm's
+      // step 2) — safe to gate here because step 1 (PATCH /members/me)
+      // always runs first and, combined with the Active phone number every
+      // member already has from registration, makes canManageAccounts true
+      // before this ever executes for a first-time member.
+      if (!isMembershipComplete(user).canManageAccounts) {
+        throw new ForbiddenException(
+          'Complete your membership profile before linking another account',
+        );
+      }
+
+      // A member who has switched off automatic micro-savings must turn
+      // it back on before linking a new contribution source — every new
+      // phone/bank account exists to feed that engine, so adding one
+      // while opted out would silently do nothing useful. Same
+      // "absence means consented" default as everywhere else, so this
+      // never blocks a first-time member who has no consent row yet.
+      if (!(await this.isSavingConsented(manager, userId))) {
+        throw new ForbiddenException(
+          'Turn on Automatic Micro-Savings before linking another account',
+        );
+      }
+
       const existingPhone = await manager.findOne(PhoneNumber, {
         where: {
           phoneNumber,
@@ -575,10 +663,54 @@ export class MembersService {
           throw new ConflictException('Phone number is already registered');
         }
 
-        // The member is re-submitting a number already on file for their
-        // own account — most commonly their registration phone number,
-        // entered again as a mobile money account on the membership form.
-        // Treat it as already linked instead of erroring.
+        // Previously this returned the existing row completely as-is,
+        // including a stale 'Inactive' phoneStatus if the member had
+        // unlinked this exact number before — the response looked like a
+        // successful (re-)link, but the number silently stayed excluded
+        // from contribution matching. Reactivate it here instead, same
+        // as the dedicated reactivatePhoneNumber endpoint below.
+        if (existingPhone.phoneStatus === 'Inactive') {
+          existingPhone.phoneStatus = 'Active';
+
+          const reactivated = await manager.save(PhoneNumber, existingPhone);
+
+          await this.auditLogsService.record(manager, {
+            memberId: userId,
+            actionType: 'phone_number.reactivate',
+            affectedTable: 'phone_numbers',
+            affectedRecordId: reactivated.phoneId,
+            newValue: { phoneStatus: reactivated.phoneStatus },
+            ipAddress,
+          });
+
+          await this.notificationsService.create(manager, {
+            memberId: userId,
+            notificationType: 'Security',
+            title: 'Phone number reactivated',
+            message: `${reactivated.phoneNumber} was reactivated and will resume contributing to your wallet.`,
+          });
+
+          const reactivatedOperator = await this.findOperatorById(
+            manager,
+            reactivated.operatorId,
+          );
+
+          return {
+            phoneId: reactivated.phoneId,
+            phoneNumber: reactivated.phoneNumber,
+            accountNumber: reactivated.accountNumber,
+            operatorId: reactivated.operatorId,
+            operatorName: reactivatedOperator.operator_name,
+            isPrimary: reactivated.isPrimary,
+            phoneStatus: reactivated.phoneStatus,
+          };
+        }
+
+        // Already active — the member is re-submitting a number already
+        // on file for their own account, most commonly their
+        // registration phone number, entered again as a mobile money
+        // account on the membership form. Treat it as already linked
+        // instead of erroring.
         const existingOperator = await this.findOperatorById(
           manager,
           existingPhone.operatorId,
@@ -660,23 +792,95 @@ export class MembersService {
     const accountNumber = data.accountNumber.trim();
 
     return this.dataSource.transaction(async (manager) => {
+      const user = await manager.findOne(User, {
+        where: { userId },
+        relations: { phoneNumbers: true },
+      });
+
+      if (!user) {
+        throw new NotFoundException('Member not found');
+      }
+
+      if (!isMembershipComplete(user).canManageAccounts) {
+        throw new ForbiddenException(
+          'Complete your membership profile before linking another account',
+        );
+      }
+
+      if (!(await this.isSavingConsented(manager, userId))) {
+        throw new ForbiddenException(
+          'Turn on Automatic Micro-Savings before linking another account',
+        );
+      }
+
       const existingAccount = await manager.findOne(MemberBankAccount, {
         where: { accountNumber },
       });
 
       if (existingAccount) {
-        throw new ConflictException(
-          'Bank account number is already registered',
+        if (
+          existingAccount.memberId !== userId ||
+          existingAccount.accountStatus !== 'Inactive'
+        ) {
+          // Either someone else's account number, or this member's own
+          // account that's still linked — a true duplicate either way.
+          throw new ConflictException(
+            'Bank account number is already registered',
+          );
+        }
+
+        // Previously this branch threw the ConflictException above
+        // unconditionally, even for the member's own account they'd
+        // simply unlinked before — meaning there was no way back in
+        // once removed. Reactivate it instead, same as
+        // reactivateBankAccount below. 'Pending', not 'Active': no
+        // verification flow exists yet to ever promote a bank account
+        // out of this default (see BankService's own matching-query
+        // comment), so this is the same non-Inactive state the account
+        // started in.
+        existingAccount.accountStatus = 'Pending';
+
+        const reactivated = await manager.save(
+          MemberBankAccount,
+          existingAccount,
         );
+
+        await this.auditLogsService.record(manager, {
+          memberId: userId,
+          actionType: 'bank_account.reactivate',
+          affectedTable: 'member_bank_accounts',
+          affectedRecordId: reactivated.memberBankAccountId,
+          newValue: { accountStatus: reactivated.accountStatus },
+          ipAddress,
+        });
+
+        await this.notificationsService.create(manager, {
+          memberId: userId,
+          notificationType: 'Security',
+          title: 'Bank account reactivated',
+          message: `Your bank account ending ${reactivated.accountNumber.slice(-4)} was reactivated and will resume contributing to your wallet.`,
+        });
+
+        const [reactivatedBank] = await manager.query<
+          { bank_name: string }[]
+        >(`SELECT bank_name FROM banks WHERE bank_id = $1`, [
+          reactivated.bankId,
+        ]);
+
+        return {
+          memberBankAccountId: reactivated.memberBankAccountId,
+          bankId: reactivated.bankId,
+          bankName: reactivatedBank?.bank_name ?? null,
+          accountNumber: reactivated.accountNumber,
+          accountHolderName: reactivated.accountHolderName,
+          accountType: reactivated.accountType,
+          isPrimary: reactivated.isPrimary,
+          accountStatus: reactivated.accountStatus,
+          verificationStatus: reactivated.verificationStatus,
+        };
       }
 
       const bank = await this.findActiveBank(manager, data.bankId);
-
-      const user = await manager.findOne(User, { where: { userId } });
-
-      if (!user) {
-        throw new NotFoundException('Member not found');
-      }
 
       const existingAccountsCount = await manager.count(MemberBankAccount, {
         where: { memberId: userId },
@@ -739,6 +943,401 @@ export class MembersService {
         accountStatus: saved.accountStatus,
         verificationStatus: saved.verificationStatus,
       };
+    });
+  }
+
+  // =====================================================
+  // Remove (unlink) a phone number / bank account — a soft delete
+  // (status flips to 'Inactive') rather than a row DELETE, since
+  // wallet_transactions/saving_ledger/insurance_allocations rows already
+  // reference this history and must keep resolving. The two contribution
+  // write paths that match a member by phone/account number
+  // (TelecomService.handleContributionWebhook,
+  // BankService.recordContribution) now both exclude 'Inactive' rows, so
+  // this is a genuine "stop crediting from this source" action, not just
+  // a status label nobody reads.
+  // =====================================================
+
+  async removePhoneNumber(
+    userId: number,
+    phoneId: number,
+    ipAddress: string | null = null,
+  ) {
+    return this.dataSource.transaction(async (manager) => {
+      const phone = await manager.findOne(PhoneNumber, {
+        where: { phoneId, userId },
+      });
+
+      if (!phone) {
+        throw new NotFoundException('Phone number not found');
+      }
+
+      if (phone.phoneStatus === 'Inactive') {
+        throw new BadRequestException('This phone number is already unlinked');
+      }
+
+      phone.phoneStatus = 'Inactive';
+      // A removed number can't stay flagged as the account's primary
+      // contribution source.
+      phone.isPrimary = false;
+
+      const saved = await manager.save(PhoneNumber, phone);
+
+      await this.auditLogsService.record(manager, {
+        memberId: userId,
+        actionType: 'phone_number.remove',
+        affectedTable: 'phone_numbers',
+        affectedRecordId: saved.phoneId,
+        newValue: { phoneStatus: saved.phoneStatus },
+        ipAddress,
+      });
+
+      await this.notificationsService.create(manager, {
+        memberId: userId,
+        notificationType: 'Security',
+        title: 'Phone number unlinked',
+        message: `${saved.phoneNumber} was unlinked from your account. Contributions from this number will no longer be credited to your wallet.`,
+      });
+
+      return {
+        phoneId: saved.phoneId,
+        phoneNumber: saved.phoneNumber,
+        phoneStatus: saved.phoneStatus,
+      };
+    });
+  }
+
+  async removeBankAccount(
+    userId: number,
+    memberBankAccountId: number,
+    ipAddress: string | null = null,
+  ) {
+    return this.dataSource.transaction(async (manager) => {
+      const account = await manager.findOne(MemberBankAccount, {
+        where: { memberBankAccountId, memberId: userId },
+      });
+
+      if (!account) {
+        throw new NotFoundException('Bank account not found');
+      }
+
+      if (account.accountStatus === 'Inactive') {
+        throw new BadRequestException('This bank account is already unlinked');
+      }
+
+      account.accountStatus = 'Inactive';
+      account.isPrimary = false;
+
+      const saved = await manager.save(MemberBankAccount, account);
+
+      await this.auditLogsService.record(manager, {
+        memberId: userId,
+        actionType: 'bank_account.remove',
+        affectedTable: 'member_bank_accounts',
+        affectedRecordId: saved.memberBankAccountId,
+        newValue: { accountStatus: saved.accountStatus },
+        ipAddress,
+      });
+
+      await this.notificationsService.create(manager, {
+        memberId: userId,
+        notificationType: 'Security',
+        title: 'Bank account unlinked',
+        message: `Your bank account ending ${saved.accountNumber.slice(-4)} was unlinked from your account. Contributions from this account will no longer be credited to your wallet.`,
+      });
+
+      return {
+        memberBankAccountId: saved.memberBankAccountId,
+        accountNumber: saved.accountNumber,
+        accountStatus: saved.accountStatus,
+      };
+    });
+  }
+
+  private isForeignKeyViolation(error: unknown): boolean {
+    const code =
+      (error as { code?: string; driverError?: { code?: string } })?.code ??
+      (error as { driverError?: { code?: string } })?.driverError?.code;
+    return code === '23503';
+  }
+
+  // =====================================================
+  // Reactivate — the other half of removePhoneNumber/removeBankAccount
+  // above. Gated the same way addPhoneNumber/addBankAccount are
+  // (membership complete + saving consent on): bringing a removed
+  // number/account back is functionally "linking a contribution source
+  // again", so it earns the same rules a brand-new link does.
+  // =====================================================
+
+  async reactivatePhoneNumber(
+    userId: number,
+    phoneId: number,
+    ipAddress: string | null = null,
+  ) {
+    return this.dataSource.transaction(async (manager) => {
+      const user = await manager.findOne(User, {
+        where: { userId },
+        relations: { phoneNumbers: true },
+      });
+
+      if (!user) {
+        throw new NotFoundException('Member not found');
+      }
+
+      if (!isMembershipComplete(user).canManageAccounts) {
+        throw new ForbiddenException(
+          'Complete your membership profile before linking another account',
+        );
+      }
+
+      if (!(await this.isSavingConsented(manager, userId))) {
+        throw new ForbiddenException(
+          'Turn on Automatic Micro-Savings before linking another account',
+        );
+      }
+
+      const phone = await manager.findOne(PhoneNumber, {
+        where: { phoneId, userId },
+      });
+
+      if (!phone) {
+        throw new NotFoundException('Phone number not found');
+      }
+
+      if (phone.phoneStatus !== 'Inactive') {
+        throw new BadRequestException('This phone number is already active');
+      }
+
+      phone.phoneStatus = 'Active';
+
+      const saved = await manager.save(PhoneNumber, phone);
+
+      await this.auditLogsService.record(manager, {
+        memberId: userId,
+        actionType: 'phone_number.reactivate',
+        affectedTable: 'phone_numbers',
+        affectedRecordId: saved.phoneId,
+        newValue: { phoneStatus: saved.phoneStatus },
+        ipAddress,
+      });
+
+      await this.notificationsService.create(manager, {
+        memberId: userId,
+        notificationType: 'Security',
+        title: 'Phone number reactivated',
+        message: `${saved.phoneNumber} was reactivated and will resume contributing to your wallet.`,
+      });
+
+      return {
+        phoneId: saved.phoneId,
+        phoneNumber: saved.phoneNumber,
+        phoneStatus: saved.phoneStatus,
+      };
+    });
+  }
+
+  async reactivateBankAccount(
+    userId: number,
+    memberBankAccountId: number,
+    ipAddress: string | null = null,
+  ) {
+    return this.dataSource.transaction(async (manager) => {
+      const user = await manager.findOne(User, {
+        where: { userId },
+        relations: { phoneNumbers: true },
+      });
+
+      if (!user) {
+        throw new NotFoundException('Member not found');
+      }
+
+      if (!isMembershipComplete(user).canManageAccounts) {
+        throw new ForbiddenException(
+          'Complete your membership profile before linking another account',
+        );
+      }
+
+      if (!(await this.isSavingConsented(manager, userId))) {
+        throw new ForbiddenException(
+          'Turn on Automatic Micro-Savings before linking another account',
+        );
+      }
+
+      const account = await manager.findOne(MemberBankAccount, {
+        where: { memberBankAccountId, memberId: userId },
+      });
+
+      if (!account) {
+        throw new NotFoundException('Bank account not found');
+      }
+
+      if (account.accountStatus !== 'Inactive') {
+        throw new BadRequestException('This bank account is already active');
+      }
+
+      // 'Pending', not 'Active' — see addBankAccount's own reactivation
+      // branch above for why.
+      account.accountStatus = 'Pending';
+
+      const saved = await manager.save(MemberBankAccount, account);
+
+      await this.auditLogsService.record(manager, {
+        memberId: userId,
+        actionType: 'bank_account.reactivate',
+        affectedTable: 'member_bank_accounts',
+        affectedRecordId: saved.memberBankAccountId,
+        newValue: { accountStatus: saved.accountStatus },
+        ipAddress,
+      });
+
+      await this.notificationsService.create(manager, {
+        memberId: userId,
+        notificationType: 'Security',
+        title: 'Bank account reactivated',
+        message: `Your bank account ending ${saved.accountNumber.slice(-4)} was reactivated and will resume contributing to your wallet.`,
+      });
+
+      return {
+        memberBankAccountId: saved.memberBankAccountId,
+        accountNumber: saved.accountNumber,
+        accountStatus: saved.accountStatus,
+      };
+    });
+  }
+
+  // =====================================================
+  // Permanently delete — a real row DELETE, unlike removePhoneNumber/
+  // removeBankAccount's soft delete. Only ever allowed once an account
+  // is already Inactive (unlinked first, so this is never someone's
+  // only path to stop a live contribution source) AND has no financial
+  // history referencing it.
+  //
+  // member_bank_accounts -> bank_transactions is declared ON DELETE
+  // CASCADE in the schema (database/schema/tujitunze.sql), so Postgres
+  // itself would silently wipe real transaction rows rather than reject
+  // the delete — deleteBankAccountPermanently checks bank_transactions
+  // explicitly for that reason. phone_numbers's referencing tables
+  // (telecom_contributions and every dual-mode-savings event table) have
+  // no cascade, so Postgres rejects the delete on its own with a foreign
+  // key violation (23503) whenever history exists against any of them;
+  // isForeignKeyViolation translates that into the same 409 here rather
+  // than leaking a raw DB error, and doubles as a safety net for
+  // deleteBankAccountPermanently against any *other* (non-cascading)
+  // table this pass didn't enumerate by hand.
+  // =====================================================
+
+  async deletePhoneNumberPermanently(
+    userId: number,
+    phoneId: number,
+    ipAddress: string | null = null,
+  ) {
+    return this.dataSource.transaction(async (manager) => {
+      const phone = await manager.findOne(PhoneNumber, {
+        where: { phoneId, userId },
+      });
+
+      if (!phone) {
+        throw new NotFoundException('Phone number not found');
+      }
+
+      if (phone.phoneStatus !== 'Inactive') {
+        throw new BadRequestException(
+          'Unlink this phone number before deleting it permanently',
+        );
+      }
+
+      try {
+        await manager.delete(PhoneNumber, { phoneId });
+      } catch (error) {
+        if (this.isForeignKeyViolation(error)) {
+          throw new ConflictException(
+            'This phone number has contribution history and cannot be permanently deleted',
+          );
+        }
+        throw error;
+      }
+
+      await this.auditLogsService.record(manager, {
+        memberId: userId,
+        actionType: 'phone_number.delete_permanent',
+        affectedTable: 'phone_numbers',
+        affectedRecordId: phoneId,
+        oldValue: { phoneNumber: phone.phoneNumber },
+        ipAddress,
+      });
+
+      await this.notificationsService.create(manager, {
+        memberId: userId,
+        notificationType: 'Security',
+        title: 'Phone number deleted',
+        message: `${phone.phoneNumber} was permanently deleted from your account.`,
+      });
+
+      return { phoneId, deleted: true };
+    });
+  }
+
+  async deleteBankAccountPermanently(
+    userId: number,
+    memberBankAccountId: number,
+    ipAddress: string | null = null,
+  ) {
+    return this.dataSource.transaction(async (manager) => {
+      const account = await manager.findOne(MemberBankAccount, {
+        where: { memberBankAccountId, memberId: userId },
+      });
+
+      if (!account) {
+        throw new NotFoundException('Bank account not found');
+      }
+
+      if (account.accountStatus !== 'Inactive') {
+        throw new BadRequestException(
+          'Unlink this bank account before deleting it permanently',
+        );
+      }
+
+      const [existingTransaction] = await manager.query<
+        { bank_transaction_id: number }[]
+      >(
+        `SELECT bank_transaction_id FROM bank_transactions WHERE member_bank_account_id = $1 LIMIT 1`,
+        [memberBankAccountId],
+      );
+
+      if (existingTransaction) {
+        throw new ConflictException(
+          'This bank account has transaction history and cannot be permanently deleted',
+        );
+      }
+
+      try {
+        await manager.delete(MemberBankAccount, { memberBankAccountId });
+      } catch (error) {
+        if (this.isForeignKeyViolation(error)) {
+          throw new ConflictException(
+            'This bank account has transaction history and cannot be permanently deleted',
+          );
+        }
+        throw error;
+      }
+
+      await this.auditLogsService.record(manager, {
+        memberId: userId,
+        actionType: 'bank_account.delete_permanent',
+        affectedTable: 'member_bank_accounts',
+        affectedRecordId: memberBankAccountId,
+        oldValue: { accountNumber: account.accountNumber },
+        ipAddress,
+      });
+
+      await this.notificationsService.create(manager, {
+        memberId: userId,
+        notificationType: 'Security',
+        title: 'Bank account deleted',
+        message: `Your bank account ending ${account.accountNumber.slice(-4)} was permanently deleted from your account.`,
+      });
+
+      return { memberBankAccountId, deleted: true };
     });
   }
 

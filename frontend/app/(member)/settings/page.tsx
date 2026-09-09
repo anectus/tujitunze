@@ -15,14 +15,21 @@ import {
   Landmark,
   ShieldCheck,
   Sparkles,
+  X,
 } from "lucide-react";
 
-import { getAccessToken } from "@/lib/utils/permissions";
+import {
+  getAccessToken,
+  MEMBERSHIP_JUST_COMPLETED_STORAGE_KEY,
+} from "@/lib/utils/permissions";
+import { useMembershipGate } from "@/lib/hooks/useMembershipGate";
 import { useLanguage } from "@/lib/context/LanguageContext";
 import { memberSettingsTranslations } from "@/constants/translations/member-settings";
 import { API_URL } from "@/lib/utils/api";
 import PageContainer from "@/components/dashboard/PageContainer";
+import MembershipGateSpinner from "@/components/dashboard/MembershipGateSpinner";
 import Button from "@/components/common/Button";
+import InfoTooltip from "@/components/common/InfoTooltip";
 
 interface TelecomOperator {
   operator_id: number;
@@ -32,6 +39,30 @@ interface TelecomOperator {
 interface Bank {
   bank_id: number;
   bank_name: string;
+}
+
+interface LinkedPhoneNumber {
+  phoneId: number;
+  phoneNumber: string;
+  operatorId: number;
+  isPrimary: boolean;
+  phoneStatus: string;
+}
+
+interface LinkedBankAccount {
+  memberBankAccountId: number;
+  bankId: number;
+  accountNumber: string;
+  accountType: string | null;
+  isPrimary: boolean;
+  accountStatus: string;
+}
+
+interface MemberProfile {
+  membershipComplete: boolean;
+  canManageAccounts: boolean;
+  phoneNumbers: LinkedPhoneNumber[];
+  bankAccounts: LinkedBankAccount[];
 }
 
 const inputClass =
@@ -104,10 +135,12 @@ function SubHeading({
   icon: Icon,
   title,
   description,
+  tooltip,
 }: {
   icon?: React.ComponentType<{ className?: string; "aria-hidden"?: boolean }>;
   title: string;
   description?: string;
+  tooltip?: string;
 }) {
   return (
     <div className="flex items-start gap-2">
@@ -115,7 +148,10 @@ function SubHeading({
         <Icon className="mt-0.5 h-4 w-4 shrink-0 text-gray-400" aria-hidden />
       )}
       <div>
-        <h3 className="text-base font-semibold text-gray-800">{title}</h3>
+        <div className="flex items-center gap-1.5">
+          <h3 className="text-base font-semibold text-gray-800">{title}</h3>
+          {tooltip && <InfoTooltip text={tooltip} />}
+        </div>
         {description && (
           <p className="mt-1 text-sm text-gray-500">{description}</p>
         )}
@@ -141,6 +177,113 @@ function Alert({
     <div className={`mt-4 flex items-start gap-2 rounded-lg px-4 py-3 text-sm ${styles}`}>
       <Icon className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
       <span>{children}</span>
+    </div>
+  );
+}
+
+// Floating, self-dismissing toast — same fixed top-right / auto-dismiss
+// treatment as the Dashboard's "?welcome=1" banner
+// ((member)/dashboard/page.tsx), reused here since a removal can be
+// triggered from either the phone or bank list and a page-level toast
+// reads better than duplicating an inline Alert in both places.
+function Toast({
+  variant,
+  children,
+  onDismiss,
+}: {
+  variant: "success" | "error";
+  children: React.ReactNode;
+  onDismiss: () => void;
+}) {
+  const Icon = variant === "success" ? CheckCircle2 : AlertCircle;
+
+  useEffect(() => {
+    const timeout = setTimeout(onDismiss, 5000);
+    return () => clearTimeout(timeout);
+  }, [onDismiss]);
+
+  return (
+    <div
+      role="status"
+      className="fixed right-4 top-4 z-50 flex items-start gap-3 rounded-lg border border-emerald-100 bg-white px-4 py-3 shadow-xl [animation:fade-in_0.3s_ease-out_forwards] motion-reduce:[animation:none]"
+    >
+      <span
+        className={`mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full ${
+          variant === "success" ? "bg-emerald-100 text-[#064E3B]" : "bg-red-100 text-red-600"
+        }`}
+      >
+        <Icon className="h-3.5 w-3.5" aria-hidden />
+      </span>
+      <p className="text-sm font-medium text-gray-900">{children}</p>
+      <button
+        type="button"
+        onClick={onDismiss}
+        aria-label="Dismiss"
+        className="ml-2 shrink-0 rounded p-0.5 text-gray-400 transition hover:text-gray-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400"
+      >
+        <X className="h-4 w-4" aria-hidden />
+      </button>
+    </div>
+  );
+}
+
+// Blocking confirm dialog for a destructive-but-reversible action (unlink,
+// not delete — the member can re-add the same number/account afterwards).
+// Self-contained rather than routed through components/modals/*.tsx or
+// components/ui/Modal.tsx — both are empty stubs with no established
+// contract, same reasoning InfoTooltip's own doc comment gives for not
+// wiring through components/ui/Tooltip.tsx.
+function ConfirmDialog({
+  title,
+  message,
+  confirmLabel,
+  cancelLabel,
+  busy,
+  onConfirm,
+  onCancel,
+}: {
+  title: string;
+  message: string;
+  confirmLabel: string;
+  cancelLabel: string;
+  busy: boolean;
+  onConfirm: () => void;
+  onCancel: () => void;
+}) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/40" onClick={busy ? undefined : onCancel} />
+
+      <div
+        role="alertdialog"
+        aria-modal="true"
+        aria-labelledby="confirm-dialog-title"
+        className="relative w-full max-w-sm rounded-2xl bg-white p-6 shadow-xl"
+      >
+        <h3 id="confirm-dialog-title" className="text-lg font-bold text-gray-900">
+          {title}
+        </h3>
+        <p className="mt-2 text-sm text-gray-600">{message}</p>
+
+        <div className="mt-6 flex justify-end gap-3">
+          <button
+            type="button"
+            onClick={onCancel}
+            disabled={busy}
+            className="text-sm font-semibold text-emerald-700 hover:text-emerald-800 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {cancelLabel}
+          </button>
+          <button
+            type="button"
+            onClick={onConfirm}
+            disabled={busy}
+            className="rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {confirmLabel}
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
@@ -409,12 +552,480 @@ function ChangePasswordSection() {
 }
 
 // =====================================================
+// Linked Accounts — the phone numbers/bank accounts already on file,
+// each with a "Remove" (unlink) action. Fetches its own copy of
+// /members/me (rather than lifting state up to SettingsPage) so it can
+// reconcile the list locally right after a successful DELETE without a
+// full-page refetch, the same self-contained-per-section convention the
+// Add forms below already use for their own option lists.
+// =====================================================
+
+type AccountKind = "phone" | "bank";
+
+type RemoveTarget = { kind: AccountKind; id: number; label: string };
+type DeleteTarget = { kind: AccountKind; id: number; label: string };
+
+function LinkedAccountsSection() {
+  const getAuthHeaders = useAuthHeaders();
+  const { language } = useLanguage();
+  const t = memberSettingsTranslations[language];
+
+  const [profile, setProfile] = useState<MemberProfile | null>(null);
+  const [operators, setOperators] = useState<TelecomOperator[]>([]);
+  const [banks, setBanks] = useState<Bank[]>([]);
+  const [target, setTarget] = useState<RemoveTarget | null>(null);
+  const [removing, setRemoving] = useState(false);
+  // Keyed "phone:<id>" / "bank:<id>" rather than a bare id — phoneId and
+  // memberBankAccountId are separate sequences that can collide on the
+  // same number, and reactivation (unlike remove/delete) has no
+  // confirm-dialog gate to make that ambiguity harmless.
+  const [reactivatingKey, setReactivatingKey] = useState<string | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<DeleteTarget | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const [toast, setToast] = useState<{ variant: "success" | "error"; message: string } | null>(
+    null
+  );
+
+  useEffect(() => {
+    const headers = getAuthHeaders();
+    if (!headers) return;
+
+    fetch(`${API_URL}/members/me`, { headers })
+      .then((response) => (response.ok ? response.json() : null))
+      .then((data: MemberProfile | null) => {
+        if (data) {
+          setProfile(data);
+        }
+      })
+      .catch(() => setProfile(null));
+
+    fetch(`${API_URL}/members/telecom-operators`)
+      .then((response) => (response.ok ? response.json() : []))
+      .then(setOperators)
+      .catch(() => setOperators([]));
+
+    fetch(`${API_URL}/members/banks`)
+      .then((response) => (response.ok ? response.json() : []))
+      .then(setBanks)
+      .catch(() => setBanks([]));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const operatorName = (operatorId: number) =>
+    operators.find((operator) => operator.operator_id === operatorId)?.operator_name ??
+    t.unknownNetwork;
+
+  const bankName = (bankId: number) =>
+    banks.find((bank) => bank.bank_id === bankId)?.bank_name ?? t.unknownBank;
+
+  const handleConfirmRemove = async () => {
+    if (!target) return;
+
+    const headers = getAuthHeaders();
+    if (!headers) return;
+
+    setRemoving(true);
+
+    try {
+      const path =
+        target.kind === "phone"
+          ? `/members/phone-numbers/${target.id}`
+          : `/members/bank-accounts/${target.id}`;
+
+      const response = await fetch(`${API_URL}${path}`, {
+        method: "DELETE",
+        headers,
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || t.removeAccountErrorFallback);
+      }
+
+      // Marked Inactive in place, not removed from the list — a removed
+      // account still needs to be visible so the member can reactivate
+      // it or delete it permanently below, rather than disappearing
+      // into a state with no way back in.
+      setProfile((current) =>
+        current
+          ? target.kind === "phone"
+            ? {
+                ...current,
+                phoneNumbers: current.phoneNumbers.map((phone) =>
+                  phone.phoneId === target.id
+                    ? { ...phone, phoneStatus: "Inactive", isPrimary: false }
+                    : phone
+                ),
+              }
+            : {
+                ...current,
+                bankAccounts: current.bankAccounts.map((account) =>
+                  account.memberBankAccountId === target.id
+                    ? { ...account, accountStatus: "Inactive", isPrimary: false }
+                    : account
+                ),
+              }
+          : current
+      );
+
+      setToast({ variant: "success", message: t.removeAccountSuccess });
+    } catch (err) {
+      setToast({
+        variant: "error",
+        message: err instanceof Error ? err.message : t.removeAccountErrorFallback,
+      });
+    } finally {
+      setRemoving(false);
+      setTarget(null);
+    }
+  };
+
+  const handleReactivate = async (kind: AccountKind, id: number) => {
+    const headers = getAuthHeaders();
+    if (!headers) return;
+
+    const key = `${kind}:${id}`;
+    setReactivatingKey(key);
+
+    try {
+      const path =
+        kind === "phone"
+          ? `/members/phone-numbers/${id}/reactivate`
+          : `/members/bank-accounts/${id}/reactivate`;
+
+      const response = await fetch(`${API_URL}${path}`, {
+        method: "PATCH",
+        headers,
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || t.reactivateAccountErrorFallback);
+      }
+
+      setProfile((current) =>
+        current
+          ? kind === "phone"
+            ? {
+                ...current,
+                phoneNumbers: current.phoneNumbers.map((phone) =>
+                  phone.phoneId === id
+                    ? { ...phone, phoneStatus: data.phoneStatus }
+                    : phone
+                ),
+              }
+            : {
+                ...current,
+                bankAccounts: current.bankAccounts.map((account) =>
+                  account.memberBankAccountId === id
+                    ? { ...account, accountStatus: data.accountStatus }
+                    : account
+                ),
+              }
+          : current
+      );
+
+      setToast({ variant: "success", message: t.reactivateAccountSuccess });
+    } catch (err) {
+      setToast({
+        variant: "error",
+        message:
+          err instanceof Error ? err.message : t.reactivateAccountErrorFallback,
+      });
+    } finally {
+      setReactivatingKey(null);
+    }
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!deleteTarget) return;
+
+    const headers = getAuthHeaders();
+    if (!headers) return;
+
+    setDeleting(true);
+
+    try {
+      const path =
+        deleteTarget.kind === "phone"
+          ? `/members/phone-numbers/${deleteTarget.id}/permanent`
+          : `/members/bank-accounts/${deleteTarget.id}/permanent`;
+
+      const response = await fetch(`${API_URL}${path}`, {
+        method: "DELETE",
+        headers,
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || t.deleteAccountErrorFallback);
+      }
+
+      // Here it really does come out of the list — unlike remove above,
+      // this is a real row DELETE, so there's nothing left to reactivate.
+      setProfile((current) =>
+        current
+          ? deleteTarget.kind === "phone"
+            ? {
+                ...current,
+                phoneNumbers: current.phoneNumbers.filter(
+                  (phone) => phone.phoneId !== deleteTarget.id
+                ),
+              }
+            : {
+                ...current,
+                bankAccounts: current.bankAccounts.filter(
+                  (account) => account.memberBankAccountId !== deleteTarget.id
+                ),
+              }
+          : current
+      );
+
+      setToast({ variant: "success", message: t.deleteAccountSuccess });
+    } catch (err) {
+      setToast({
+        variant: "error",
+        message: err instanceof Error ? err.message : t.deleteAccountErrorFallback,
+      });
+    } finally {
+      setDeleting(false);
+      setDeleteTarget(null);
+    }
+  };
+
+  if (!profile) {
+    return null;
+  }
+
+  // Every member has at least one phone number from registration, so
+  // this is realistically never empty — kept as a guard rather than an
+  // assumption.
+  if (profile.phoneNumbers.length === 0 && profile.bankAccounts.length === 0) {
+    return null;
+  }
+
+  return (
+    <div>
+      <SubHeading title={t.linkedAccountsTitle} description={t.linkedAccountsDescription} />
+
+      <ul className="mt-4 divide-y divide-gray-200 rounded-lg bg-white">
+        {profile.phoneNumbers.map((phone) => {
+          const inactive = phone.phoneStatus === "Inactive";
+          const reactivateKey = `phone:${phone.phoneId}`;
+
+          return (
+            <li
+              key={`phone-${phone.phoneId}`}
+              className="flex items-center justify-between gap-3 px-4 py-3 first:pt-3 last:pb-3"
+            >
+              <div className="flex items-center gap-2.5">
+                <Smartphone
+                  className={`h-4 w-4 shrink-0 ${inactive ? "text-gray-300" : "text-gray-400"}`}
+                  aria-hidden
+                />
+                <div>
+                  <p className={`font-semibold ${inactive ? "text-gray-500" : "text-gray-900"}`}>
+                    {phone.phoneNumber}
+                    {phone.isPrimary && (
+                      <span className="ml-2 rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-semibold text-[#064E3B]">
+                        {t.primary}
+                      </span>
+                    )}
+                    {inactive && (
+                      <span className="ml-2 rounded-full bg-gray-100 px-2 py-0.5 text-xs font-semibold text-gray-500">
+                        {t.inactiveBadge}
+                      </span>
+                    )}
+                  </p>
+                  <p className="text-sm text-gray-500">{operatorName(phone.operatorId)}</p>
+                </div>
+              </div>
+
+              {profile.canManageAccounts && (
+                <div className="flex items-center gap-3">
+                  {inactive ? (
+                    <>
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          type="button"
+                          onClick={() => handleReactivate("phone", phone.phoneId)}
+                          disabled={reactivatingKey === reactivateKey}
+                          className="text-sm font-semibold text-[#064E3B] hover:text-emerald-800 disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                          {reactivatingKey === reactivateKey ? t.reactivating : t.reactivate}
+                        </button>
+                        <InfoTooltip text={t.reactivateAccountTooltip} />
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setDeleteTarget({
+                              kind: "phone",
+                              id: phone.phoneId,
+                              label: phone.phoneNumber,
+                            })
+                          }
+                          className="text-sm font-semibold text-red-600 hover:text-red-700"
+                        >
+                          {t.deletePermanently}
+                        </button>
+                        <InfoTooltip text={t.deleteAccountTooltip} />
+                      </div>
+                    </>
+                  ) : (
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setTarget({ kind: "phone", id: phone.phoneId, label: phone.phoneNumber })
+                        }
+                        className="text-sm font-semibold text-red-600 hover:text-red-700"
+                      >
+                        {t.remove}
+                      </button>
+                      <InfoTooltip text={t.removeAccountTooltip} />
+                    </div>
+                  )}
+                </div>
+              )}
+            </li>
+          );
+        })}
+
+        {profile.bankAccounts.map((account) => {
+          const inactive = account.accountStatus === "Inactive";
+          const reactivateKey = `bank:${account.memberBankAccountId}`;
+          const label = `···· ${account.accountNumber.slice(-4)}`;
+
+          return (
+            <li
+              key={`bank-${account.memberBankAccountId}`}
+              className="flex items-center justify-between gap-3 px-4 py-3 first:pt-3 last:pb-3"
+            >
+              <div className="flex items-center gap-2.5">
+                <Landmark
+                  className={`h-4 w-4 shrink-0 ${inactive ? "text-gray-300" : "text-gray-400"}`}
+                  aria-hidden
+                />
+                <div>
+                  <p className={`font-semibold ${inactive ? "text-gray-500" : "text-gray-900"}`}>
+                    {bankName(account.bankId)} · {label}
+                    {account.isPrimary && (
+                      <span className="ml-2 rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-semibold text-[#064E3B]">
+                        {t.primary}
+                      </span>
+                    )}
+                    {inactive && (
+                      <span className="ml-2 rounded-full bg-gray-100 px-2 py-0.5 text-xs font-semibold text-gray-500">
+                        {t.inactiveBadge}
+                      </span>
+                    )}
+                  </p>
+                  <p className="text-sm text-gray-500">{account.accountStatus}</p>
+                </div>
+              </div>
+
+              {profile.canManageAccounts && (
+                <div className="flex items-center gap-3">
+                  {inactive ? (
+                    <>
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          type="button"
+                          onClick={() => handleReactivate("bank", account.memberBankAccountId)}
+                          disabled={reactivatingKey === reactivateKey}
+                          className="text-sm font-semibold text-[#064E3B] hover:text-emerald-800 disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                          {reactivatingKey === reactivateKey ? t.reactivating : t.reactivate}
+                        </button>
+                        <InfoTooltip text={t.reactivateAccountTooltip} />
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setDeleteTarget({
+                              kind: "bank",
+                              id: account.memberBankAccountId,
+                              label,
+                            })
+                          }
+                          className="text-sm font-semibold text-red-600 hover:text-red-700"
+                        >
+                          {t.deletePermanently}
+                        </button>
+                        <InfoTooltip text={t.deleteAccountTooltip} />
+                      </div>
+                    </>
+                  ) : (
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setTarget({
+                            kind: "bank",
+                            id: account.memberBankAccountId,
+                            label,
+                          })
+                        }
+                        className="text-sm font-semibold text-red-600 hover:text-red-700"
+                      >
+                        {t.remove}
+                      </button>
+                      <InfoTooltip text={t.removeAccountTooltip} />
+                    </div>
+                  )}
+                </div>
+              )}
+            </li>
+          );
+        })}
+      </ul>
+
+      {target && (
+        <ConfirmDialog
+          title={t.removeAccountConfirmTitle}
+          message={t.removeAccountConfirmMessageTemplate.replace("{account}", target.label)}
+          confirmLabel={removing ? t.removing : t.remove}
+          cancelLabel={t.cancel}
+          busy={removing}
+          onConfirm={handleConfirmRemove}
+          onCancel={() => setTarget(null)}
+        />
+      )}
+
+      {deleteTarget && (
+        <ConfirmDialog
+          title={t.deleteAccountConfirmTitle}
+          message={t.deleteAccountConfirmMessageTemplate.replace("{account}", deleteTarget.label)}
+          confirmLabel={deleting ? t.deleting : t.deletePermanently}
+          cancelLabel={t.cancel}
+          busy={deleting}
+          onConfirm={handleConfirmDelete}
+          onCancel={() => setDeleteTarget(null)}
+        />
+      )}
+
+      {toast && (
+        <Toast variant={toast.variant} onDismiss={() => setToast(null)}>
+          {toast.message}
+        </Toast>
+      )}
+    </div>
+  );
+}
+
+// =====================================================
 // Add Phone Number — an income source for the wallet
 // (mobile money). The registration number can be re-entered here too;
 // the backend treats that as already-linked instead of an error.
 // =====================================================
 
-function AddPhoneNumberSection() {
+function AddPhoneNumberSection({ blocked }: { blocked: boolean }) {
   const getAuthHeaders = useAuthHeaders();
   const { language } = useLanguage();
   const t = memberSettingsTranslations[language];
@@ -452,6 +1063,14 @@ function AddPhoneNumberSection() {
     e.preventDefault();
     setError("");
     setSuccess("");
+
+    // Mirrors the backend's own check (MembersService.addPhoneNumber) —
+    // this is a UX shortcut, not the real boundary, so a request that
+    // somehow reaches the API anyway is still rejected there.
+    if (blocked) {
+      setError(t.savingConsentRequiredAlert);
+      return;
+    }
 
     const headers = getAuthHeaders();
     if (!headers) return;
@@ -492,8 +1111,14 @@ function AddPhoneNumberSection() {
 
   return (
     <div>
-      <SubHeading icon={Smartphone} title={t.addPhoneTitle} description={t.addPhoneDescription} />
+      <SubHeading
+        icon={Smartphone}
+        title={t.addPhoneTitle}
+        description={t.addPhoneDescription}
+        tooltip={t.addAccountTooltip}
+      />
 
+      {blocked && <Alert variant="error">{t.savingConsentRequiredAlert}</Alert>}
       {error && <Alert variant="error">{error}</Alert>}
       {success && <Alert variant="success">{success}</Alert>}
 
@@ -536,7 +1161,7 @@ function AddPhoneNumberSection() {
           />
         </div>
 
-        <Button type="submit" disabled={loading} size="sm">
+        <Button type="submit" disabled={loading || blocked} size="sm">
           {loading ? t.adding : t.addPhoneButton}
         </Button>
 
@@ -550,7 +1175,7 @@ function AddPhoneNumberSection() {
 // Add Bank Account — another income source for the wallet.
 // =====================================================
 
-function AddBankAccountSection() {
+function AddBankAccountSection({ blocked }: { blocked: boolean }) {
   const getAuthHeaders = useAuthHeaders();
   const { language } = useLanguage();
   const t = memberSettingsTranslations[language];
@@ -590,6 +1215,14 @@ function AddBankAccountSection() {
     e.preventDefault();
     setError("");
     setSuccess("");
+
+    // Mirrors the backend's own check (MembersService.addBankAccount) —
+    // this is a UX shortcut, not the real boundary, so a request that
+    // somehow reaches the API anyway is still rejected there.
+    if (blocked) {
+      setError(t.savingConsentRequiredAlert);
+      return;
+    }
 
     const headers = getAuthHeaders();
     if (!headers) return;
@@ -631,8 +1264,14 @@ function AddBankAccountSection() {
 
   return (
     <div>
-      <SubHeading icon={Landmark} title={t.addBankTitle} description={t.addBankDescription} />
+      <SubHeading
+        icon={Landmark}
+        title={t.addBankTitle}
+        description={t.addBankDescription}
+        tooltip={t.addAccountTooltip}
+      />
 
+      {blocked && <Alert variant="error">{t.savingConsentRequiredAlert}</Alert>}
       {error && <Alert variant="error">{error}</Alert>}
       {success && <Alert variant="success">{success}</Alert>}
 
@@ -689,7 +1328,7 @@ function AddBankAccountSection() {
           <option value="Current">{t.current}</option>
         </SelectField>
 
-        <Button type="submit" disabled={loading} size="sm">
+        <Button type="submit" disabled={loading || blocked} size="sm">
           {loading ? t.adding : t.addBankButton}
         </Button>
 
@@ -705,7 +1344,15 @@ function AddBankAccountSection() {
 // member_saving_consents row means consented).
 // =====================================================
 
-function SavingConsentSection() {
+function SavingConsentSection({
+  onConsentChange,
+}: {
+  // Notified on both the initial fetch and every successful toggle so
+  // SettingsPage — which renders the Add Phone/Bank forms in a separate
+  // panel — can gate them on the same consent value without this section
+  // giving up its own self-contained fetch/toggle state.
+  onConsentChange?: (consented: boolean) => void;
+}) {
   const getAuthHeaders = useAuthHeaders();
   const { language } = useLanguage();
   const t = memberSettingsTranslations[language];
@@ -723,7 +1370,10 @@ function SavingConsentSection() {
     fetch(`${API_URL}/members/saving-consent`, { headers })
       .then((response) => (response.ok ? response.json() : null))
       .then((data) => {
-        if (data) setConsented(data.consented);
+        if (data) {
+          setConsented(data.consented);
+          onConsentChange?.(data.consented);
+        }
       })
       .finally(() => setLoaded(true));
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -733,10 +1383,23 @@ function SavingConsentSection() {
     const headers = getAuthHeaders();
     if (!headers) return;
 
+    const previousValue = consented;
     const nextValue = !consented;
     setError("");
     setSuccess("");
     setSaving(true);
+
+    // Optimistic: flip the switch (and notify the parent) the instant
+    // the click happens, rather than waiting on the PATCH round-trip.
+    // Previously `consented` only updated inside the success branch
+    // below, so on any real network latency the switch — and the whole
+    // button, dimmed via disabled:opacity-60 while `saving` is true —
+    // looked stuck in its old position for the entire request instead
+    // of responding to the click. Rolled back in the catch block below
+    // if the request actually fails, so this never leaves the UI
+    // showing a state the backend didn't accept.
+    setConsented(nextValue);
+    onConsentChange?.(nextValue);
 
     try {
       const response = await fetch(`${API_URL}/members/saving-consent`, {
@@ -751,9 +1414,10 @@ function SavingConsentSection() {
         throw new Error(data.message || t.savingConsentUpdateErrorFallback);
       }
 
-      setConsented(nextValue);
       setSuccess(t.savingConsentUpdateSuccess);
     } catch (err) {
+      setConsented(previousValue);
+      onConsentChange?.(previousValue);
       setError(err instanceof Error ? err.message : t.genericErrorFallback);
     } finally {
       setSaving(false);
@@ -768,23 +1432,32 @@ function SavingConsentSection() {
       {success && <Alert variant="success">{success}</Alert>}
 
       <div className="mt-4 flex items-center justify-between gap-4 rounded-lg bg-white p-4">
-        <span className="text-sm font-medium text-gray-700">
+        <span id="saving-consent-label" className="text-sm font-medium text-gray-700">
           {consented ? t.savingConsentOn : t.savingConsentOff}
         </span>
 
+        {/* aria-labelledby (not just the visible text next to it) gives
+            this its accessible name — a bare role="switch" button
+            otherwise announces only "switch, on/off" with nothing
+            saying what it controls. aria-busy mirrors the optimistic
+            update above: the switch has already visually moved by the
+            time this is true, but a screen reader user still benefits
+            from knowing the change is being confirmed with the server. */}
         <button
           type="button"
           role="switch"
           aria-checked={consented}
+          aria-labelledby="saving-consent-label"
+          aria-busy={saving}
           disabled={!loaded || saving}
           onClick={handleToggle}
-          className={`relative h-7 w-12 shrink-0 rounded-full transition-colors duration-300 ease-in-out disabled:opacity-60 ${
+          className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors duration-200 ease-in-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60 ${
             consented ? "bg-[#064E3B]" : "bg-gray-300"
           }`}
         >
           <span
-            className={`absolute top-0.5 h-6 w-6 rounded-full bg-white shadow transition-transform duration-300 ease-in-out ${
-              consented ? "translate-x-5" : "translate-x-0.5"
+            className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform duration-200 ease-in-out ${
+              consented ? "translate-x-6" : "translate-x-1"
             }`}
           />
         </button>
@@ -847,6 +1520,37 @@ export default function SettingsPage() {
   const { language } = useLanguage();
   const t = memberSettingsTranslations[language];
   const [activeTab, setActiveTab] = useState<TabKey>("user");
+  const [showOnboardingBanner, setShowOnboardingBanner] = useState(false);
+  // null while SavingConsentSection's own fetch is still in flight —
+  // treated as "not blocked" below so the Add forms don't flash a false
+  // warning before the real value is known.
+  const [savingConsent, setSavingConsent] = useState<boolean | null>(null);
+
+  // Same requireComplete gate the Dashboard uses — an incomplete member
+  // is redirected to /onboarding/mobile-money before any of this page's
+  // own data (change password, linked accounts) ever fetches.
+  const membershipComplete = useMembershipGate("requireComplete");
+
+  // One-shot banner set by MobileMoneyAccountForm right after it finishes
+  // (see permissions.ts's MEMBERSHIP_JUST_COMPLETED_STORAGE_KEY doc
+  // comment) — read once and cleared immediately so it doesn't reappear
+  // on a later visit to this page.
+  useEffect(() => {
+    try {
+      if (sessionStorage.getItem(MEMBERSHIP_JUST_COMPLETED_STORAGE_KEY) === "1") {
+        sessionStorage.removeItem(MEMBERSHIP_JUST_COMPLETED_STORAGE_KEY);
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- syncing to an external signal (sessionStorage flag set by a prior page), not derivable during render
+        setShowOnboardingBanner(true);
+      }
+    } catch {
+      // sessionStorage can throw in a locked-down browsing context — the
+      // banner just won't show, no functional loss.
+    }
+  }, []);
+
+  if (membershipComplete !== true) {
+    return <MembershipGateSpinner label={t.loadingSettings} />;
+  }
 
   return (
     <PageContainer backHref="/profile" backLabel={t.backToProfile}>
@@ -860,6 +1564,10 @@ export default function SettingsPage() {
         <p className="mt-2 text-sm text-gray-500">
           {t.description}
         </p>
+
+        {showOnboardingBanner && (
+          <Alert variant="success">{t.onboardingCompleteBanner}</Alert>
+        )}
 
         <SettingsTabs
           active={activeTab}
@@ -878,7 +1586,7 @@ export default function SettingsPage() {
                 title={t.microSavingsGroupTitle}
                 description={t.microSavingsGroupDescription}
               >
-                <SavingConsentSection />
+                <SavingConsentSection onConsentChange={setSavingConsent} />
               </SettingsPanel>
 
               <SettingsPanel
@@ -887,9 +1595,12 @@ export default function SettingsPage() {
                 description={t.walletSourcesGroupDescription}
               >
                 <div className="space-y-8">
-                  <AddPhoneNumberSection />
+                  <LinkedAccountsSection />
                   <div className="border-t border-gray-200 pt-8">
-                    <AddBankAccountSection />
+                    <AddPhoneNumberSection blocked={savingConsent === false} />
+                  </div>
+                  <div className="border-t border-gray-200 pt-8">
+                    <AddBankAccountSection blocked={savingConsent === false} />
                   </div>
                 </div>
               </SettingsPanel>

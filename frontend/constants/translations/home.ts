@@ -255,6 +255,7 @@ export const footerTranslations = {
       "Data protected under Tanzania Insurance Regulatory Authority guidelines.",
     privacyPolicy: "Privacy Policy",
     terms: "Terms & Conditions",
+    memberDashboardTagline: "Empowering health savings for every member.",
   },
   sw: {
     tagline:
@@ -277,6 +278,7 @@ export const footerTranslations = {
       "Taarifa zako zinalindwa kwa mujibu wa miongozo ya Mamlaka ya Usimamizi wa Bima Tanzania.",
     privacyPolicy: "Sera ya Faragha",
     terms: "Vigezo na Masharti",
+    memberDashboardTagline: "Tunaboresha akiba ya afya kwa kila mwanachama.",
   },
 } as const satisfies Record<Language, Record<string, string>>;
 

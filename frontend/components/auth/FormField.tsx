@@ -19,6 +19,11 @@ interface FormFieldProps {
   valid?: boolean;
   helpText?: string;
   trailing?: ReactNode;
+  // Overrides the default pr-11 reserved for `trailing` — for a caller
+  // whose trailing content (e.g. a detected-network badge with a logo
+  // and name) is wider than the show/hide-password toggle this was
+  // originally sized for.
+  trailingWidthClass?: string;
 }
 
 // Shared field shell for the login/register forms: label + input +
@@ -42,6 +47,7 @@ export default function FormField({
   valid,
   helpText,
   trailing,
+  trailingWidthClass = "pr-11",
 }: FormFieldProps) {
   const showCheck = !trailing && valid && !error;
   const messageId = `${id}-message`;
@@ -78,7 +84,7 @@ export default function FormField({
           aria-invalid={!!error}
           aria-describedby={hasMessage ? messageId : undefined}
           className={`w-full rounded-lg border px-4 py-3 text-gray-900 outline-none transition ${
-            trailing || showCheck ? "pr-11" : ""
+            trailing ? trailingWidthClass : showCheck ? "pr-11" : ""
           } ${
             error
               ? "border-red-500 focus:border-red-500 focus:ring-2 focus:ring-red-200"

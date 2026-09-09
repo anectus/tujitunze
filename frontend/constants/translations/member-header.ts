@@ -8,9 +8,11 @@ export const memberHeaderTranslations = {
   en: {
     completeMembership: "Complete Membership",
     unreadNotifications: "unread notifications",
+    searchPlaceholder: "Search transactions, policies...",
   },
   sw: {
     completeMembership: "Kamilisha Usajili",
     unreadNotifications: "arifa mpya",
+    searchPlaceholder: "Tafuta miamala, sera...",
   },
 } as const satisfies Record<Language, Record<string, string>>;

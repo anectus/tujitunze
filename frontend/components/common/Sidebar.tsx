@@ -142,7 +142,7 @@ export default function Sidebar({
               ${isCompact ? "justify-center" : ""}
               ${
                 isActive
-                  ? "bg-emerald-50 text-[#064E3B]"
+                  ? "bg-emerald-50 text-[#064E3B] font-semibold"
                   : "text-slate-600 hover:bg-gray-50 hover:text-[#064E3B]"
               }`}
             >

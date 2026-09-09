@@ -216,8 +216,12 @@ export class TelecomService {
         const [phone] = await manager.query<
           { phone_id: number; user_id: number }[]
         >(
+          // phone_status = 'Active' — a member who has unlinked this
+          // number (MembersService.removePhoneNumber) must stop being
+          // matched here, same as the resource-conversion/outgoing-
+          // diversion webhooks below already require.
           `SELECT phone_id, user_id FROM phone_numbers
-           WHERE phone_number = $1 AND operator_id = $2`,
+           WHERE phone_number = $1 AND operator_id = $2 AND phone_status = 'Active'`,
           [dto.phoneNumber, operatorId],
         );
 

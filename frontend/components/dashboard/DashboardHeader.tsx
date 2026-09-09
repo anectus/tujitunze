@@ -77,7 +77,11 @@ export default function DashboardHeader({ title }: DashboardHeaderProps) {
       headers: { Authorization: `Bearer ${token}` },
     })
       .then((response) => (response.ok ? response.json() : null))
-      .then((profile) => setNeedsMembershipCompletion(!!profile && !profile.region))
+      .then((profile) =>
+        setNeedsMembershipCompletion(
+          !!profile && profile.membershipComplete === false
+        )
+      )
       .catch(() => setNeedsMembershipCompletion(false));
 
     fetch(`${API_URL}/members/notifications?pageSize=1`, {
@@ -140,7 +144,7 @@ export default function DashboardHeader({ title }: DashboardHeaderProps) {
           // rendered a CompactLogo instead; removed as a genuine
           // duplicate, since Sidebar.tsx already shows the logo at every
           // page's actual left edge regardless of role.)
-          <SearchBar className="w-48 md:w-64" />
+          <SearchBar className="w-48 md:w-64" placeholder={mt.searchPlaceholder} />
         ) : (
           <span />
         )}

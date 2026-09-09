@@ -289,4 +289,5 @@ export const NAV_ICONS: Record<NavLabelKey, ComponentType<IconProps>> = {
   qrCode: QrIcon,
   profile: UserCircleIcon,
   settings: SlidersIcon,
+  completeMembership: PhoneIcon,
 };

@@ -164,9 +164,16 @@ export class BankService {
             account_number: string;
           }[]
         >(
+          // account_status <> 'Inactive' rather than requiring 'Active':
+          // no verification flow exists yet to ever promote a linked
+          // account out of its 'Pending' default (see MembersService.
+          // addBankAccount), so requiring 'Active' here would reject
+          // every real account. 'Inactive' is the one status
+          // MembersService.removeBankAccount actually sets, and is the
+          // one case that must stop matching.
           `SELECT member_bank_account_id, member_id, account_number
            FROM member_bank_accounts
-           WHERE account_number = $1 AND bank_id = $2`,
+           WHERE account_number = $1 AND bank_id = $2 AND account_status <> 'Inactive'`,
           [dto.accountNumber, bankId],
         );
 
@@ -330,9 +337,16 @@ export class BankService {
             account_number: string;
           }[]
         >(
+          // account_status <> 'Inactive' rather than requiring 'Active':
+          // no verification flow exists yet to ever promote a linked
+          // account out of its 'Pending' default (see MembersService.
+          // addBankAccount), so requiring 'Active' here would reject
+          // every real account. 'Inactive' is the one status
+          // MembersService.removeBankAccount actually sets, and is the
+          // one case that must stop matching.
           `SELECT member_bank_account_id, member_id, account_number
            FROM member_bank_accounts
-           WHERE account_number = $1 AND bank_id = $2`,
+           WHERE account_number = $1 AND bank_id = $2 AND account_status <> 'Inactive'`,
           [dto.accountNumber, bankId],
         );
 

@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Param,
   ParseIntPipe,
@@ -98,6 +99,95 @@ export class MembersController {
     @Req() request: Request,
   ) {
     return this.membersService.addBankAccount(user.userId, body, request.ip);
+  }
+
+  // Unlink, not a hard delete — see MembersService.removePhoneNumber.
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('Member')
+  @Delete('phone-numbers/:id')
+  async removePhoneNumber(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id', ParseIntPipe) id: number,
+    @Req() request: Request,
+  ) {
+    return this.membersService.removePhoneNumber(user.userId, id, request.ip);
+  }
+
+  // Unlink, not a hard delete — see MembersService.removeBankAccount.
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('Member')
+  @Delete('bank-accounts/:id')
+  async removeBankAccount(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id', ParseIntPipe) id: number,
+    @Req() request: Request,
+  ) {
+    return this.membersService.removeBankAccount(user.userId, id, request.ip);
+  }
+
+  // The other half of removePhoneNumber/removeBankAccount above — see
+  // MembersService.reactivatePhoneNumber.
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('Member')
+  @Patch('phone-numbers/:id/reactivate')
+  async reactivatePhoneNumber(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id', ParseIntPipe) id: number,
+    @Req() request: Request,
+  ) {
+    return this.membersService.reactivatePhoneNumber(
+      user.userId,
+      id,
+      request.ip,
+    );
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('Member')
+  @Patch('bank-accounts/:id/reactivate')
+  async reactivateBankAccount(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id', ParseIntPipe) id: number,
+    @Req() request: Request,
+  ) {
+    return this.membersService.reactivateBankAccount(
+      user.userId,
+      id,
+      request.ip,
+    );
+  }
+
+  // Real hard delete — only reachable once already unlinked and only if
+  // there's no financial history against it. See
+  // MembersService.deletePhoneNumberPermanently.
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('Member')
+  @Delete('phone-numbers/:id/permanent')
+  async deletePhoneNumberPermanently(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id', ParseIntPipe) id: number,
+    @Req() request: Request,
+  ) {
+    return this.membersService.deletePhoneNumberPermanently(
+      user.userId,
+      id,
+      request.ip,
+    );
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('Member')
+  @Delete('bank-accounts/:id/permanent')
+  async deleteBankAccountPermanently(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id', ParseIntPipe) id: number,
+    @Req() request: Request,
+  ) {
+    return this.membersService.deleteBankAccountPermanently(
+      user.userId,
+      id,
+      request.ip,
+    );
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)

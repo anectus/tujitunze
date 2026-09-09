@@ -97,6 +97,10 @@ const DEBOUNCE_MS = 300;
 // happens to be further up the tree.
 interface SearchBarProps {
   className?: string;
+  // Overrides the generic t.search placeholder/aria-label — e.g. the
+  // Member dashboard header passes a more specific hint since it knows
+  // what this caller's search actually covers.
+  placeholder?: string;
 }
 
 // Reusable across every authenticated header (currently: DashboardHeader).
@@ -105,11 +109,12 @@ interface SearchBarProps {
 // modal dialog (focus trap, backdrop, escape-to-close semantics) is
 // disproportionate for what's still a lightweight dropdown; this gets
 // the same "tap icon → type" UX with far less machinery to get wrong.
-export default function SearchBar({ className = "" }: SearchBarProps) {
+export default function SearchBar({ className = "", placeholder }: SearchBarProps) {
   const router = useRouter();
   const { language } = useLanguage();
   const t = commonTranslations[language];
   const navLabels = navLabelTranslations[language];
+  const inputPlaceholder = placeholder ?? t.search;
 
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<SearchResults | null>(null);
@@ -325,8 +330,8 @@ export default function SearchBar({ className = "" }: SearchBarProps) {
           value={query}
           onChange={(event) => setQuery(event.target.value)}
           onFocus={() => results && setDropdownOpen(true)}
-          placeholder={t.search}
-          aria-label={t.search}
+          placeholder={inputPlaceholder}
+          aria-label={inputPlaceholder}
           className={inputClasses}
         />
         {showDropdown && (
@@ -360,8 +365,8 @@ export default function SearchBar({ className = "" }: SearchBarProps) {
                   type="search"
                   value={query}
                   onChange={(event) => setQuery(event.target.value)}
-                  placeholder={t.search}
-                  aria-label={t.search}
+                  placeholder={inputPlaceholder}
+                  aria-label={inputPlaceholder}
                   className={inputClasses}
                 />
               </div>

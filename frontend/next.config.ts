@@ -12,7 +12,7 @@ const nextConfig: NextConfig = {
   // network; matching only supports an exact host or *.subdomain
   // wildcard, not a general wildcard, so there's no way to make this
   // one entry itself network-independent.
-  allowedDevOrigins: ["196.44.164.105"],
+  allowedDevOrigins: ["192.168.137.107"],
 };
 
 export default nextConfig;

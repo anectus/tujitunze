@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 
 import { getAccessToken } from "@/lib/utils/permissions";
+import MembershipGateSpinner from "@/components/dashboard/MembershipGateSpinner";
 import StatusBadge from "@/components/common/StatusBadge";
 import { useLanguage } from "@/lib/context/LanguageContext";
 import { memberProfileTranslations } from "@/constants/translations/member-profile";
@@ -63,6 +64,7 @@ interface MemberProfile {
   createdAt: string;
   phoneNumbers: PhoneNumber[];
   bankAccounts: BankAccount[];
+  membershipComplete: boolean;
 }
 
 interface RecentTransaction {
@@ -210,6 +212,15 @@ export default function ProfilePage() {
     loadProfile();
   }, [router, t.loadErrorFallback, t.genericErrorFallback]);
 
+  // Reuses the already-fetched profile rather than a second /members/me
+  // call via useMembershipGate — this page needs the full profile body
+  // anyway, so there's no separate "just the flag" fetch to share.
+  useEffect(() => {
+    if (profile && !profile.membershipComplete) {
+      router.replace("/onboarding/mobile-money?reason=incomplete");
+    }
+  }, [profile, router]);
+
   // Update local state directly rather than refetching the whole profile —
   // the new primary is already known from a successful PATCH.
   const setPrimaryPhone = async (phoneId: number) => {
@@ -281,6 +292,14 @@ export default function ProfilePage() {
         ? "bg-amber-100 text-amber-800"
         : "bg-gray-100 text-gray-600";
 
+  // null-equivalent (still loading) or an incomplete profile the redirect
+  // effect above is already navigating away from — neither renders the
+  // real page content underneath it, same MembershipGateSpinner the
+  // dashboard and settings pages use.
+  if (loading || (profile && !profile.membershipComplete)) {
+    return <MembershipGateSpinner label={t.loadingProfile} />;
+  }
+
   return (
     <div className="min-h-screen bg-[#F0FDF4] px-4 py-12">
 
@@ -296,10 +315,6 @@ export default function ProfilePage() {
         <h1 className="mt-4 text-3xl font-bold text-gray-900">
           {t.title}
         </h1>
-
-        {loading && (
-          <p className="mt-8 text-gray-500">{t.loadingProfile}</p>
-        )}
 
         {error && (
           <div className="mt-8 rounded-lg bg-red-100 px-4 py-3 text-sm text-red-700">
@@ -416,14 +431,19 @@ export default function ProfilePage() {
 
               <div className="space-y-6 lg:col-span-2">
 
-                {/* Contact Information */}
+                {/* Contact Information — "Add Another" goes to Settings
+                    (the real Add Phone Number form) rather than the
+                    onboarding form: this member has already completed
+                    membership, so /onboarding/mobile-money is reserved for
+                    the one-time setup flow, not ongoing account
+                    management. */}
                 <ProfileCard
                   title={t.contactInfoTitle}
                   icon={PhoneIcon}
                   delay={0.1}
                   action={
                     <Link
-                      href="/onboarding/mobile-money"
+                      href="/settings"
                       className="text-sm font-semibold text-[#064E3B] hover:text-[#065F46]"
                     >
                       {t.addAnother}
@@ -473,14 +493,16 @@ export default function ProfilePage() {
                   </ul>
                 </ProfileCard>
 
-                {/* Financial Information */}
+                {/* Financial Information — same reasoning as Contact
+                    Information above: "Add Another" goes to the real
+                    Add Bank Account form on /settings. */}
                 <ProfileCard
                   title={t.financialInfoTitle}
                   icon={WalletIcon}
                   delay={0.2}
                   action={
                     <Link
-                      href="/onboarding/mobile-money"
+                      href="/settings"
                       className="text-sm font-semibold text-[#064E3B] hover:text-[#065F46]"
                     >
                       {t.addAnother}

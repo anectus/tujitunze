@@ -10,6 +10,10 @@ export const memberSettingsTranslations = {
     userSettingsTab: "User Settings",
     securitySettingsTab: "Security Settings",
 
+    loadingSettings: "Loading your settings...",
+    onboardingCompleteBanner:
+      "Your onboarding is complete. You can now manage your linked accounts.",
+
     accountSecurityGroupTitle: "Account Security",
     accountSecurityGroupDescription:
       "Manage your password and keep your account protected.",
@@ -19,6 +23,41 @@ export const memberSettingsTranslations = {
     microSavingsGroupTitle: "Micro-Savings Preferences",
     microSavingsGroupDescription:
       "Control whether small amounts are automatically saved from your everyday transactions.",
+
+    linkedAccountsTitle: "Linked Accounts",
+    linkedAccountsDescription:
+      "Phone numbers and bank accounts currently linked to your Health Wallet.",
+    primary: "Primary",
+    unknownNetwork: "Unknown network",
+    unknownBank: "Unknown bank",
+    remove: "Remove",
+    removing: "Removing...",
+    cancel: "Cancel",
+    addAccountTooltip: "Link a new source for your Health Wallet.",
+    removeAccountTooltip: "Stops wallet contributions from this source.",
+    savingConsentRequiredAlert:
+      "Turn on Automatic Micro-Savings above before adding a new phone number or bank account.",
+    removeAccountConfirmTitle: "Unlink this account?",
+    removeAccountConfirmMessageTemplate:
+      "Are you sure you want to unlink {account}? This will stop wallet contributions from this source.",
+    removeAccountSuccess: "Account removed successfully.",
+    removeAccountErrorFallback: "Failed to remove account. Please try again.",
+
+    inactiveBadge: "Inactive",
+    reactivate: "Reactivate",
+    reactivating: "Reactivating...",
+    reactivateAccountTooltip: "Brings this source back online for wallet contributions.",
+    reactivateAccountSuccess: "Account reactivated successfully.",
+    reactivateAccountErrorFallback: "Failed to reactivate account. Please try again.",
+    deletePermanently: "Delete Permanently",
+    deleting: "Deleting...",
+    deleteAccountTooltip:
+      "Permanently removes this account from your profile. This can't be undone.",
+    deleteAccountConfirmTitle: "Permanently delete this account?",
+    deleteAccountConfirmMessageTemplate:
+      "Are you sure you want to permanently delete {account}? This cannot be undone.",
+    deleteAccountSuccess: "Account deleted permanently.",
+    deleteAccountErrorFallback: "Failed to delete account. Please try again.",
 
     changePasswordTitle: "Change Password",
     currentPassword: "Current Password",
@@ -64,7 +103,8 @@ export const memberSettingsTranslations = {
       "When this is on, a small share of eligible telecom bundle purchases and mobile-money transactions is automatically saved into your Health Wallet. Turning it off stops new savings — it does not affect money already saved.",
     savingConsentOn: "On — savings are active",
     savingConsentOff: "Off — no new savings will be applied",
-    savingConsentUpdateErrorFallback: "Unable to update this setting.",
+    savingConsentUpdateErrorFallback:
+      "Could not update savings preference. Please try again.",
     savingConsentUpdateSuccess: "Your savings preference was updated.",
 
     genericErrorFallback: "Something went wrong. Please try again.",
@@ -78,6 +118,10 @@ export const memberSettingsTranslations = {
     userSettingsTab: "Mipangilio ya Mtumiaji",
     securitySettingsTab: "Mipangilio ya Usalama",
 
+    loadingSettings: "Inapakia mipangilio yako...",
+    onboardingCompleteBanner:
+      "Usajili wako umekamilika. Sasa unaweza kusimamia akaunti zako zilizounganishwa.",
+
     accountSecurityGroupTitle: "Usalama wa Akaunti",
     accountSecurityGroupDescription:
       "Simamia nywila yako na uweke akaunti yako salama.",
@@ -87,6 +131,41 @@ export const memberSettingsTranslations = {
     microSavingsGroupTitle: "Mapendeleo ya Akiba Ndogo Ndogo",
     microSavingsGroupDescription:
       "Dhibiti kama kiasi kidogo kinahifadhiwa kiotomatiki kutoka kwenye miamala yako ya kila siku.",
+
+    linkedAccountsTitle: "Akaunti Zilizounganishwa",
+    linkedAccountsDescription:
+      "Namba za simu na akaunti za benki ambazo tayari zimeunganishwa na Mkoba wako wa Afya.",
+    primary: "Msingi",
+    unknownNetwork: "Mtandao usiojulikana",
+    unknownBank: "Benki isiyojulikana",
+    remove: "Ondoa",
+    removing: "Inaondoa...",
+    cancel: "Ghairi",
+    addAccountTooltip: "Unganisha chanzo kipya kwa Mkoba wako wa Afya.",
+    removeAccountTooltip: "Inasitisha michango ya mkoba kutoka chanzo hiki.",
+    savingConsentRequiredAlert:
+      "Washa Akiba Ndogo Ndogo Kiotomatiki hapo juu kabla ya kuongeza namba mpya ya simu au akaunti ya benki.",
+    removeAccountConfirmTitle: "Ondoa akaunti hii?",
+    removeAccountConfirmMessageTemplate:
+      "Una uhakika unataka kuondoa {account}? Hii itasitisha michango ya mkoba kutoka chanzo hiki.",
+    removeAccountSuccess: "Akaunti imeondolewa kikamilifu.",
+    removeAccountErrorFallback: "Imeshindwa kuondoa akaunti. Tafadhali jaribu tena.",
+
+    inactiveBadge: "Haitumiki",
+    reactivate: "Rejesha",
+    reactivating: "Inarejesha...",
+    reactivateAccountTooltip: "Inarejesha chanzo hiki kwa michango ya mkoba.",
+    reactivateAccountSuccess: "Akaunti imerejeshwa kikamilifu.",
+    reactivateAccountErrorFallback: "Imeshindwa kurejesha akaunti. Tafadhali jaribu tena.",
+    deletePermanently: "Futa Kabisa",
+    deleting: "Inafuta...",
+    deleteAccountTooltip:
+      "Inaondoa akaunti hii kabisa kwenye wasifu wako. Hatua hii haiwezi kutenduliwa.",
+    deleteAccountConfirmTitle: "Futa akaunti hii kabisa?",
+    deleteAccountConfirmMessageTemplate:
+      "Una uhakika unataka kufuta {account} kabisa? Hatua hii haiwezi kutenduliwa.",
+    deleteAccountSuccess: "Akaunti imefutwa kabisa.",
+    deleteAccountErrorFallback: "Imeshindwa kufuta akaunti. Tafadhali jaribu tena.",
 
     changePasswordTitle: "Badilisha Nywila",
     currentPassword: "Nywila ya Sasa",
@@ -132,7 +211,8 @@ export const memberSettingsTranslations = {
       "Ukiwasha hii, sehemu ndogo ya manunuzi ya vifurushi vya simu na miamala ya pesa za simu inayostahili itahifadhiwa kiotomatiki kwenye Mkoba wako wa Afya. Kuzima hakuathiri fedha ambazo tayari zimehifadhiwa — kunazuia tu akiba mpya.",
     savingConsentOn: "Imewashwa — akiba inaendelea",
     savingConsentOff: "Imezimwa — hakuna akiba mpya itakayowekwa",
-    savingConsentUpdateErrorFallback: "Imeshindwa kubadilisha mpangilio huu.",
+    savingConsentUpdateErrorFallback:
+      "Imeshindwa kusasisha mpangilio wa akiba. Tafadhali jaribu tena.",
     savingConsentUpdateSuccess: "Mpangilio wako wa akiba umesasishwa.",
 
     genericErrorFallback: "Hitilafu imetokea. Tafadhali jaribu tena.",
