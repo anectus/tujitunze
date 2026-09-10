@@ -8,7 +8,7 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 
-import { DataSource, EntityManager } from 'typeorm';
+import { DataSource, EntityManager, Not } from 'typeorm';
 
 import * as bcrypt from 'bcrypt';
 
@@ -126,6 +126,12 @@ interface District {
 
 @Injectable()
 export class MembersService {
+  // TCRA-aligned per-operator SIM caps under a single NIDA (see
+  // assertSimSlotAvailable below): one standard mobile-money number per
+  // operator, up to four M2M (IoT/router/tracking) SIMs per operator.
+  private static readonly STANDARD_SIM_LIMIT_PER_OPERATOR = 1;
+  private static readonly M2M_SIM_LIMIT_PER_OPERATOR = 4;
+
   constructor(
     private readonly dataSource: DataSource,
     private readonly auditLogsService: AuditLogsService,
@@ -610,6 +616,93 @@ export class MembersService {
     return row ? row.consented : true;
   }
 
+  // TCRA rule: a member may hold one Standard SIM per operator under
+  // their NIDA, or up to four M2M SIMs per operator (device SIMs are
+  // explicitly excluded from the one-per-operator rule). Counts only
+  // non-Inactive rows — a removed (unlinked) number frees its slot, same
+  // as everywhere else that treats 'Inactive' as "doesn't count".
+  // excludePhoneId lets a reactivation check the limit as if its own row
+  // weren't already there.
+  private async assertSimSlotAvailable(
+    manager: EntityManager,
+    userId: number,
+    operatorId: number,
+    simType: string,
+    operatorName: string,
+    excludePhoneId?: number,
+  ): Promise<void> {
+    const limit =
+      simType === 'M2M'
+        ? MembersService.M2M_SIM_LIMIT_PER_OPERATOR
+        : MembersService.STANDARD_SIM_LIMIT_PER_OPERATOR;
+
+    const qb = manager
+      .createQueryBuilder(PhoneNumber, 'phone')
+      .where('phone.userId = :userId', { userId })
+      .andWhere('phone.operatorId = :operatorId', { operatorId })
+      .andWhere('phone.simType = :simType', { simType })
+      .andWhere("phone.phoneStatus != 'Inactive'");
+
+    if (excludePhoneId) {
+      qb.andWhere('phone.phoneId != :excludePhoneId', { excludePhoneId });
+    }
+
+    const activeCount = await qb.getCount();
+
+    if (activeCount >= limit) {
+      throw new ConflictException(
+        simType === 'M2M'
+          ? `You already have the maximum of ${limit} M2M SIMs registered with ${operatorName} under your NIDA.`
+          : `You already have a ${operatorName} SIM registered under your NIDA. Only one standard SIM per operator is allowed — register it as an M2M SIM instead if this is for an IoT device, router, or tracker.`,
+      );
+    }
+  }
+
+  // "You already have this account type at this bank" rule: bankId +
+  // accountType + currency + accountCapacity must be unique per member
+  // among non-Inactive rows (an unlinked account frees its combination,
+  // same reasoning as assertSimSlotAvailable above). excludeAccountId
+  // lets a reactivation check as if its own row weren't already there.
+  private async assertBankProductAvailable(
+    manager: EntityManager,
+    userId: number,
+    bankId: number,
+    accountType: string | null,
+    currency: string,
+    accountCapacity: string,
+    excludeAccountId?: number,
+  ): Promise<void> {
+    const qb = manager
+      .createQueryBuilder(MemberBankAccount, 'account')
+      .where('account.memberId = :userId', { userId })
+      .andWhere('account.bankId = :bankId', { bankId })
+      .andWhere('account.currency = :currency', { currency })
+      .andWhere('account.accountCapacity = :accountCapacity', {
+        accountCapacity,
+      })
+      .andWhere("account.accountStatus != 'Inactive'");
+
+    if (accountType === null) {
+      qb.andWhere('account.accountType IS NULL');
+    } else {
+      qb.andWhere('account.accountType = :accountType', { accountType });
+    }
+
+    if (excludeAccountId) {
+      qb.andWhere('account.memberBankAccountId != :excludeAccountId', {
+        excludeAccountId,
+      });
+    }
+
+    const existing = await qb.getExists();
+
+    if (existing) {
+      throw new ConflictException(
+        'You already have this account type at this bank.',
+      );
+    }
+  }
+
   async addPhoneNumber(
     userId: number,
     data: AddPhoneNumberDto,
@@ -618,6 +711,8 @@ export class MembersService {
     const phoneNumber = this.normalizeTanzanianPhone(data.phoneNumber);
 
     const accountNumber = data.accountNumber?.trim() || null;
+
+    const simType = data.simType === 'M2M' ? 'M2M' : 'Standard';
 
     return this.dataSource.transaction(async (manager) => {
       const user = await manager.findOne(User, {
@@ -670,6 +765,23 @@ export class MembersService {
         // from contribution matching. Reactivate it here instead, same
         // as the dedicated reactivatePhoneNumber endpoint below.
         if (existingPhone.phoneStatus === 'Inactive') {
+          const reactivatedOperator = await this.findOperatorById(
+            manager,
+            existingPhone.operatorId,
+          );
+
+          // A slot may have filled up (a new SIM added on this operator)
+          // in the time since this number was unlinked — reactivating it
+          // now would push the member over their per-operator cap.
+          await this.assertSimSlotAvailable(
+            manager,
+            userId,
+            existingPhone.operatorId,
+            existingPhone.simType,
+            reactivatedOperator.operator_name,
+            existingPhone.phoneId,
+          );
+
           existingPhone.phoneStatus = 'Active';
 
           const reactivated = await manager.save(PhoneNumber, existingPhone);
@@ -690,11 +802,6 @@ export class MembersService {
             message: `${reactivated.phoneNumber} was reactivated and will resume contributing to your wallet.`,
           });
 
-          const reactivatedOperator = await this.findOperatorById(
-            manager,
-            reactivated.operatorId,
-          );
-
           return {
             phoneId: reactivated.phoneId,
             phoneNumber: reactivated.phoneNumber,
@@ -703,6 +810,7 @@ export class MembersService {
             operatorName: reactivatedOperator.operator_name,
             isPrimary: reactivated.isPrimary,
             phoneStatus: reactivated.phoneStatus,
+            simType: reactivated.simType,
           };
         }
 
@@ -724,12 +832,21 @@ export class MembersService {
           operatorName: existingOperator.operator_name,
           isPrimary: existingPhone.isPrimary,
           phoneStatus: existingPhone.phoneStatus,
+          simType: existingPhone.simType,
         };
       }
 
       const prefix = phoneNumber.substring(0, 3);
 
       const operator = await this.findActiveOperatorForPrefix(manager, prefix);
+
+      await this.assertSimSlotAvailable(
+        manager,
+        userId,
+        operator.operator_id,
+        simType,
+        operator.operator_name,
+      );
 
       const phone = manager.create(PhoneNumber, {
         userId,
@@ -743,6 +860,8 @@ export class MembersService {
         isPrimary: false,
 
         phoneStatus: 'Active',
+
+        simType,
       });
 
       const savedPhone = await manager.save(PhoneNumber, phone);
@@ -780,6 +899,8 @@ export class MembersService {
         isPrimary: savedPhone.isPrimary,
 
         phoneStatus: savedPhone.phoneStatus,
+
+        simType: savedPhone.simType,
       };
     });
   }
@@ -790,6 +911,9 @@ export class MembersService {
     ipAddress: string | null = null,
   ) {
     const accountNumber = data.accountNumber.trim();
+
+    const currency = data.currency?.trim().toUpperCase() || 'TZS';
+    const accountCapacity = data.accountCapacity || 'Individual';
 
     return this.dataSource.transaction(async (manager) => {
       const user = await manager.findOne(User, {
@@ -828,6 +952,20 @@ export class MembersService {
             'Bank account number is already registered',
           );
         }
+
+        // A slot may have filled up (a new account added for this exact
+        // bank/type/currency/capacity combination) in the time since
+        // this account was unlinked — reactivating it now would create a
+        // duplicate product.
+        await this.assertBankProductAvailable(
+          manager,
+          userId,
+          existingAccount.bankId,
+          existingAccount.accountType,
+          existingAccount.currency,
+          existingAccount.accountCapacity,
+          existingAccount.memberBankAccountId,
+        );
 
         // Previously this branch threw the ConflictException above
         // unconditionally, even for the member's own account they'd
@@ -877,10 +1015,21 @@ export class MembersService {
           isPrimary: reactivated.isPrimary,
           accountStatus: reactivated.accountStatus,
           verificationStatus: reactivated.verificationStatus,
+          currency: reactivated.currency,
+          accountCapacity: reactivated.accountCapacity,
         };
       }
 
       const bank = await this.findActiveBank(manager, data.bankId);
+
+      await this.assertBankProductAvailable(
+        manager,
+        userId,
+        bank.bank_id,
+        data.accountType,
+        currency,
+        accountCapacity,
+      );
 
       const existingAccountsCount = await manager.count(MemberBankAccount, {
         where: { memberId: userId },
@@ -908,6 +1057,10 @@ export class MembersService {
         verificationStatus: 'Pending',
 
         isPrimary: existingAccountsCount === 0,
+
+        currency,
+
+        accountCapacity,
       });
 
       const saved = await manager.save(MemberBankAccount, bankAccount);
@@ -942,6 +1095,8 @@ export class MembersService {
         isPrimary: saved.isPrimary,
         accountStatus: saved.accountStatus,
         verificationStatus: saved.verificationStatus,
+        currency: saved.currency,
+        accountCapacity: saved.accountCapacity,
       };
     });
   }
@@ -1108,6 +1263,17 @@ export class MembersService {
         throw new BadRequestException('This phone number is already active');
       }
 
+      const operator = await this.findOperatorById(manager, phone.operatorId);
+
+      await this.assertSimSlotAvailable(
+        manager,
+        userId,
+        phone.operatorId,
+        phone.simType,
+        operator.operator_name,
+        phone.phoneId,
+      );
+
       phone.phoneStatus = 'Active';
 
       const saved = await manager.save(PhoneNumber, phone);
@@ -1174,6 +1340,16 @@ export class MembersService {
       if (account.accountStatus !== 'Inactive') {
         throw new BadRequestException('This bank account is already active');
       }
+
+      await this.assertBankProductAvailable(
+        manager,
+        userId,
+        account.bankId,
+        account.accountType,
+        account.currency,
+        account.accountCapacity,
+        account.memberBankAccountId,
+      );
 
       // 'Pending', not 'Active' — see addBankAccount's own reactivation
       // branch above for why.

@@ -10,9 +10,7 @@ import { API_URL } from "@/lib/utils/api";
 import {
   BellIcon,
   ShieldIcon,
-  SignalIcon,
   UsersIcon,
-  WalletIcon,
 } from "@/components/common/SidebarIcons";
 
 function SearchIcon({ className }: { className?: string }) {
@@ -57,17 +55,13 @@ interface SearchResultItem {
 
 interface SearchResults {
   members: SearchResultItem[];
-  wallet: SearchResultItem[];
   insurance: SearchResultItem[];
-  telecom: SearchResultItem[];
   notifications: SearchResultItem[];
 }
 
 const EMPTY_RESULTS: SearchResults = {
   members: [],
-  wallet: [],
   insurance: [],
-  telecom: [],
   notifications: [],
 };
 
@@ -81,9 +75,7 @@ const CATEGORY_ORDER: {
   icon: typeof UsersIcon;
 }[] = [
   { key: "members", labelKey: "members", icon: UsersIcon },
-  { key: "wallet", labelKey: "wallet", icon: WalletIcon },
   { key: "insurance", labelKey: "insurance", icon: ShieldIcon },
-  { key: "telecom", labelKey: "telecom", icon: SignalIcon },
   { key: "notifications", labelKey: "notifications", icon: BellIcon },
 ];
 

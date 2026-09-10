@@ -51,6 +51,24 @@ export class MemberBankAccount {
   })
   accountType!: string | null;
 
+  // Part of the per-bank product uniqueness key (bankId + accountType +
+  // currency + accountCapacity) enforced in MembersService.
+  @Column({
+    name: 'currency',
+    type: 'varchar',
+    length: 3,
+    default: 'TZS',
+  })
+  currency!: string;
+
+  @Column({
+    name: 'account_capacity',
+    type: 'varchar',
+    length: 20,
+    default: 'Individual',
+  })
+  accountCapacity!: string;
+
   @Column({
     name: 'account_status',
     type: 'varchar',

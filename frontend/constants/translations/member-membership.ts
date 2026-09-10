@@ -19,7 +19,6 @@ export const memberMembershipTranslations = {
     insuranceCoverage: "Insurance Coverage",
     policyLabel: "Policy",
     noActiveInsurance: "No active insurance policy on file.",
-    makeContribution: "Make a contribution →",
     errorFallback: "Unable to load your membership.",
   },
   sw: {
@@ -40,7 +39,6 @@ export const memberMembershipTranslations = {
     insuranceCoverage: "Ulinzi wa Bima",
     policyLabel: "Sera",
     noActiveInsurance: "Hakuna sera ya bima hai kwenye kumbukumbu.",
-    makeContribution: "Fanya mchango →",
     errorFallback: "Imeshindwa kupakia uanachama wako.",
   },
 } as const satisfies Record<Language, Record<string, string>>;

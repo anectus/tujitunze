@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 
 import { getAccessToken } from "@/lib/utils/permissions";
 import StatusBadge from "@/components/common/StatusBadge";
-import Button from "@/components/common/Button";
 import { useLanguage } from "@/lib/context/LanguageContext";
 import { memberMembershipTranslations } from "@/constants/translations/member-membership";
 import { commonTranslations } from "@/constants/translations/common";
@@ -230,12 +229,6 @@ export default function MembershipPage() {
                   </p>
                 )}
 
-              </div>
-
-              <div className="mt-6 flex justify-center">
-                <Button href="/wallet" size="sm">
-                  {t.makeContribution}
-                </Button>
               </div>
 
             </div>

@@ -3,7 +3,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { DataSource, EntityManager } from 'typeorm';
+import { DataSource, EntityManager, IsNull } from 'typeorm';
 
 import { Notification } from './entities/notification.entity';
 
@@ -46,7 +46,7 @@ export class NotificationsService {
     const [items, total] = await this.dataSource.manager.findAndCount(
       Notification,
       {
-        where: { memberId },
+        where: { memberId, deletedAt: IsNull() },
         order: { sentDate: 'DESC' },
         skip: (page - 1) * pageSize,
         take: pageSize,
@@ -54,18 +54,23 @@ export class NotificationsService {
     );
 
     const unreadCount = await this.dataSource.manager.count(Notification, {
-      where: { memberId, readStatus: false },
+      where: { memberId, readStatus: false, deletedAt: IsNull() },
     });
 
     return { items, total, unreadCount, page, pageSize };
   }
 
-  async markRead(memberId: number, notificationId: number) {
+  private async findOwnNotification(
+    memberId: number,
+    notificationId: number,
+  ): Promise<Notification> {
     const notification = await this.dataSource.manager.findOne(Notification, {
       where: { notificationId },
     });
 
-    if (!notification) {
+    // Soft-deleted rows 404 the same as a nonexistent id — a member has
+    // no legitimate reason to act on a notification they already deleted.
+    if (!notification || notification.deletedAt) {
       throw new NotFoundException('Notification not found');
     }
 
@@ -73,7 +78,16 @@ export class NotificationsService {
       throw new ForbiddenException('That notification does not belong to you');
     }
 
+    return notification;
+  }
+
+  async markRead(memberId: number, notificationId: number) {
+    const notification = await this.findOwnNotification(memberId, notificationId);
+
     notification.readStatus = true;
+    // Set once — a re-PATCH of an already-read notification shouldn't
+    // move readAt forward and lose when it was actually first read.
+    notification.readAt = notification.readAt ?? new Date();
 
     return this.dataSource.manager.save(Notification, notification);
   }
@@ -81,10 +95,20 @@ export class NotificationsService {
   async markAllRead(memberId: number) {
     await this.dataSource.manager.update(
       Notification,
-      { memberId, readStatus: false },
-      { readStatus: true },
+      { memberId, readStatus: false, deletedAt: IsNull() },
+      { readStatus: true, readAt: new Date() },
     );
 
     return { message: 'All notifications marked as read.' };
+  }
+
+  async deleteNotification(memberId: number, notificationId: number) {
+    const notification = await this.findOwnNotification(memberId, notificationId);
+
+    notification.deletedAt = new Date();
+
+    await this.dataSource.manager.save(Notification, notification);
+
+    return { message: 'Notification deleted.' };
   }
 }

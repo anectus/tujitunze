@@ -59,6 +59,18 @@ export class PhoneNumber {
   })
   phoneStatus!: string;
 
+  // 'Standard' (one active SIM per operator per NIDA) or 'M2M' (up to
+  // four active SIMs per operator — IoT/router/tracking devices). The
+  // cap itself is enforced in MembersService, not by a DB constraint —
+  // see migration 0030's header comment for why.
+  @Column({
+    name: 'sim_type',
+    type: 'varchar',
+    length: 20,
+    default: 'Standard',
+  })
+  simType!: string;
+
   @CreateDateColumn({
     name: 'created_at',
     type: 'timestamp',

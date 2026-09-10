@@ -13,14 +13,10 @@ import type { SidebarNavItem } from "@/components/common/Sidebar";
 // items that actually change.
 const BASE_NAV_ITEMS: readonly SidebarNavItem[] = [
   { labelKey: "dashboard", href: "/dashboard" },
-  { labelKey: "wallet", href: "/wallet" },
   { labelKey: "savings", href: "/savings" },
   { labelKey: "insurance", href: "/insurance/plans" },
-  { labelKey: "telecom", href: "/telecom" },
   { labelKey: "membership", href: "/membership" },
-  { labelKey: "verifications", href: "/verifications" },
   { labelKey: "notifications", href: "/notifications" },
-  { labelKey: "reports", href: "/reports" },
   { labelKey: "qrCode", href: "/qr" },
 ];
 

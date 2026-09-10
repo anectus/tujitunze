@@ -25,4 +25,16 @@ export class AddBankAccountDto {
   @IsString()
   @MaxLength(150)
   accountHolderName?: string;
+
+  // Defaults to 'TZS' when omitted. Part of the per-bank product
+  // uniqueness key alongside accountType and accountCapacity — see
+  // MembersService.addBankAccount.
+  @IsOptional()
+  @IsIn(['TZS', 'USD'])
+  currency?: string;
+
+  // Defaults to 'Individual' when omitted.
+  @IsOptional()
+  @IsIn(['Individual', 'Joint'])
+  accountCapacity?: string;
 }

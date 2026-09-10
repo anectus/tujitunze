@@ -12,16 +12,11 @@ export const memberDashboardTranslations = {
     allCaughtUp: "All caught up",
     quickAccessHeading: "Quick Access",
     quickAccessSubtitle:
-      "Jump straight to your wallet, insurance, savings, telecom, and notifications.",
+      "Jump straight to your insurance, savings, and notifications.",
     viewDetails: "View Details",
     savingsProgressTemplate:
       "{percent}% of your wallet balance built from automatic micro-savings",
     cards: [
-      {
-        href: "/wallet",
-        title: "Wallet",
-        subtitle: "Your Health Wallet balance and transaction history.",
-      },
       {
         href: "/insurance/plans",
         title: "Insurance",
@@ -31,11 +26,6 @@ export const memberDashboardTranslations = {
         href: "/savings",
         title: "Savings",
         subtitle: "Automatic micro-savings from your contributions.",
-      },
-      {
-        href: "/telecom",
-        title: "Telecom",
-        subtitle: "Airtime, data bundles, and telecom payments.",
       },
       {
         href: "/notifications",
@@ -55,16 +45,11 @@ export const memberDashboardTranslations = {
     allCaughtUp: "Hakuna jipya",
     quickAccessHeading: "Ufikiaji wa Haraka",
     quickAccessSubtitle:
-      "Nenda moja kwa moja kwenye mkoba, bima, akiba, simu, na arifa zako.",
+      "Nenda moja kwa moja kwenye bima, akiba, na arifa zako.",
     viewDetails: "Angalia Maelezo",
     savingsProgressTemplate:
       "{percent}% ya salio la mkoba wako limetokana na akiba ya kiotomatiki",
     cards: [
-      {
-        href: "/wallet",
-        title: "Mkoba",
-        subtitle: "Salio la Mkoba wako wa Afya na historia ya miamala.",
-      },
       {
         href: "/insurance/plans",
         title: "Bima",
@@ -74,11 +59,6 @@ export const memberDashboardTranslations = {
         href: "/savings",
         title: "Akiba",
         subtitle: "Akiba ya moja kwa moja kutoka kwenye michango yako.",
-      },
-      {
-        href: "/telecom",
-        title: "Simu",
-        subtitle: "Muda wa maongezi, vifurushi vya data, na malipo ya simu.",
       },
       {
         href: "/notifications",

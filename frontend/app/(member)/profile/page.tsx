@@ -14,8 +14,6 @@ import { memberProfileTranslations } from "@/constants/translations/member-profi
 import { commonTranslations } from "@/constants/translations/common";
 import { API_URL } from "@/lib/utils/api";
 import {
-  BadgeCheckIcon,
-  ChartBarIcon,
   PhoneIcon,
   UserCircleIcon,
   WalletIcon,
@@ -65,19 +63,6 @@ interface MemberProfile {
   phoneNumbers: PhoneNumber[];
   bankAccounts: BankAccount[];
   membershipComplete: boolean;
-}
-
-interface RecentTransaction {
-  walletTransactionId: number;
-  transactionType: string;
-  amount: number;
-  transactionDate: string;
-}
-
-const RECENT_ACTIVITY_PAGE_SIZE = 3;
-
-function formatTsh(amount: number) {
-  return `TSh ${amount.toLocaleString("en-TZ", { minimumFractionDigits: 2 })}`;
 }
 
 // Matches backend/src/modules/members/members.service.ts's own
@@ -140,9 +125,6 @@ export default function ProfilePage() {
   const [profile, setProfile] = useState<MemberProfile | null>(null);
   const [operators, setOperators] = useState<TelecomOperator[]>([]);
   const [banks, setBanks] = useState<Bank[]>([]);
-  const [recentActivity, setRecentActivity] = useState<RecentTransaction[] | null>(
-    null
-  );
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
   const [settingPrimaryId, setSettingPrimaryId] = useState<number | null>(null);
@@ -196,17 +178,6 @@ export default function ProfilePage() {
       } finally {
         setLoading(false);
       }
-
-      // Activity Summary — best-effort, separate from the profile load
-      // above: a failure here shouldn't block the rest of the page, it
-      // just leaves that one card showing "no recent activity".
-      fetch(
-        `${API_URL}/members/wallet/transactions?pageSize=${RECENT_ACTIVITY_PAGE_SIZE}`,
-        { headers }
-      )
-        .then((response) => (response.ok ? response.json() : null))
-        .then((data) => setRecentActivity(data?.items ?? []))
-        .catch(() => setRecentActivity([]));
     };
 
     loadProfile();
@@ -383,8 +354,8 @@ export default function ProfilePage() {
             </motion.div>
 
             {/* Two-column grid: Personal Information on the left, the
-                dynamic sections (contact/financial/activity) on the
-                right — stacks to one column below lg. */}
+                dynamic sections (contact/financial) on the right —
+                stacks to one column below lg. */}
             <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-3">
 
               <div className="lg:col-span-1">
@@ -534,57 +505,6 @@ export default function ProfilePage() {
 
                           <span className="text-sm text-gray-600">
                             {account.verificationStatus}
-                          </span>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </ProfileCard>
-
-                {/* Activity Summary — the 3 most recent wallet
-                    transactions, reusing the same endpoint the Wallet
-                    page's own transaction list already calls. */}
-                <ProfileCard
-                  title={t.activitySummaryTitle}
-                  icon={ChartBarIcon}
-                  delay={0.3}
-                  action={
-                    <Link
-                      href="/wallet"
-                      className="text-sm font-semibold text-[#064E3B] hover:text-[#065F46]"
-                    >
-                      {common.view}
-                    </Link>
-                  }
-                >
-                  {recentActivity === null ? (
-                    <p className="text-sm text-gray-600">{t.loadingActivity}</p>
-                  ) : recentActivity.length === 0 ? (
-                    <p className="text-sm text-gray-600">{t.noRecentActivity}</p>
-                  ) : (
-                    <ul className="divide-y divide-gray-100">
-                      {recentActivity.map((txn) => (
-                        <li
-                          key={txn.walletTransactionId}
-                          className="flex items-center justify-between py-3 first:pt-0 last:pb-0"
-                        >
-                          <div className="flex items-center gap-2.5">
-                            <BadgeCheckIcon className="h-4 w-4 shrink-0 text-slate-400" />
-                            <div>
-                              <p className="font-medium text-gray-900">
-                                {txn.transactionType}
-                              </p>
-                              <p className="text-sm text-gray-600">
-                                {new Date(txn.transactionDate).toLocaleDateString("en-TZ")}
-                              </p>
-                            </div>
-                          </div>
-                          <span
-                            className={`text-sm font-semibold ${
-                              Number(txn.amount) < 0 ? "text-red-600" : "text-[#064E3B]"
-                            }`}
-                          >
-                            {formatTsh(Number(txn.amount))}
                           </span>
                         </li>
                       ))}

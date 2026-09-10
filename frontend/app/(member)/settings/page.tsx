@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   AlertCircle,
@@ -47,6 +47,7 @@ interface LinkedPhoneNumber {
   operatorId: number;
   isPrimary: boolean;
   phoneStatus: string;
+  simType: string;
 }
 
 interface LinkedBankAccount {
@@ -56,6 +57,8 @@ interface LinkedBankAccount {
   accountType: string | null;
   isPrimary: boolean;
   accountStatus: string;
+  currency: string;
+  accountCapacity: string;
 }
 
 interface MemberProfile {
@@ -565,12 +568,20 @@ type AccountKind = "phone" | "bank";
 type RemoveTarget = { kind: AccountKind; id: number; label: string };
 type DeleteTarget = { kind: AccountKind; id: number; label: string };
 
-function LinkedAccountsSection() {
+function LinkedAccountsSection({
+  profile,
+  onChanged,
+}: {
+  // Owned by SettingsPage, not fetched here — see walletProfile's doc
+  // comment there for why (this list needs to reflect additions made by
+  // the sibling Add Phone/Bank sections, not just its own mutations).
+  profile: MemberProfile | null;
+  onChanged: () => void;
+}) {
   const getAuthHeaders = useAuthHeaders();
   const { language } = useLanguage();
   const t = memberSettingsTranslations[language];
 
-  const [profile, setProfile] = useState<MemberProfile | null>(null);
   const [operators, setOperators] = useState<TelecomOperator[]>([]);
   const [banks, setBanks] = useState<Bank[]>([]);
   const [target, setTarget] = useState<RemoveTarget | null>(null);
@@ -587,18 +598,6 @@ function LinkedAccountsSection() {
   );
 
   useEffect(() => {
-    const headers = getAuthHeaders();
-    if (!headers) return;
-
-    fetch(`${API_URL}/members/me`, { headers })
-      .then((response) => (response.ok ? response.json() : null))
-      .then((data: MemberProfile | null) => {
-        if (data) {
-          setProfile(data);
-        }
-      })
-      .catch(() => setProfile(null));
-
     fetch(`${API_URL}/members/telecom-operators`)
       .then((response) => (response.ok ? response.json() : []))
       .then(setOperators)
@@ -608,7 +607,6 @@ function LinkedAccountsSection() {
       .then((response) => (response.ok ? response.json() : []))
       .then(setBanks)
       .catch(() => setBanks([]));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const operatorName = (operatorId: number) =>
@@ -643,31 +641,12 @@ function LinkedAccountsSection() {
         throw new Error(data.message || t.removeAccountErrorFallback);
       }
 
-      // Marked Inactive in place, not removed from the list — a removed
-      // account still needs to be visible so the member can reactivate
-      // it or delete it permanently below, rather than disappearing
-      // into a state with no way back in.
-      setProfile((current) =>
-        current
-          ? target.kind === "phone"
-            ? {
-                ...current,
-                phoneNumbers: current.phoneNumbers.map((phone) =>
-                  phone.phoneId === target.id
-                    ? { ...phone, phoneStatus: "Inactive", isPrimary: false }
-                    : phone
-                ),
-              }
-            : {
-                ...current,
-                bankAccounts: current.bankAccounts.map((account) =>
-                  account.memberBankAccountId === target.id
-                    ? { ...account, accountStatus: "Inactive", isPrimary: false }
-                    : account
-                ),
-              }
-          : current
-      );
+      // Re-fetches the shared profile rather than splicing a local copy
+      // — the account still shows here afterward (marked Inactive by the
+      // backend, not removed from the list) so the member can reactivate
+      // it or delete it permanently below, rather than disappearing into
+      // a state with no way back in.
+      onChanged();
 
       setToast({ variant: "success", message: t.removeAccountSuccess });
     } catch (err) {
@@ -705,27 +684,7 @@ function LinkedAccountsSection() {
         throw new Error(data.message || t.reactivateAccountErrorFallback);
       }
 
-      setProfile((current) =>
-        current
-          ? kind === "phone"
-            ? {
-                ...current,
-                phoneNumbers: current.phoneNumbers.map((phone) =>
-                  phone.phoneId === id
-                    ? { ...phone, phoneStatus: data.phoneStatus }
-                    : phone
-                ),
-              }
-            : {
-                ...current,
-                bankAccounts: current.bankAccounts.map((account) =>
-                  account.memberBankAccountId === id
-                    ? { ...account, accountStatus: data.accountStatus }
-                    : account
-                ),
-              }
-          : current
-      );
+      onChanged();
 
       setToast({ variant: "success", message: t.reactivateAccountSuccess });
     } catch (err) {
@@ -766,23 +725,7 @@ function LinkedAccountsSection() {
 
       // Here it really does come out of the list — unlike remove above,
       // this is a real row DELETE, so there's nothing left to reactivate.
-      setProfile((current) =>
-        current
-          ? deleteTarget.kind === "phone"
-            ? {
-                ...current,
-                phoneNumbers: current.phoneNumbers.filter(
-                  (phone) => phone.phoneId !== deleteTarget.id
-                ),
-              }
-            : {
-                ...current,
-                bankAccounts: current.bankAccounts.filter(
-                  (account) => account.memberBankAccountId !== deleteTarget.id
-                ),
-              }
-          : current
-      );
+      onChanged();
 
       setToast({ variant: "success", message: t.deleteAccountSuccess });
     } catch (err) {
@@ -832,6 +775,11 @@ function LinkedAccountsSection() {
                     {phone.isPrimary && (
                       <span className="ml-2 rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-semibold text-[#064E3B]">
                         {t.primary}
+                      </span>
+                    )}
+                    {phone.simType === "M2M" && (
+                      <span className="ml-2 rounded-full bg-blue-100 px-2 py-0.5 text-xs font-semibold text-blue-700">
+                        {t.m2mBadge}
                       </span>
                     )}
                     {inactive && (
@@ -925,7 +873,9 @@ function LinkedAccountsSection() {
                       </span>
                     )}
                   </p>
-                  <p className="text-sm text-gray-500">{account.accountStatus}</p>
+                  <p className="text-sm text-gray-500">
+                    {account.accountStatus} · {account.currency} · {account.accountCapacity}
+                  </p>
                 </div>
               </div>
 
@@ -1025,16 +975,43 @@ function LinkedAccountsSection() {
 // the backend treats that as already-linked instead of an error.
 // =====================================================
 
-function AddPhoneNumberSection({ blocked }: { blocked: boolean }) {
+// TCRA-aligned caps a member can hold under one NIDA — mirrors
+// MembersService.assertSimSlotAvailable. Frontend-side so the "Add
+// Phone Number" button can disable itself once a network/SIM-type
+// combination is full, instead of only failing after submit; the
+// backend check is still the real boundary (same UX-shortcut caveat as
+// the saving-consent gate above).
+const STANDARD_SIM_LIMIT_PER_OPERATOR = 1;
+const M2M_SIM_LIMIT_PER_OPERATOR = 4;
+
+function AddPhoneNumberSection({
+  blocked,
+  profile,
+  onAdded,
+}: {
+  blocked: boolean;
+  // Owned by SettingsPage — see walletProfile's doc comment there. Used
+  // for the per-operator SIM-slot count below, so it needs to reflect
+  // removals/reactivations made from LinkedAccountsSection too, not just
+  // this section's own adds.
+  profile: MemberProfile | null;
+  onAdded: () => void;
+}) {
   const getAuthHeaders = useAuthHeaders();
   const { language } = useLanguage();
   const t = memberSettingsTranslations[language];
 
   const [operators, setOperators] = useState<TelecomOperator[]>([]);
-  const [form, setForm] = useState({ operatorId: "", phoneNumber: "" });
+  const [form, setForm] = useState({
+    operatorId: "",
+    phoneNumber: "",
+    simType: "Standard",
+  });
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [loading, setLoading] = useState(false);
+
+  const linkedPhones = profile?.phoneNumbers ?? [];
 
   useEffect(() => {
     const loadOperators = async () => {
@@ -1058,6 +1035,26 @@ function AddPhoneNumberSection({ blocked }: { blocked: boolean }) {
     setError("");
     setSuccess("");
   };
+
+  const selectedOperator = operators.find(
+    (operator) => String(operator.operator_id) === form.operatorId
+  );
+
+  const limitForSelection =
+    form.simType === "M2M"
+      ? M2M_SIM_LIMIT_PER_OPERATOR
+      : STANDARD_SIM_LIMIT_PER_OPERATOR;
+
+  const activeCountForSelection = selectedOperator
+    ? linkedPhones.filter(
+        (phone) =>
+          phone.operatorId === selectedOperator.operator_id &&
+          phone.simType === form.simType &&
+          phone.phoneStatus !== "Inactive"
+      ).length
+    : 0;
+
+  const slotFull = !!selectedOperator && activeCountForSelection >= limitForSelection;
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -1086,6 +1083,7 @@ function AddPhoneNumberSection({ blocked }: { blocked: boolean }) {
           body: JSON.stringify({
             operatorId: Number(form.operatorId),
             phoneNumber: form.phoneNumber,
+            simType: form.simType,
           }),
         }
       );
@@ -1097,7 +1095,11 @@ function AddPhoneNumberSection({ blocked }: { blocked: boolean }) {
       }
 
       setSuccess(t.addPhoneSuccessTemplate.replace("{phoneNumber}", data.phoneNumber));
-      setForm({ operatorId: "", phoneNumber: "" });
+      // Refetches the shared profile — updates this section's own
+      // per-operator slot count AND LinkedAccountsSection's list from the
+      // same round trip, instead of only patching a local copy here.
+      onAdded();
+      setForm({ operatorId: "", phoneNumber: "", simType: "Standard" });
     } catch (err) {
       setError(
         err instanceof Error
@@ -1143,6 +1145,40 @@ function AddPhoneNumberSection({ blocked }: { blocked: boolean }) {
         </SelectField>
 
         <div>
+          <div className="mb-2 flex items-center gap-1.5">
+            <label
+              htmlFor="simType"
+              className="block text-sm font-semibold text-gray-700"
+            >
+              {t.simType}
+            </label>
+            <InfoTooltip
+              text={
+                form.simType === "M2M"
+                  ? t.simTypeTooltipM2M
+                  : t.simTypeTooltipStandard
+              }
+            />
+          </div>
+          <div className="relative">
+            <select
+              id="simType"
+              name="simType"
+              value={form.simType}
+              onChange={handleChange}
+              className={selectClass}
+            >
+              <option value="Standard">{t.simTypeStandard}</option>
+              <option value="M2M">{t.simTypeM2M}</option>
+            </select>
+            <ChevronDown
+              className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400"
+              aria-hidden
+            />
+          </div>
+        </div>
+
+        <div>
           <label
             htmlFor="phoneNumber"
             className="mb-2 block text-sm font-semibold text-gray-700"
@@ -1161,7 +1197,15 @@ function AddPhoneNumberSection({ blocked }: { blocked: boolean }) {
           />
         </div>
 
-        <Button type="submit" disabled={loading || blocked} size="sm">
+        {slotFull && selectedOperator && (
+          <Alert variant="error">
+            {(form.simType === "M2M" ? t.simSlotFullM2M : t.simSlotFullStandard)
+              .replace("{operator}", selectedOperator.operator_name)
+              .replace("{limit}", String(limitForSelection))}
+          </Alert>
+        )}
+
+        <Button type="submit" disabled={loading || blocked || slotFull} size="sm">
           {loading ? t.adding : t.addPhoneButton}
         </Button>
 
@@ -1175,7 +1219,16 @@ function AddPhoneNumberSection({ blocked }: { blocked: boolean }) {
 // Add Bank Account — another income source for the wallet.
 // =====================================================
 
-function AddBankAccountSection({ blocked }: { blocked: boolean }) {
+function AddBankAccountSection({
+  blocked,
+  onAdded,
+}: {
+  blocked: boolean;
+  // Triggers SettingsPage's shared profile refetch — see
+  // walletProfile's doc comment there. LinkedAccountsSection needs this
+  // to show a bank account added here without a page reload.
+  onAdded: () => void;
+}) {
   const getAuthHeaders = useAuthHeaders();
   const { language } = useLanguage();
   const t = memberSettingsTranslations[language];
@@ -1185,6 +1238,8 @@ function AddBankAccountSection({ blocked }: { blocked: boolean }) {
     bankId: "",
     accountNumber: "",
     accountType: "",
+    currency: "TZS",
+    accountCapacity: "Individual",
   });
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
@@ -1239,6 +1294,8 @@ function AddBankAccountSection({ blocked }: { blocked: boolean }) {
             bankId: Number(form.bankId),
             accountNumber: form.accountNumber,
             accountType: form.accountType,
+            currency: form.currency,
+            accountCapacity: form.accountCapacity,
           }),
         }
       );
@@ -1250,7 +1307,14 @@ function AddBankAccountSection({ blocked }: { blocked: boolean }) {
       }
 
       setSuccess(t.addBankSuccessTemplate.replace("{accountNumber}", data.accountNumber));
-      setForm({ bankId: "", accountNumber: "", accountType: "" });
+      onAdded();
+      setForm({
+        bankId: "",
+        accountNumber: "",
+        accountType: "",
+        currency: "TZS",
+        accountCapacity: "Individual",
+      });
     } catch (err) {
       setError(
         err instanceof Error
@@ -1326,6 +1390,30 @@ function AddBankAccountSection({ blocked }: { blocked: boolean }) {
           </option>
           <option value="Savings">{t.savings}</option>
           <option value="Current">{t.current}</option>
+        </SelectField>
+
+        <SelectField
+          id="currency"
+          name="currency"
+          label={t.currency}
+          value={form.currency}
+          onChange={handleChange}
+          required
+        >
+          <option value="TZS">TZS</option>
+          <option value="USD">USD</option>
+        </SelectField>
+
+        <SelectField
+          id="accountCapacity"
+          name="accountCapacity"
+          label={t.accountCapacity}
+          value={form.accountCapacity}
+          onChange={handleChange}
+          required
+        >
+          <option value="Individual">{t.capacityIndividual}</option>
+          <option value="Joint">{t.capacityJoint}</option>
         </SelectField>
 
         <Button type="submit" disabled={loading || blocked} size="sm">
@@ -1517,6 +1605,7 @@ function SettingsTabs({
 }
 
 export default function SettingsPage() {
+  const getAuthHeaders = useAuthHeaders();
   const { language } = useLanguage();
   const t = memberSettingsTranslations[language];
   const [activeTab, setActiveTab] = useState<TabKey>("user");
@@ -1525,6 +1614,35 @@ export default function SettingsPage() {
   // treated as "not blocked" below so the Add forms don't flash a false
   // warning before the real value is known.
   const [savingConsent, setSavingConsent] = useState<boolean | null>(null);
+
+  // Owned here (not by each section individually) so LinkedAccountsSection,
+  // AddPhoneNumberSection, and AddBankAccountSection all read the same
+  // snapshot and can all trigger the same refetch. Previously each of the
+  // three fetched its own copy of /members/me and never told the others
+  // about a change — adding a phone number in AddPhoneNumberSection didn't
+  // appear in LinkedAccountsSection's list (and didn't update its own
+  // per-operator SIM-slot count either) until a full page reload.
+  const [walletProfile, setWalletProfile] = useState<MemberProfile | null>(null);
+
+  const refreshWalletProfile = useCallback(() => {
+    const headers = getAuthHeaders();
+    if (!headers) return;
+
+    fetch(`${API_URL}/members/me`, { headers })
+      .then((response) => (response.ok ? response.json() : null))
+      .then((data: MemberProfile | null) => {
+        if (data) setWalletProfile(data);
+      })
+      .catch(() => {
+        // Leaves the previous snapshot in place — a transient refetch
+        // failure shouldn't blank out an already-loaded list.
+      });
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- getAuthHeaders is a fresh closure every render (see its own definition); intentionally excluded so this identity is stable across renders.
+  }, []);
+
+  useEffect(() => {
+    refreshWalletProfile();
+  }, [refreshWalletProfile]);
 
   // Same requireComplete gate the Dashboard uses — an incomplete member
   // is redirected to /onboarding/mobile-money before any of this page's
@@ -1595,12 +1713,22 @@ export default function SettingsPage() {
                 description={t.walletSourcesGroupDescription}
               >
                 <div className="space-y-8">
-                  <LinkedAccountsSection />
+                  <LinkedAccountsSection
+                    profile={walletProfile}
+                    onChanged={refreshWalletProfile}
+                  />
                   <div className="border-t border-gray-200 pt-8">
-                    <AddPhoneNumberSection blocked={savingConsent === false} />
+                    <AddPhoneNumberSection
+                      blocked={savingConsent === false}
+                      profile={walletProfile}
+                      onAdded={refreshWalletProfile}
+                    />
                   </div>
                   <div className="border-t border-gray-200 pt-8">
-                    <AddBankAccountSection blocked={savingConsent === false} />
+                    <AddBankAccountSection
+                      blocked={savingConsent === false}
+                      onAdded={refreshWalletProfile}
+                    />
                   </div>
                 </div>
               </SettingsPanel>

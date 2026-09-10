@@ -26,7 +26,6 @@ export const memberProfileTranslations = {
     personalInfoTitle: "Personal Information",
     contactInfoTitle: "Contact Information",
     financialInfoTitle: "Financial Information",
-    activitySummaryTitle: "Activity Summary",
     accountStatus: "Account Status",
     memberIdLabel: "Member ID",
     memberSince: "Member since {year}",
@@ -35,8 +34,6 @@ export const memberProfileTranslations = {
     verificationFull: "Verified",
     verificationPartial: "Pending",
     verificationNone: "Inactive",
-    noRecentActivity: "No recent activity yet.",
-    loadingActivity: "Loading recent activity...",
   },
   sw: {
     title: "Wasifu Wangu",
@@ -63,7 +60,6 @@ export const memberProfileTranslations = {
     personalInfoTitle: "Taarifa Binafsi",
     contactInfoTitle: "Taarifa za Mawasiliano",
     financialInfoTitle: "Taarifa za Kifedha",
-    activitySummaryTitle: "Muhtasari wa Shughuli",
     accountStatus: "Hali ya Akaunti",
     memberIdLabel: "Kitambulisho cha Mwanachama",
     memberSince: "Mwanachama tangu {year}",
@@ -72,7 +68,5 @@ export const memberProfileTranslations = {
     verificationFull: "Imethibitishwa",
     verificationPartial: "Inasubiri",
     verificationNone: "Haijafanya kazi",
-    noRecentActivity: "Hakuna shughuli za hivi karibuni bado.",
-    loadingActivity: "Inapakia shughuli za hivi karibuni...",
   },
 } as const satisfies Record<Language, Record<string, string>>;

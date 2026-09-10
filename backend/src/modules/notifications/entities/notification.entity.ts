@@ -67,4 +67,18 @@ export class Notification {
     default: false,
   })
   readStatus!: boolean;
+
+  @Column({
+    name: 'read_at',
+    type: 'timestamp',
+    nullable: true,
+  })
+  readAt!: Date | null;
+
+  @Column({
+    name: 'deleted_at',
+    type: 'timestamp',
+    nullable: true,
+  })
+  deletedAt!: Date | null;
 }

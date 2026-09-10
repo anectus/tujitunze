@@ -19,7 +19,6 @@ import {
   BellIcon,
   CoinsIcon,
   ShieldIcon,
-  SignalIcon,
   WalletIcon,
 } from "@/components/common/SidebarIcons";
 import Overview from "./Overview";
@@ -45,10 +44,8 @@ function formatTsh(amount: number) {
 // Icon per Quick Access card, keyed by href (stable across languages) —
 // same lookup-by-href convention cardDetail/cardActive below use.
 const CARD_ICONS: Record<string, ComponentType<SVGProps<SVGSVGElement>>> = {
-  "/wallet": WalletIcon,
   "/insurance/plans": ShieldIcon,
   "/savings": CoinsIcon,
-  "/telecom": SignalIcon,
   "/notifications": BellIcon,
 };
 
@@ -250,14 +247,10 @@ export default function DashboardPage() {
   // which figure belongs on which card.
   const cardDetail = (href: string): string | undefined => {
     switch (href) {
-      case "/wallet":
-        return wallet ? formatTsh(wallet.balance) : undefined;
       case "/insurance/plans":
         return activePolicy ? activePolicy.provider_name : t.noActivePolicy;
       case "/savings":
         return savings ? formatTsh(savings.totalSavedTzs) : undefined;
-      case "/telecom":
-        return t.comingSoon;
       case "/notifications":
         return unreadCount > 0
           ? t.unreadTemplate.replace("{count}", String(unreadCount))
@@ -267,19 +260,15 @@ export default function DashboardPage() {
     }
   };
 
-  // Emerald = real, current data; gray = nothing to show yet (Telecom's
-  // "coming soon", no active policy, or notifications with nothing
-  // unread) — same active/inactive language the KPI cards above use.
+  // Emerald = real, current data; gray = nothing to show yet (no active
+  // policy, or notifications with nothing unread) — same active/inactive
+  // language the KPI cards above use.
   const cardActive = (href: string): boolean => {
     switch (href) {
-      case "/wallet":
-        return !!wallet;
       case "/insurance/plans":
         return !!activePolicy;
       case "/savings":
         return !!savings;
-      case "/telecom":
-        return false;
       case "/notifications":
         return unreadCount > 0;
       default:
@@ -364,7 +353,7 @@ export default function DashboardPage() {
         <Overview />
       </div>
 
-      {/* Quick Access — Wallet, Insurance, Savings, Telecom, Notifications */}
+      {/* Quick Access — Insurance, Savings, Notifications */}
       <SectionHeader
         title={t.quickAccessHeading}
         subtitle={t.quickAccessSubtitle}
