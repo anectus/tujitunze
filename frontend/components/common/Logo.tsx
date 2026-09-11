@@ -1,42 +1,35 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 
-// The one real Tujitunze brand mark in this codebase — a shield-with-
-// cross, matching the health/security positioning — previously defined
-// only as a private, unexported function inside Header.tsx (the public
-// marketing site's header) and used nowhere else. Exported from here so
-// Header.tsx and every authenticated page's Sidebar/DashboardHeader
-// render the exact same mark instead of two different ones drifting
-// apart. Colors are the app's actual established greens (#6ee7b7 /
-// #a7f3d0 fills, #064e3b stroke) — not a different "brand green" hex,
-// since this already matches every other emerald-toned element site-wide.
+// The one real Tujitunze brand mark in this codebase — the official
+// brand icon (frontend/public/tujitunze-logo.jpeg), previously a
+// hand-drawn shield-with-cross SVG defined only as a private,
+// unexported function inside Header.tsx (the public marketing site's
+// header) and used nowhere else. Exported from here so Header.tsx and
+// every authenticated page's Sidebar/DashboardHeader render the exact
+// same mark instead of two different ones drifting apart. `fill` +
+// a relative/overflow-hidden wrapper is the same pattern Trust.tsx
+// uses for the Vodacom/Halotel network logos.
 export function LogoMark({ className }: { className?: string }) {
   return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      viewBox="0 0 24 24"
-      aria-hidden="true"
+    <span
       // group-hover here relies on the parent Link's `group` class (see
       // Logo below) — Header.tsx/Footer.tsx use this mark directly with
       // their own Link, which also carries `group`, so the hover state
-      // still comes from a real ancestor rather than needing this SVG
+      // still comes from a real ancestor rather than needing this image
       // itself to be interactive.
-      className={`transition-transform duration-300 ease-in-out group-hover:scale-110 group-hover:drop-shadow-[0_0_8px_rgba(6,78,59,0.5)] motion-reduce:transition-none motion-reduce:group-hover:scale-100 ${className ?? ""}`}
+      className={`relative inline-block overflow-hidden rounded-full transition-transform duration-300 ease-in-out group-hover:scale-110 group-hover:drop-shadow-[0_0_8px_rgba(6,78,59,0.5)] motion-reduce:transition-none motion-reduce:group-hover:scale-100 ${className ?? ""}`}
     >
-      <path
-        d="M12 2 L20 5.2 C20 12.4 16.8 18.2 12 21 C7.2 18.2 4 12.4 4 5.2 Z"
-        fill="#6ee7b7"
+      <Image
+        src="/tujitunze-logo.jpeg"
+        alt=""
+        fill
+        sizes="64px"
+        className="object-cover"
       />
-      <path
-        d="M12 4.3 L17.6 6.5 C17.6 11.8 15.3 16 12 18.2 C8.7 16 6.4 11.8 6.4 6.5 Z"
-        fill="#a7f3d0"
-      />
-      <g stroke="#064e3b" strokeWidth="1.6" strokeLinecap="round">
-        <line x1="12" y1="8.6" x2="12" y2="14" />
-        <line x1="9.3" y1="11.3" x2="14.7" y2="11.3" />
-      </g>
-    </svg>
+    </span>
   );
 }
 

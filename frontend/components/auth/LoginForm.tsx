@@ -435,11 +435,11 @@ export default function LoginForm() {
           {/* Welcome panel — right on desktop, below the form on mobile
               (this whole card is flex-col until lg:, so this is simply
               the second child rather than a separate hidden-on-mobile
-              element). LogoMark's existing fill colors (mint greens,
-              dark stroke) already read correctly against a dark emerald
-              background — same combination Header.tsx uses on its own
-              bg-emerald-900 bar — so no separate "light" variant of the
-              mark was needed. */}
+              element). LogoMark renders the raster brand icon inside a
+              rounded-full clip, which reads fine against this dark
+              emerald background — same combination Header.tsx uses on
+              its own bg-emerald-900 bar — so no separate "light" variant
+              of the mark was needed. */}
           <div className="flex flex-1 flex-col items-center justify-center bg-gradient-to-br from-[#064E3B] to-emerald-800 p-10 text-center text-white [animation:slide-in-right_0.8s_ease-out_forwards] motion-reduce:[animation:none] sm:p-12">
             <LogoMark className="h-16 w-16" />
             <h2 className="mt-6 text-2xl font-bold">{t.welcomeTitle}</h2>

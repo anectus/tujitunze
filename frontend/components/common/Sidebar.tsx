@@ -43,6 +43,14 @@ export default function Sidebar({
   const { firstName, roles, logout } = useAuth();
   const { language } = useLanguage();
   const [mobileOpen, setMobileOpen] = useState(false);
+  // HTB-style hover expand: only meaningful while `collapsed` (the
+  // pinned/persisted preference from DashboardLayout) is true — hovering
+  // the icon-only rail temporarily reveals labels without touching that
+  // persisted preference, and it snaps back the moment the cursor leaves.
+  // Doesn't apply when the sidebar is already pinned open.
+  const [hoverExpanded, setHoverExpanded] = useState(false);
+  const isHoverOverlay = collapsed && hoverExpanded;
+  const isCompact = collapsed && !hoverExpanded;
 
   // Sidebar is shared by every role group — a bare "/super-admin/dashboard"
   // link would send a Bank/Telecom/Insurance/Admin/Member staffer to a
@@ -266,13 +274,21 @@ export default function Sidebar({
           shows up in the active nav state and logo mark, slate gray in
           secondary text, per the Tujitunze palette. Collapses to an
           icon-only rail (own width managed here; DashboardLayout mirrors
-          it for the content column's left padding). */}
+          it for the content column's left padding). While collapsed,
+          hovering the rail temporarily re-expands it (HTB-style) as a
+          floating overlay — `fixed` positioning means the wider hover
+          state never shifts DashboardLayout's content padding, which
+          stays keyed to the persisted `collapsed` prop, not the hover
+          state; z-40 + shadow-lg here is what keeps it reading as an
+          overlay above that content instead of a layout shift. */}
       <aside
-        className={`hidden md:flex md:flex-col md:fixed md:inset-y-0 border-r border-gray-100 bg-white transition-[width] duration-200 ${
-          collapsed ? "md:w-20" : "md:w-64"
-        }`}
+        onMouseEnter={() => setHoverExpanded(true)}
+        onMouseLeave={() => setHoverExpanded(false)}
+        className={`hidden md:flex md:flex-col md:fixed md:inset-y-0 border-r border-gray-100 bg-white transition-all duration-300 ease-in-out ${
+          isCompact ? "md:w-20" : "md:w-64"
+        } ${isHoverOverlay ? "z-40 shadow-lg" : "z-20"}`}
       >
-        {sidebarBody(undefined, collapsed)}
+        {sidebarBody(undefined, isCompact)}
 
         <button
           type="button"
@@ -282,7 +298,7 @@ export default function Sidebar({
           className="absolute -right-3 top-8 flex h-6 w-6 items-center justify-center rounded-full border border-gray-200 bg-white text-slate-500 shadow-sm transition hover:text-[#064E3B]"
         >
           <ChevronDoubleLeftIcon
-            className={`h-3.5 w-3.5 transition-transform ${collapsed ? "rotate-180" : ""}`}
+            className={`h-3.5 w-3.5 transition-transform duration-300 ease-in-out ${collapsed ? "rotate-180" : ""}`}
           />
         </button>
       </aside>
